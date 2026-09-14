@@ -5,1331 +5,864 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Desk | UpClip Studio</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/creator_desk.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-    <style>
-        /* ============================================
-           YouTube Desk — Modern Glassmorphism
-        ============================================ */
-        :root {
-            --yt-red: #FF0000;
-            --yt-red-dark: #cc0000;
-            --yt-red-soft: rgba(255, 0, 0, 0.10);
-            --yt-red-border: rgba(255, 0, 0, 0.30);
-            --glass-bg: rgba(20, 24, 36, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.06);
-            --sidebar-w: 260px;
-        }
-
-        /* Light theme overrides for YouTube Desk */
-        :root[data-theme="light"] {
-            --glass-bg: rgba(255, 255, 255, 0.72);
-            --glass-border: rgba(255, 255, 255, 0.40);
-        }
-
-        .yt-desk-shell {
-            display: flex;
-            min-height: 100vh;
-            font-family: 'Inter', system-ui, sans-serif;
-        }
-
-        /* =======================
-           Sidebar
-        ======================= */
-        .yt-sidebar {
-            width: var(--sidebar-w);
-            background: rgba(8, 9, 13, 0.92);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid var(--glass-border);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            inset: 0 auto 0 0;
-            z-index: 50;
-            overflow-y: auto;
-        }
-        :root[data-theme="light"] .yt-sidebar {
-            background: rgba(255, 255, 255, 0.80);
-        }
-
-        .yt-sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .yt-sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 4px;
-        }
-        .yt-sidebar-brand .brand-icon {
-            font-size: 28px;
-        }
-        .yt-sidebar-brand h2 {
-            font-size: 16px;
-            font-weight: 800;
-            background: linear-gradient(90deg, var(--primary-2), var(--accent));
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .yt-sidebar-sub {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .yt-sidebar-nav {
-            flex: 1;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .yt-nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            font-family: inherit;
-            transition: 0.2s;
-        }
-        .yt-nav-item:hover {
-            background: var(--glass-bg);
-            color: var(--text);
-            border: 1px solid var(--glass-border);
-        }
-        .yt-nav-item.active {
-            background: var(--yt-red-soft);
-            color: var(--text);
-            border: 1px solid var(--yt-red-border);
-            font-weight: 600;
-        }
-        .yt-nav-item .nav-icon {
-            font-size: 18px;
-            width: 24px;
-            text-align: center;
-        }
-        .yt-nav-badge {
-            margin-left: auto;
-            background: var(--error);
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 999px;
-        }
-        .yt-nav-section-title {
-            padding: 4px 12px 8px;
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .yt-sidebar-footer {
-            padding: 12px;
-            border-top: 1px solid var(--glass-border);
-            font-size: 12px;
-            color: var(--text-muted);
-            text-align: center;
-        }
-        .yt-sidebar-footer a {
-            color: var(--text-muted);
-            text-decoration: none;
-        }
-        .yt-sidebar-footer a:hover {
-            color: var(--accent);
-        }
-
-        /* =======================
-           Main Content
-        ======================= */
-        .yt-main {
-            flex: 1;
-            margin-left: var(--sidebar-w);
-            padding: 24px clamp(16px, 2vw, 32px) 40px;
-        }
-
-        /* Top bar — modern, slim, glass */
-        .yt-topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-        .yt-topbar h1 {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--text);
-        }
-        .yt-topbar h1 .yt-icon {
-            margin-right: 6px;
-        }
-        .yt-topbar-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        /* Channel connection badge */
-        .yt-channel-badge {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 14px;
-            border-radius: 999px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .yt-channel-badge.connected {
-            border-color: var(--yt-red-border);
-        }
-        .yt-channel-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 1px solid var(--glass-border);
-        }
-        .yt-channel-name {
-            font-weight: 600;
-            color: var(--text);
-        }
-        .yt-disconnect-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--success);
-            flex-shrink: 0;
-        }
-        .yt-disconnect-dot.offline {
-            background: var(--error);
-        }
-
-        /* =======================
-           Workspace Layout
-        ======================= */
-        .yt-workspace {
-            display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 20px;
-            align-items: start;
-        }
-        .yt-workspace-main {
-            min-width: 0;
-        }
-        .yt-workspace-side {
-            min-width: 0;
-        }
-
-        /* =======================
-           Glass Card
-        ======================= */
-        .yt-glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.30);
-        }
-        :root[data-theme="light"] .yt-glass-card {
-            background: rgba(255, 255, 255, 0.72);
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        }
-
-        /* =======================
-           Video Preview
-        ======================= */
-        .yt-video-preview {
-            position: relative;
-            width: 100%;
-            border-radius: 16px;
-            overflow: hidden;
-            background: #000;
-            border: 1px solid var(--glass-border);
-            aspect-ratio: 16/9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .yt-video-preview video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        .yt-video-placeholder {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 40px 20px;
-        }
-        .yt-video-placeholder .yt-placeholder-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-        .yt-video-placeholder h3 {
-            font-size: 18px;
-            color: var(--text);
-            margin-bottom: 6px;
-        }
-        .yt-video-placeholder p {
-            font-size: 14px;
-        }
-
-        /* =======================
-           Drop Zone
-        ======================= */
-        .yt-dropzone {
-            border: 2px dashed var(--glass-border);
-            border-radius: 20px;
-            padding: 48px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.25s;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            margin-top: 24px;
-        }
-        .yt-dropzone:hover,
-        .yt-dropzone.dragover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.08);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
-        }
-        .yt-dropzone.dragover {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.3);
-        }
-        .yt-dropzone-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-            opacity: 0.7;
-        }
-        .yt-dropzone p {
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-        .yt-dropzone .yt-sub {
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-        .yt-dropzone input[type="file"] {
-            display: none;
-        }
-
-        /* =======================
-           Active Video Info
-        ======================= */
-        .yt-active-video-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-top: 20px;
-            padding: 16px 20px;
-            background: var(--glass-bg);
-            border-radius: 16px;
-            border: 1px solid var(--glass-border);
-        }
-        .yt-active-video-thumb {
-            width: 80px;
-            height: 45px;
-            border-radius: 8px;
-            object-fit: cover;
-            background: #000;
-            flex-shrink: 0;
-        }
-        .yt-active-video-details {
-            flex: 1;
-            min-width: 0;
-        }
-        .yt-active-video-details .yt-filename {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .yt-active-video-details .yt-video-meta {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-        .yt-active-video-source {
-            font-size: 11px;
-            color: var(--primary-2);
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 999px;
-            padding: 2px 8px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .yt-clear-video {
-            background: rgba(248, 113, 113, 0.1);
-            border: 1px solid rgba(248, 113, 113, 0.3);
-            color: var(--error);
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            flex-shrink: 0;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-        .yt-clear-video:hover {
-            background: rgba(248, 113, 113, 0.2);
-        }
-
-        /* =======================
-           Upload Settings
-        ======================= */
-        .yt-settings-form {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .yt-form-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 6px;
-        }
-        .yt-form-input,
-        .yt-form-textarea,
-        .yt-form-select {
-            width: 100%;
-            padding: 11px 14px;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            background: var(--glass-bg);
-            color: var(--text);
-            font-size: 14px;
-            font-family: inherit;
-            outline: none;
-            transition: 0.2s;
-            resize: vertical;
-        }
-        .yt-form-input:focus,
-        .yt-form-textarea:focus,
-        .yt-form-select:focus {
-            border-color: var(--primary);
-            background: var(--card-2);
-        }
-        .yt-form-textarea {
-            min-height: 100px;
-        }
-        .yt-char-count {
-            font-size: 12px;
-            color: var(--text-muted);
-            text-align: right;
-            margin-top: 4px;
-        }
-        .yt-char-count.warn { color: var(--warning); }
-        .yt-char-count.error { color: var(--error); }
-
-        .yt-tag-input-wrap {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .yt-tag-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            background: rgba(99, 102, 241, 0.12);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--primary-2);
-        }
-        .yt-tag-chip button {
-            background: none;
-            border: none;
-            color: var(--primary-2);
-            cursor: pointer;
-            font-size: 14px;
-            line-height: 1;
-            padding: 0;
-        }
-
-        /* =======================
-           Upload Settings Grid
-        ======================= */
-        .yt-upload-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .yt-upload-grid .yt-form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* =======================
-           Bottom Bar
-        ======================= */
-        .yt-bottom-bar {
-            margin-top: 20px;
-            padding: 16px 20px;
-            background: var(--glass-bg);
-            border-radius: 16px;
-            border: 1px solid var(--glass-border);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        .yt-bottom-bar .yt-btn-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        /* =======================
-           Progress Bar
-        ======================= */
-        .yt-upload-progress {
-            flex: 1;
-            min-width: 200px;
-        }
-        .yt-progress-track {
-            width: 100%;
-            height: 10px;
-            background: var(--card-2);
-            border-radius: 20px;
-            overflow: hidden;
-        }
-        .yt-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            border-radius: 20px;
-            transition: width 0.3s ease;
-        }
-        .yt-progress-text {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        /* =======================
-           Existing Videos Panel
-        ======================= */
-        .yt-existing-videos {
-            margin-top: 24px;
-        }
-        .yt-existing-videos .yt-section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 12px;
-        }
-        .yt-video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 12px;
-        }
-        .yt-video-item {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .yt-video-item:hover {
-            border-color: var(--primary);
-            background: var(--card-2);
-            transform: translateY(-1px);
-        }
-        .yt-video-thumb {
-            width: 100%;
-            height: 90px;
-            border-radius: 8px;
-            object-fit: cover;
-            background: #000;
-            margin-bottom: 8px;
-        }
-        .yt-video-thumb-placeholder {
-            width: 100%;
-            height: 90px;
-            border-radius: 8px;
-            background: var(--card-2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            opacity: 0.5;
-            margin-bottom: 8px;
-        }
-        .yt-video-filename {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 4px;
-        }
-        .yt-video-meta-row {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-        .yt-video-use-btn {
-            width: 100%;
-            padding: 6px 8px;
-            font-size: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--primary);
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary-2);
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .yt-video-use-btn:hover {
-            background: rgba(99, 102, 241, 0.3);
-        }
-
-        /* =======================
-           Toast
-        ======================= */
-        .yt-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 300;
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            transform: translateX(120%);
-            transition: transform 0.3s ease;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-        }
-        .yt-toast.show { transform: translateX(0); }
-        .yt-toast.success {
-            background: rgba(52, 211, 153, 0.15);
-            border: 1px solid var(--success);
-            color: var(--success);
-        }
-        .yt-toast.error {
-            background: rgba(248, 113, 113, 0.15);
-            border: 1px solid var(--error);
-            color: var(--error);
-        }
-        .yt-toast.info {
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid var(--primary);
-            color: var(--primary-2);
-        }
-
-        /* =======================
-           Modal
-        ======================= */
-        .yt-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-        }
-        .yt-modal-overlay[hidden] { display: none; }
-        .yt-modal {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 28px;
-            max-width: 520px;
-            width: 90%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .yt-modal h3 { margin-bottom: 16px; font-size: 18px; }
-        .yt-modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
-        /* =======================
-           Badges
-        ======================= */
-        .yt-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .yt-badge.queued { background: rgba(99,102,241,0.12); color: var(--primary-2); border: 1px solid rgba(99,102,241,0.3); }
-        .yt-badge.uploading { background: rgba(251,191,36,0.12); color: var(--warning); border: 1px solid rgba(251,191,36,0.3); }
-        .yt-badge.processing { background: rgba(139,92,246,0.12); color: var(--primary-2); border: 1px solid rgba(139,92,246,0.3); }
-        .yt-badge.published { background: rgba(52,211,153,0.12); color: var(--success); border: 1px solid rgba(52,211,153,0.3); }
-        .yt-badge.scheduled { background: rgba(34,211,238,0.12); color: var(--accent); border: 1px solid rgba(34,211,238,0.3); }
-        .yt-badge.failed { background: rgba(248,113,113,0.12); color: var(--error); border: 1px solid rgba(248,113,113,0.3); }
-        .yt-badge.draft { background: rgba(148,163,184,0.12); color: var(--text-muted); border: 1px solid var(--glass-border); }
-        .yt-badge.private { background: rgba(148,163,184,0.12); color: var(--text-muted); border: 1px solid var(--glass-border); }
-        .yt-badge.unlisted { background: rgba(251,191,36,0.12); color: var(--warning); border: 1px solid rgba(251,191,36,0.3); }
-
-        /* =======================
-           Table
-        ======================= */
-        .yt-table-wrap {
-            overflow-x: auto;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-        }
-        .yt-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            min-width: 600px;
-        }
-        .yt-table th, .yt-table td {
-            text-align: left;
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--glass-border);
-            white-space: nowrap;
-        }
-        .yt-table th {
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .yt-table tr:hover td { background: var(--glass-bg); }
-        .yt-table tr:last-child td { border-bottom: none; }
-
-        /* =======================
-           Connect Button
-        ======================= */
-        .yt-connect-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 28px;
-            background: var(--yt-red);
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            font-family: inherit;
-        }
-        .yt-connect-btn:hover {
-            background: var(--yt-red-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3);
-        }
-
-        /* =======================
-           Section Title
-        ======================= */
-        .yt-section-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 16px;
-        }
-
-        /* =======================
-           Stat Card
-        ======================= */
-        .yt-stat-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .yt-stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            flex-shrink: 0;
-        }
-        .yt-stat-icon.blue { background: rgba(99,102,241,0.15); }
-        .yt-stat-icon.green { background: rgba(52,211,153,0.15); }
-        .yt-stat-icon.yellow { background: rgba(251,191,36,0.15); }
-        .yt-stat-icon.red { background: rgba(248,113,113,0.15); }
-        .yt-stat-icon.purple { background: rgba(139,92,246,0.15); }
-        .yt-stat-value { font-size: 22px; font-weight: 800; }
-        .yt-stat-label { font-size: 13px; color: var(--text-muted); }
-
-        /* =======================
-           Tabs (for side panel)
-        ======================= */
-        .yt-tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 16px;
-            border-radius: 12px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            padding: 4px;
-        }
-        .yt-tab {
-            flex: 1;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            color: var(--text-muted);
-            background: none;
-            border: none;
-        }
-        .yt-tab:hover { color: var(--text); }
-        .yt-tab.active {
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary-2);
-        }
-
-        /* =======================
-           Empty State
-        ======================= */
-        .yt-empty {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-        .yt-empty-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-            opacity: 0.5;
-        }
-        .yt-empty h3 {
-            font-size: 18px;
-            color: var(--text);
-            margin-bottom: 6px;
-        }
-
-        /* =======================
-           Responsive
-        ======================= */
-        @media (max-width: 1024px) {
-            .yt-workspace { grid-template-columns: 1fr; }
-            .yt-sidebar { display: none; }
-            .yt-main { margin-left: 0; padding-bottom: 80px; }
-        }
-        @media (max-width: 768px) {
-            .yt-topbar { flex-direction: column; align-items: flex-start; }
-            .yt-topbar h1 { font-size: 20px; }
-            .yt-upload-grid { grid-template-columns: 1fr; }
-            .yt-btn-row { flex-direction: column; }
-            .yt-btn-row .btn { width: 100%; justify-content: center; }
-        }
-        @media (max-width: 480px) {
-            .yt-video-grid { grid-template-columns: 1fr; }
-            .yt-stat-card { padding: 16px; }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="yt-desk-shell">
-        <!-- ======================= Sidebar ======================= -->
-        <aside class="yt-sidebar" id="ytSidebar">
-            <div class="yt-sidebar-header">
-                <a href="/" style="text-decoration:none;color:inherit;">
-                    <div class="yt-sidebar-brand">
-                        <div class="brand-icon"><svg data-lucide="clapperboard" width="28" height="28" style="color:var(--primary);"></svg></div>
-                        <h2>UpClip Studio</h2>
-                    </div>
-                    <div class="yt-sidebar-sub">YouTube Desk</div>
+    <div class="app-shell">
+        <!-- Top Bar -->
+        <header class="app-topbar">
+            <div class="topbar-left">
+                <a href="/" class="topbar-brand">
+                    <span class="brand-dot"></span>
+                    <span>UpClip Studio</span>
                 </a>
-            </div>
-            <nav class="yt-sidebar-nav">
-                <div class="yt-nav-section-title">Studio Modules</div>
-                <a href="/yt-downloader" class="yt-nav-item" data-module="yt_downloader" style="text-decoration:none;">
-                     <span class="nav-icon"><svg data-lucide="download" width="36" height="36"></svg></span> YouTube Downloader
-                </a>
-                <a href="/dashboard" class="yt-nav-item" data-module="clip_cutter" style="text-decoration:none;">
-                     <span class="nav-icon"><svg data-lucide="scissors" width="36" height="36"></svg></span> Clip Cutter
-                </a>
-                <a href="/caption-studio" class="yt-nav-item" data-module="caption_studio" style="text-decoration:none;">
-                     <span class="nav-icon"><svg data-lucide="message-circle" width="36" height="36"></svg></span> Caption Studio
-                </a>
-                <div class="yt-nav-section-title">YouTube Desk</div>
-                <button class="yt-nav-item active" data-view="desk">
-                     <span class="nav-icon"><svg data-lucide="tv" width="36" height="36"></svg></span> YouTube Desk
-                </button>
-                <button class="yt-nav-item" data-view="connect">
-                    <span class="nav-icon">🔗</span> Connect YouTube
-                </button>
-                <button class="yt-nav-item" data-view="queue">
-                    <span class="nav-icon">⏳</span> Upload Queue
-                    <span class="yt-nav-badge" id="queueBadge" hidden>0</span>
-                </button>
-                <button class="yt-nav-item" data-view="history">
-                    <span class="nav-icon">📜</span> Upload History
-                </button>
-                <button class="yt-nav-item" data-view="errors">
-                    <span class="nav-icon">⚠️</span> Error Center
-                    <span class="yt-nav-badge" id="errorBadge" hidden>0</span>
-                </button>
-                <button class="yt-nav-item" data-view="settings">
-                    <span class="nav-icon">⚙️</span> Settings
-                </button>
-            </nav>
-            <div class="yt-sidebar-footer">
-                <a href="/studio">← Back to Studio Hub</a>
-            </div>
-        </aside>
-
-        <!-- ======================= Main Content ======================= -->
-        <main class="yt-main">
-            <!-- Top Bar -->
-            <div class="yt-topbar">
-                 <h1><span class="yt-icon"><svg data-lucide="tv" width="36" height="36"></svg></span> YouTube Desk</h1>
-                <div class="yt-topbar-actions">
-                    <div class="yt-channel-badge" id="ytChannelBadge">
-                        <img class="yt-channel-avatar" id="ytChannelAvatar" src="" alt="" hidden>
-                        <div class="yt-channel-name" id="ytChannelName">Not connected</div>
-                        <span class="yt-disconnect-dot" id="ytConnectDot"></span>
-                    </div>
-                    <button class="btn btn-secondary" id="ytSettingsBtn">⚙️ Settings</button>
+                <div class="topbar-divider"></div>
+                <div class="topbar-workspace-title">
+                    <svg data-lucide="tv" width="16" height="16" style="color:var(--primary);"></svg>
+                    <span>YouTube Desk</span>
                 </div>
             </div>
 
-            <!-- ==================== YouTube Desk Workspace ==================== -->
-            <div id="view-desk" class="yt-view">
-                <!-- Dashboard stats -->
-                <div class="yt-grid" id="deskStats" style="display:none;">
-                    <div class="yt-stat-card">
-                        <div class="yt-stat-icon blue">📹</div>
-                        <div>
-                            <div class="yt-stat-value" id="statTotal">0</div>
-                            <div class="yt-stat-label">Total Uploaded</div>
-                        </div>
+            <div class="topbar-center">
+                <button class="command-trigger" id="topbarCommandTrigger" data-tooltip="Quick Command Menu" data-hotkey="Ctrl+K">
+                    <div class="command-trigger-left">
+                        <svg data-lucide="search" width="14" height="14"></svg>
+                        <span>Search commands, videos, or switch workspace...</span>
                     </div>
-                    <div class="yt-stat-card">
-                        <div class="yt-stat-icon green">📅</div>
-                        <div>
-                            <div class="yt-stat-value" id="statScheduled">0</div>
-                            <div class="yt-stat-label">Scheduled</div>
-                        </div>
-                    </div>
-                    <div class="yt-stat-card">
-                        <div class="yt-stat-icon yellow">⏳</div>
-                        <div>
-                            <div class="yt-stat-value" id="statProcessing">0</div>
-                            <div class="yt-stat-label">Processing</div>
-                        </div>
-                    </div>
-                    <div class="yt-stat-card">
-                        <div class="yt-stat-icon red">❌</div>
-                        <div>
-                            <div class="yt-stat-value" id="statFailed">0</div>
-                            <div class="yt-stat-label">Failed</div>
-                        </div>
-                    </div>
+                    <span class="kbd-badge">Ctrl + K</span>
+                </button>
+            </div>
+
+            <div class="topbar-right">
+                <!-- Status Pill -->
+                <div class="status-pill disconnected" id="topbarStatusPill">
+                    <span class="dot"></span>
+                    <span class="status-text">Checking...</span>
+                </div>
+                <button class="topbar-btn theme-toggle" id="themeToggle" aria-label="Toggle theme" data-tooltip="Toggle Dark/Light theme">🌙</button>
+                <a href="/dashboard" class="btn btn-primary btn-sm"><svg data-lucide="plus" width="14" height="14"></svg> New Project</a>
+            </div>
+        </header>
+
+        <div class="app-main">
+            <!-- Sidebar Navigation (Consistent with Studio Hub) -->
+            <aside class="app-sidebar" id="appSidebar">
+                <div class="sidebar-header">
+                    <a href="/dashboard" class="sidebar-new-btn">
+                        <svg data-lucide="plus" width="16" height="16"></svg>
+                        <span>New Project</span>
+                    </a>
                 </div>
 
-                <!-- Dashboard quick-list rows -->
-                <div style="display:grid;gap:20px;margin-top:24px;">
-                    <div class="yt-glass-card">
-                        <div class="yt-section-title">Upload Queue (Recent)</div>
-                        <div id="dashQueueList"></div>
-                    </div>
-                    <div class="yt-glass-card">
-                        <div class="yt-section-title">Scheduled Uploads</div>
-                        <div id="dashScheduleList"></div>
-                    </div>
-                    <div class="yt-glass-card">
-                        <div class="yt-section-title">Today's Uploads</div>
-                        <div id="dashTodayList"></div>
-                    </div>
-                </div>
+                <nav class="sidebar-nav">
+                    <div class="nav-section-label">Workspaces</div>
+                    <a href="/" class="sidebar-item" data-tooltip="Home & Projects">
+                        <div class="sidebar-icon"><svg data-lucide="house" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Home & Projects</span>
+                    </a>
+                    <a href="/dashboard" class="sidebar-item" data-tooltip="AI Clip Studio">
+                        <div class="sidebar-icon"><svg data-lucide="wand-sparkles" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">AI Clip Studio</span>
+                    </a>
+                    <a href="/caption-studio" class="sidebar-item" data-tooltip="Caption Studio">
+                        <div class="sidebar-icon"><svg data-lucide="captions" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Caption Studio</span>
+                    </a>
+                    <a href="/studio" class="sidebar-item" data-tooltip="Studio Hub">
+                        <div class="sidebar-icon"><svg data-lucide="shapes" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Studio Hub</span>
+                    </a>
+                    <a href="/yt-downloader" class="sidebar-item" data-tooltip="YT Downloader">
+                        <div class="sidebar-icon"><svg data-lucide="download" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Downloader</span>
+                    </a>
+                    <a href="/youtube-desk" class="sidebar-item active" data-tooltip="YouTube Desk">
+                        <div class="sidebar-icon"><svg data-lucide="tv" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">YouTube Desk</span>
+                    </a>
 
-                <!-- Workspace: LEFT (preview + drop zone) / RIGHT (settings) -->
-                <div class="yt-workspace">
-                    <!-- LEFT / MAIN -->
-                    <div class="yt-workspace-main">
-                        <!-- Video Preview -->
-                        <div class="yt-glass-card" id="ytPreviewCard">
-                            <div class="yt-video-preview" id="ytVideoPreview">
-                                <div class="yt-video-placeholder">
-                                    <div class="yt-placeholder-icon">📹</div>
-                                    <h3>No video selected</h3>
-                                    <p>Drag & drop a video or choose from the library below.</p>
+                    <div class="nav-section-label" style="margin-top: 12px;">Resources</div>
+                    <a href="/guide" class="sidebar-item" data-tooltip="User Guide">
+                        <div class="sidebar-icon"><svg data-lucide="book-open" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">How to Use</span>
+                    </a>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" data-tooltip="Collapse / Expand Sidebar">
+                        <svg data-lucide="panel-left-close" width="18" height="18"></svg>
+                        <span class="sidebar-label">Collapse</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Workspace Container -->
+            <main class="app-workspace">
+                <div class="workspace-content" style="max-width: 1280px; margin: 0 auto; width: 100%;">
+                    <!-- Desk Header -->
+                    <div class="desk-header">
+                        <div class="desk-header-title">
+                            <h1>
+                                <svg data-lucide="tv" width="28" height="28" style="color:var(--primary);"></svg>
+                                <span>YouTube Desk</span>
+                            </h1>
+                            <p>Professional creator publishing control center — automate uploads, manage schedules, and distribute video clips.</p>
+                        </div>
+                        <div class="desk-header-actions">
+                            <div class="status-pill disconnected" id="deskConnectionBadge">
+                                <span class="dot"></span>
+                                <span class="status-text">Not Connected</span>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" id="btnDeskSettings" title="YouTube Automation Settings">
+                                <svg data-lucide="settings" width="15" height="15"></svg>
+                                <span>Settings</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sub-Navigation Pill Bar -->
+                    <div class="desk-nav-bar" id="deskNavBar">
+                        <button class="desk-nav-tab active" data-view="overview">
+                            <svg data-lucide="layout-dashboard" width="15" height="15"></svg>
+                            <span>Overview</span>
+                        </button>
+                        <button class="desk-nav-tab" data-view="upload">
+                            <svg data-lucide="upload-cloud" width="15" height="15"></svg>
+                            <span>Upload Wizard</span>
+                        </button>
+                        <button class="desk-nav-tab" data-view="queue">
+                            <svg data-lucide="layers" width="15" height="15"></svg>
+                            <span>Upload Queue</span>
+                            <span class="tab-badge" id="queueBadgeCount">0</span>
+                        </button>
+                        <button class="desk-nav-tab" data-view="scheduled">
+                            <svg data-lucide="calendar" width="15" height="15"></svg>
+                            <span>Scheduled</span>
+                            <span class="tab-badge" id="scheduledBadgeCount">0</span>
+                        </button>
+                        <button class="desk-nav-tab" data-view="history">
+                            <svg data-lucide="history" width="15" height="15"></svg>
+                            <span>Upload History</span>
+                        </button>
+                        <button class="desk-nav-tab" data-view="connection">
+                            <svg data-lucide="link" width="15" height="15"></svg>
+                            <span>YouTube Connection</span>
+                        </button>
+                    </div>
+
+                    <!-- ========================================================
+                         VIEW 1: OVERVIEW
+                         ======================================================== -->
+                    <div class="desk-view-pane active" id="view-overview">
+                        <!-- Compact KPI Grid (Section 5) -->
+                        <div class="kpi-row">
+                            <div class="kpi-card" data-nav="history">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-title">Total Uploads</span>
+                                    <div class="kpi-icon"><svg data-lucide="video" width="16" height="16"></svg></div>
+                                </div>
+                                <div class="kpi-value" id="kpiTotal">0</div>
+                                <div class="kpi-subtitle positive">
+                                    <svg data-lucide="trending-up" width="12" height="12"></svg>
+                                    <span>All published videos</span>
                                 </div>
                             </div>
 
-                            <!-- Active video info -->
-                            <div class="yt-active-video-info" id="ytActiveVideoInfo" hidden>
-                                <img class="yt-active-video-thumb" id="ytActiveVideoThumb" src="" alt="">
-                                <div class="yt-active-video-details">
-                                    <div class="yt-filename" id="ytActiveVideoName">video.mp4</div>
-                                    <div class="yt-video-meta" id="ytActiveVideoMeta">0 MB • 0:00 • 0x0</div>
+                            <div class="kpi-card" data-nav="scheduled">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-title">Scheduled</span>
+                                    <div class="kpi-icon"><svg data-lucide="calendar" width="16" height="16"></svg></div>
                                 </div>
-                                <span class="yt-active-video-source" id="ytActiveVideoSource">local</span>
-                                <button class="yt-clear-video" id="ytClearVideo" title="Remove video" hidden>✕</button>
+                                <div class="kpi-value" id="kpiScheduled">0</div>
+                                <div class="kpi-subtitle" id="kpiNextScheduled">
+                                    <svg data-lucide="clock" width="12" height="12"></svg>
+                                    <span>No upcoming releases</span>
+                                </div>
+                            </div>
+
+                            <div class="kpi-card" data-nav="queue">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-title">Processing / Queue</span>
+                                    <div class="kpi-icon"><svg data-lucide="loader" width="16" height="16"></svg></div>
+                                </div>
+                                <div class="kpi-value" id="kpiProcessing">0</div>
+                                <div class="kpi-subtitle" id="kpiQueueStatus">
+                                    <svg data-lucide="check-circle" width="12" height="12"></svg>
+                                    <span>Queue is idle</span>
+                                </div>
+                            </div>
+
+                            <div class="kpi-card" data-nav="queue" data-filter="failed">
+                                <div class="kpi-card-header">
+                                    <span class="kpi-title">Failed Issues</span>
+                                    <div class="kpi-icon"><svg data-lucide="alert-circle" width="16" height="16"></svg></div>
+                                </div>
+                                <div class="kpi-value" id="kpiFailed">0</div>
+                                <div class="kpi-subtitle" id="kpiErrorStatus">
+                                    <svg data-lucide="shield-check" width="12" height="12"></svg>
+                                    <span>All systems clear</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Drag & Drop Area -->
-                        <div class="yt-dropzone" id="ytDropzone">
-                            <div class="yt-dropzone-icon">📁</div>
-                            <p>Drag and drop your video here</p>
-                            <p class="yt-sub">or click to browse — MP4, MOV, WebM, MKV, AVI</p>
-                            <input type="file" id="ytVideoInput" accept="video/*">
-                            <button class="btn btn-primary" id="ytBrowseBtn" style="margin-top:12px;">
-                                Browse Files
+                        <!-- Quick Actions Bar (Section 6) -->
+                        <div class="quick-actions-bar">
+                            <span class="bar-label">Quick Actions:</span>
+                            <button class="btn btn-primary btn-sm" id="btnQuickUpload">
+                                <svg data-lucide="plus" width="14" height="14"></svg>
+                                <span>Upload Video</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnQuickSchedule">
+                                <svg data-lucide="calendar-plus" width="14" height="14"></svg>
+                                <span>Schedule Upload</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnQuickQueue">
+                                <svg data-lucide="layers" width="14" height="14"></svg>
+                                <span>Open Queue</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnQuickHistory">
+                                <svg data-lucide="file-text" width="14" height="14"></svg>
+                                <span>View History</span>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btnQuickConnect">
+                                <svg data-lucide="link-2" width="14" height="14"></svg>
+                                <span>Channel Connection</span>
                             </button>
                         </div>
 
-                        <!-- Import progress -->
-                        <div class="yt-upload-progress" id="ytImportProgress" hidden>
-                            <div class="yt-progress-track">
-                                <div class="yt-progress-fill" id="ytImportProgressFill" style="width:0%"></div>
+                        <!-- Overview Content Grid (Sections 7 & 8) -->
+                        <div class="desk-overview-grid">
+                            <!-- Left: Recent Uploads Card -->
+                            <div class="desk-card">
+                                <div class="desk-card-header">
+                                    <h3>
+                                        <svg data-lucide="clock" width="16" height="16" style="color:var(--primary);"></svg>
+                                        <span>Recent Uploads</span>
+                                    </h3>
+                                    <a href="#" class="desk-card-action" data-nav="history">
+                                        <span>View All History</span>
+                                        <svg data-lucide="arrow-right" width="13" height="13"></svg>
+                                    </a>
+                                </div>
+                                <div id="overviewRecentUploadsList">
+                                    <!-- Populated dynamically: max 3-4 compact items -->
+                                    <div class="compact-empty-state">
+                                        <svg data-lucide="video" width="32" height="32"></svg>
+                                        <h4>No Recent Uploads</h4>
+                                        <p>Videos you publish or schedule through UpClip Studio will appear here.</p>
+                                        <button class="btn btn-primary btn-sm" data-nav="upload">Upload First Video</button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="yt-progress-text" id="ytImportProgressText">Importing...</div>
-                        </div>
 
-                        <!-- Existing Videos Panel -->
-                        <div class="yt-existing-videos">
-                            <div class="yt-section-title">Existing Videos</div>
-                            <div id="ytExistingFiles">
-                                <div class="yt-empty">
-                                     <div class="yt-empty-icon"><svg data-lucide="clapperboard" width="28" height="28" style="color:var(--primary);"></svg></div>
-                                    <h3>No videos found</h3>
-                                    <p>Upload a video above or download one using the YT Downloader.</p>
+                            <!-- Right: Scheduled Uploads + Channel Card -->
+                            <div style="display:flex; flex-direction:column; gap: var(--space-5);">
+                                <!-- Scheduled Card -->
+                                <div class="desk-card">
+                                    <div class="desk-card-header">
+                                        <h3>
+                                            <svg data-lucide="calendar" width="16" height="16" style="color:var(--primary);"></svg>
+                                            <span>Upcoming Scheduled</span>
+                                        </h3>
+                                        <a href="#" class="desk-card-action" data-nav="scheduled">
+                                            <span>View All</span>
+                                            <svg data-lucide="arrow-right" width="13" height="13"></svg>
+                                        </a>
+                                    </div>
+                                    <div id="overviewUpcomingSchedulesList">
+                                        <!-- Populated dynamically -->
+                                        <div class="compact-empty-state">
+                                            <svg data-lucide="calendar-x" width="28" height="28"></svg>
+                                            <h4>No Scheduled Uploads</h4>
+                                            <p>Schedule your next clip to automate publishing at peak hours.</p>
+                                            <button class="btn btn-secondary btn-sm" data-nav="upload" data-mode="schedule">Schedule Upload</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Channel Summary Card -->
+                                <div class="desk-card" id="overviewChannelCard">
+                                    <div class="desk-card-header">
+                                        <h3>
+                                            <svg data-lucide="user-check" width="16" height="16" style="color:var(--primary);"></svg>
+                                            <span>Connected Channel</span>
+                                        </h3>
+                                        <a href="#" class="desk-card-action" data-nav="connection">
+                                            <span>Manage</span>
+                                            <svg data-lucide="arrow-right" width="13" height="13"></svg>
+                                        </a>
+                                    </div>
+                                    <div id="overviewChannelBody" style="display:flex; align-items:center; gap: 14px;">
+                                        <div style="width:48px; height:48px; border-radius:50%; background:var(--surface-1); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); overflow:hidden;" id="overviewChannelAvatar">
+                                            <svg data-lucide="youtube" width="24" height="24"></svg>
+                                        </div>
+                                        <div style="flex:1; min-width:0;">
+                                            <h4 style="font-size:14px; font-weight:700; color:var(--text-primary); margin:0 0 2px;" id="overviewChannelName">Channel Not Connected</h4>
+                                            <p style="font-size:12px; color:var(--text-muted); margin:0;" id="overviewChannelDetails">Connect your YouTube account to publish directly.</p>
+                                        </div>
+                                        <button class="btn btn-secondary btn-sm" id="btnConnectShortcut" data-nav="connection">Connect</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- RIGHT / SETTINGS -->
-                    <div class="yt-workspace-side">
-                        <div class="yt-glass-card">
-                            <!-- Tab navigation -->
-                            <div class="yt-tabs">
-                                <button class="yt-tab active" data-tab="settings">Upload Settings</button>
-                                <button class="yt-tab" data-tab="video">Video</button>
-                                <button class="yt-tab" data-tab="thumbnail">Thumbnail</button>
+                    <!-- ========================================================
+                         VIEW 2: UPLOAD WIZARD (Sections 9 & 10)
+                         ======================================================== -->
+                    <div class="desk-view-pane" id="view-upload" style="display:none;">
+                        <div class="wizard-container">
+                            <!-- Stepper Header -->
+                            <div class="wizard-stepper" id="wizardStepper">
+                                <div class="wizard-step-node active" data-step="1">
+                                    <div class="wizard-step-circle">1</div>
+                                    <span class="wizard-step-label">Video</span>
+                                </div>
+                                <div class="wizard-step-node" data-step="2">
+                                    <div class="wizard-step-circle">2</div>
+                                    <span class="wizard-step-label">Details</span>
+                                </div>
+                                <div class="wizard-step-node" data-step="3">
+                                    <div class="wizard-step-circle">3</div>
+                                    <span class="wizard-step-label">Metadata</span>
+                                </div>
+                                <div class="wizard-step-node" data-step="4">
+                                    <div class="wizard-step-circle">4</div>
+                                    <span class="wizard-step-label">Publish</span>
+                                </div>
+                                <div class="wizard-step-node" data-step="5">
+                                    <div class="wizard-step-circle">5</div>
+                                    <span class="wizard-step-label">Thumbnail</span>
+                                </div>
+                                <div class="wizard-step-node" data-step="6">
+                                    <div class="wizard-step-circle">6</div>
+                                    <span class="wizard-step-label">Review</span>
+                                </div>
                             </div>
 
-                            <!-- Settings Tab -->
-                            <div id="ytTab-settings" class="yt-tab-panel">
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label" for="ytTitle">Title <span id="titleCount" class="yt-char-count">0/100</span></label>
-                                    <input type="text" id="ytTitle" class="yt-form-input" placeholder="Enter video title..." maxlength="100">
+                            <!-- Wizard Form Body -->
+                            <div class="wizard-step-body">
+                                <!-- STEP 1: SELECT VIDEO -->
+                                <div class="wizard-step-pane active" id="wizard-step-1">
+                                    <div class="upload-dropzone" id="uploadDropzone">
+                                        <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,video/avi" hidden>
+                                        <div class="upload-dropzone-icon">
+                                            <svg data-lucide="upload-cloud" width="28" height="28"></svg>
+                                        </div>
+                                        <h3>Upload Your Video File</h3>
+                                        <p>Drag and drop your video file here, or click to browse files from your computer.</p>
+                                        <div style="display:flex; gap:10px; margin-bottom: 16px;">
+                                            <button type="button" class="btn btn-primary btn-sm" id="btnBrowseVideo">Choose Video File</button>
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btnPickLibrary">Select from Library</button>
+                                        </div>
+                                        <div class="upload-dropzone-badges">
+                                            <span>Supported formats: MP4, MOV, WebM, MKV</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Video Selected Preview Card (Shown after selection) -->
+                                    <div class="video-preview-card" id="selectedVideoCard" style="display:none;">
+                                        <video id="videoElementPreview" class="video-preview-thumb" controls playsinline></video>
+                                        <div class="video-preview-details">
+                                            <h4 id="selectedVideoFilename">video_filename.mp4</h4>
+                                            <div class="video-preview-stats">
+                                                <div class="video-preview-stat">
+                                                    <svg data-lucide="clock" width="13" height="13"></svg>
+                                                    <span id="selectedVideoDuration">--:--</span>
+                                                </div>
+                                                <div class="video-preview-stat">
+                                                    <svg data-lucide="monitor" width="13" height="13"></svg>
+                                                    <span id="selectedVideoResolution">--</span>
+                                                </div>
+                                                <div class="video-preview-stat">
+                                                    <svg data-lucide="hard-drive" width="13" height="13"></svg>
+                                                    <span id="selectedVideoSize">--</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-secondary btn-sm" id="btnChangeVideo">Change</button>
+                                    </div>
                                 </div>
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label" for="ytDescription">Description</label>
-                                    <textarea id="ytDescription" class="yt-form-textarea" placeholder="Describe your video..."></textarea>
-                                    <div class="yt-char-count" id="descCount">0/5000</div>
+
+                                <!-- STEP 2: VIDEO DETAILS -->
+                                <div class="wizard-step-pane" id="wizard-step-2">
+                                    <div style="margin-bottom: var(--space-4);">
+                                        <label for="inputVideoTitle" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Title *</label>
+                                        <input type="text" id="inputVideoTitle" maxlength="100" class="form-input" placeholder="Catchy title that describes your video..." style="width:100%; padding:10px 14px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                                        <div class="char-counter" id="titleCharCounter">0/100</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="inputVideoDescription" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Description</label>
+                                        <textarea id="inputVideoDescription" rows="8" maxlength="5000" class="form-textarea" placeholder="Tell viewers what your video is about, links, hashtags, and credits..." style="width:100%; padding:12px 14px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary); resize:vertical;"></textarea>
+                                        <div class="char-counter" id="descCharCounter">0/5000</div>
+                                    </div>
                                 </div>
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label">Tags</label>
-                                    <div class="yt-tag-input-wrap" id="ytTagsWrap"></div>
-                                    <input type="text" id="ytTagInput" class="yt-form-input" placeholder="Add tag and press Enter" style="margin-top:8px;">
-                                </div>
-                                <div class="yt-upload-grid">
-                                    <div class="yt-form-group">
-                                        <label class="yt-form-label" for="ytCategory">Category</label>
-                                        <select id="ytCategory" class="yt-form-select">
-                                            <option value="">Select category</option>
-                                            <option value="1">Film &amp; Animation</option>
-                                            <option value="10">Music</option>
-                                            <option value="15">Pets & Animals</option>
-                                            <option value="17">Sports</option>
-                                            <option value="18">Short Movies</option>
-                                            <option value="19">Travel &amp; Events</option>
-                                            <option value="20">Gaming</option>
-                                            <option value="22" selected>People &amp; Blogs</option>
-                                            <option value="24">Entertainment</option>
-                                            <option value="25">News & Politics</option>
-                                            <option value="26">Howto & Style</option>
-                                            <option value="27">Education</option>
-                                            <option value="28">Science &amp; Technology</option>
-                                            <option value="29">Nonprofits &amp; Activism</option>
+
+                                <!-- STEP 3: DISCOVERY / METADATA -->
+                                <div class="wizard-step-pane" id="wizard-step-3">
+                                    <div style="margin-bottom: var(--space-4);">
+                                        <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Tags (Press Enter or comma to create chip)</label>
+                                        <div class="tag-input-box" id="tagInputBox">
+                                            <!-- Chips dynamically inserted -->
+                                            <input type="text" class="tag-input-field" id="tagInputField" placeholder="Type a tag and press Enter...">
+                                        </div>
+                                        <p style="font-size:11px; color:var(--text-muted); margin:4px 0 0;">Tags help viewers discover your videos. YouTube allows up to 500 characters of tags.</p>
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+                                        <div>
+                                            <label for="selectCategory" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Category</label>
+                                            <select id="selectCategory" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                                                <option value="22" selected>People & Blogs</option>
+                                                <option value="24">Entertainment</option>
+                                                <option value="10">Music</option>
+                                                <option value="20">Gaming</option>
+                                                <option value="27">Education</option>
+                                                <option value="28">Science & Technology</option>
+                                                <option value="26">Howto & Style</option>
+                                                <option value="1">Film & Animation</option>
+                                                <option value="17">Sports</option>
+                                                <option value="25">News & Politics</option>
+                                                <option value="23">Comedy</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="selectPlaylist" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Add to Playlist (Optional)</label>
+                                            <select id="selectPlaylist" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                                                <option value="">None (Don't add to playlist)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label for="selectLanguage" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Language</label>
+                                        <select id="selectLanguage" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                                            <option value="en" selected>English</option>
+                                            <option value="es">Spanish</option>
+                                            <option value="fr">French</option>
+                                            <option value="de">German</option>
+                                            <option value="hi">Hindi</option>
+                                            <option value="pt">Portuguese</option>
+                                            <option value="ja">Japanese</option>
                                         </select>
                                     </div>
-                                    <div class="yt-form-group">
-                                        <label class="yt-form-label" for="ytVisibility">Visibility</label>
-                                        <select id="ytVisibility" class="yt-form-select">
-                                            <option value="public">Public</option>
-                                            <option value="unlisted">Unlisted</option>
-                                            <option value="private">Private</option>
-                                            <option value="scheduled">Scheduled</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="yt-form-group" id="ytScheduleGroup" hidden>
-                                    <label class="yt-form-label" for="ytScheduleAt">Schedule Date &amp; Time</label>
-                                    <input type="datetime-local" id="ytScheduleAt" class="yt-form-input">
-                                    <div class="yt-form-label">Your local timezone</div>
-                                </div>
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label" for="ytPlaylist">Playlist</label>
-                                    <select id="ytPlaylist" class="yt-form-select">
-                                        <option value="">None</option>
-                                    </select>
-                                    <button class="btn btn-secondary btn-sm" id="ytRefreshPlaylists" style="margin-top:8px;">Refresh Playlists</button>
-                                </div>
-                                <div class="yt-bottom-bar">
-                                    <div class="yt-btn-row">
-                                        <button class="btn btn-secondary" id="ytSaveDraftBtn">Save Draft</button>
-                                    </div>
-                                    <div class="yt-btn-row">
-                                        <button class="btn btn-primary" id="ytUploadBtn">🚀 Upload to YouTube</button>
-                                    </div>
                                 </div>
 
-                                <!-- Upload progress overlay -->
-                                <div class="yt-upload-progress" id="ytUploadProgress" hidden style="margin-top:16px;">
-                                    <div class="yt-progress-track">
-                                        <div class="yt-progress-fill" id="ytUploadProgressFill" style="width:0%"></div>
+                                <!-- STEP 4: PUBLISH SETTINGS -->
+                                <div class="wizard-step-pane" id="wizard-step-4">
+                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:8px;">Visibility</label>
+                                    <div class="radio-card-grid">
+                                        <label class="radio-card active">
+                                            <input type="radio" name="videoVisibility" value="public" checked>
+                                            <div class="radio-card-label">
+                                                <h4>Public</h4>
+                                                <p>Everyone can search for and view your video.</p>
+                                            </div>
+                                        </label>
+                                        <label class="radio-card">
+                                            <input type="radio" name="videoVisibility" value="unlisted">
+                                            <div class="radio-card-label">
+                                                <h4>Unlisted</h4>
+                                                <p>Anyone with the link can view your video.</p>
+                                            </div>
+                                        </label>
+                                        <label class="radio-card">
+                                            <input type="radio" name="videoVisibility" value="private">
+                                            <div class="radio-card-label">
+                                                <h4>Private</h4>
+                                                <p>Only you and chosen people can watch.</p>
+                                            </div>
+                                        </label>
                                     </div>
-                                    <div class="yt-progress-text" id="ytUploadProgressText">Uploading...</div>
-                                </div>
-                            </div>
 
-                            <!-- Video Tab (source info) -->
-                            <div id="ytTab-video" class="yt-tab-panel" hidden>
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label">Filename</label>
-                                    <div id="ytVideoFilename" class="yt-form-input" style="background:var(--card-2);">-</div>
-                                </div>
-                                <div class="yt-upload-grid">
-                                    <div class="yt-form-group">
-                                        <label class="yt-form-label">Resolution</label>
-                                        <div id="ytVideoResolution" class="yt-form-input" style="background:var(--card-2);">-</div>
+                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:8px; margin-top:20px;">Publishing Timing</label>
+                                    <div class="radio-card-grid">
+                                        <label class="radio-card active">
+                                            <input type="radio" name="publishingMode" value="now" checked>
+                                            <div class="radio-card-label">
+                                                <h4>Publish Now</h4>
+                                                <p>Upload and make available immediately.</p>
+                                            </div>
+                                        </label>
+                                        <label class="radio-card">
+                                            <input type="radio" name="publishingMode" value="schedule">
+                                            <div class="radio-card-label">
+                                                <h4>Schedule Upload</h4>
+                                                <p>Set a future date and time to publish.</p>
+                                            </div>
+                                        </label>
                                     </div>
-                                    <div class="yt-form-group">
-                                        <label class="yt-form-label">Duration</label>
-                                        <div id="ytVideoDuration" class="yt-form-input" style="background:var(--card-2);">-</div>
-                                    </div>
-                                </div>
-                                <div class="yt-upload-grid">
-                                    <div class="yt-form-group">
-                                        <label class="yt-form-label">Size</label>
-                                        <div id="ytVideoSize" class="yt-form-input" style="background:var(--card-2);">-</div>
-                                    </div>
-                                    <div class="yt-form-group">
-                                        <label class="yt-form-label">Source</label>
-                                        <div id="ytVideoSource" class="yt-form-input" style="background:var(--card-2);">-</div>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <!-- Thumbnail Tab -->
-                            <div id="ytTab-thumbnail" class="yt-tab-panel" hidden>
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label">Thumbnail Preview</label>
-                                    <div id="ytThumbPreviewLarge">
-                                        <div class="yt-video-preview" style="height:120px;">
-                                            <div class="yt-video-placeholder">
-                                                <div class="yt-empty-icon">🖼️</div>
-                                                <p>No thumbnail set</p>
+                                    <!-- Conditional Schedule Fields -->
+                                    <div id="scheduleFieldsWrapper" style="display:none; background:var(--surface-1); padding:16px; border-radius:var(--radius); border:1px solid var(--border); margin-top:12px;">
+                                        <h4 style="font-size:13px; font-weight:700; color:var(--primary); margin:0 0 12px; display:flex; align-items:center; gap:6px;">
+                                            <svg data-lucide="calendar" width="14" height="14"></svg>
+                                            <span>Schedule Release Date & Time</span>
+                                        </h4>
+                                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+                                            <div>
+                                                <label for="inputScheduleDate" style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:4px;">Date</label>
+                                                <input type="date" id="inputScheduleDate" style="width:100%; padding:8px 12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary);">
+                                            </div>
+                                            <div>
+                                                <label for="inputScheduleTime" style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:4px;">Time</label>
+                                                <input type="time" id="inputScheduleTime" style="width:100%; padding:8px 12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary);">
+                                            </div>
+                                            <div>
+                                                <label for="selectScheduleTimezone" style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:4px;">Timezone</label>
+                                                <select id="selectScheduleTimezone" style="width:100%; padding:8px 12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary);">
+                                                    <option value="UTC">UTC</option>
+                                                    <option value="America/New_York">Eastern Time (ET)</option>
+                                                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                                    <option value="Europe/London">London (GMT)</option>
+                                                    <option value="Asia/Kolkata" selected>India (IST)</option>
+                                                    <option value="Asia/Tokyo">Tokyo (JST)</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label">Capture from Video Frame</label>
-                                    <select id="ytThumbVideoSelect" class="yt-form-select">
-                                        <option value="">Select video...</option>
-                                    </select>
-                                    <button class="btn btn-secondary btn-sm" id="ytCaptureFrameBtn" style="margin-top:8px;"> Capture Frame</button>
+
+                                <!-- STEP 5: THUMBNAIL -->
+                                <div class="wizard-step-pane" id="wizard-step-5">
+                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Thumbnail</label>
+                                    <p style="font-size:12px; color:var(--text-secondary); margin:0 0 16px;">Select an enticing thumbnail that represents your video. Recommended size: 1280x720 (16:9 aspect ratio, under 2MB).</p>
+
+                                    <div style="display:grid; grid-template-columns: 280px 1fr; gap: var(--space-5); align-items:start;">
+                                        <!-- Thumbnail Preview Card -->
+                                        <div style="border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); background:#000; aspect-ratio: 16/9; display:flex; align-items:center; justify-content:center; position:relative;">
+                                            <img id="wizardThumbnailPreview" src="" alt="Thumbnail preview" style="width:100%; height:100%; object-fit:cover; display:none;">
+                                            <div id="wizardThumbnailPlaceholder" style="text-align:center; color:var(--text-muted); padding:16px;">
+                                                <svg data-lucide="image" width="32" height="32" style="margin-bottom:6px;"></svg>
+                                                <div style="font-size:12px;">Auto-generated or custom thumbnail</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Options -->
+                                        <div style="display:flex; flex-direction:column; gap:12px;">
+                                            <input type="file" id="customThumbFileInput" accept="image/jpeg,image/png,image/webp" hidden>
+                                            <button type="button" class="btn btn-secondary btn-block" id="btnUploadThumbFile" style="justify-content:flex-start;">
+                                                <svg data-lucide="upload" width="16" height="16"></svg>
+                                                <span>Upload Custom Image (PNG, JPG)</span>
+                                            </button>
+                                            <button type="button" class="btn btn-secondary btn-block" id="btnCaptureVideoFrame" style="justify-content:flex-start;">
+                                                <svg data-lucide="camera" width="16" height="16"></svg>
+                                                <span>Capture Frame from Video</span>
+                                            </button>
+                                            <button type="button" class="btn btn-outline btn-sm" id="btnResetThumbnail" style="align-self:flex-start; display:none;">Reset to Default</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="yt-form-group">
-                                    <label class="yt-form-label">Upload Custom Thumbnail</label>
-                                    <div class="yt-dropzone" id="ytThumbDropzone" style="padding:20px;">
-                                        <div class="yt-dropzone-icon" style="font-size:32px;">🖼️</div>
-                                        <p>Drop image here or click to browse</p>
-                                        <p class="yt-sub">JPG, PNG, WebP</p>
-                                        <input type="file" id="ytThumbInput" accept="image/*" class="yt-form-input">
-                                        <button class="btn btn-primary btn-sm" id="ytThumbBrowseBtn" style="margin-top:8px;">Browse</button>
+
+                                <!-- STEP 6: REVIEW & CONFIRM -->
+                                <div class="wizard-step-pane" id="wizard-step-6">
+                                    <div style="background:var(--surface-1); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px;">
+                                        <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0 0 16px; display:flex; align-items:center; gap:8px;">
+                                            <svg data-lucide="check-circle" width="18" height="18" style="color:var(--primary);"></svg>
+                                            <span>Publishing Summary</span>
+                                        </h3>
+
+                                        <div style="display:grid; grid-template-columns: 200px 1fr; gap:16px; margin-bottom:16px;">
+                                            <div style="border-radius:var(--radius-xs); overflow:hidden; background:#000; aspect-ratio:16/9; border:1px solid var(--border);">
+                                                <img id="reviewThumbnailImg" src="" style="width:100%; height:100%; object-fit:cover;">
+                                            </div>
+                                            <div>
+                                                <h4 id="reviewTitle" style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0 0 6px;">Untitled Video</h4>
+                                                <p id="reviewDescription" style="font-size:12px; color:var(--text-secondary); margin:0; line-height:1.4; max-height:48px; overflow:hidden; text-overflow:ellipsis;">No description.</p>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; padding-top:14px; border-top:1px solid var(--border-subtle); font-size:12px;">
+                                            <div>
+                                                <span style="color:var(--text-muted); display:block;">Visibility</span>
+                                                <span id="reviewVisibility" style="font-weight:600; color:var(--text-primary); text-transform:capitalize;">Public</span>
+                                            </div>
+                                            <div>
+                                                <span style="color:var(--text-muted); display:block;">Schedule</span>
+                                                <span id="reviewTiming" style="font-weight:600; color:var(--primary);">Publish Immediately</span>
+                                            </div>
+                                            <div>
+                                                <span style="color:var(--text-muted); display:block;">Category</span>
+                                                <span id="reviewCategory" style="font-weight:600; color:var(--text-primary);">People & Blogs</span>
+                                            </div>
+                                            <div>
+                                                <span style="color:var(--text-muted); display:block;">Tags Count</span>
+                                                <span id="reviewTagsCount" style="font-weight:600; color:var(--text-primary);">0 tags</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- UPLOAD PROGRESS & STATUS STATE (Section 10) -->
+                                <div class="wizard-step-pane" id="wizard-progress-state">
+                                    <div style="text-align:center; padding:32px 16px;">
+                                        <div style="width:64px; height:64px; border-radius:50%; background:var(--primary-soft); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;" id="uploadStatusIcon">
+                                            <svg data-lucide="upload-cloud" width="32" height="32"></svg>
+                                        </div>
+                                        <h3 style="font-size:20px; font-weight:800; color:var(--text-primary); margin:0 0 6px;" id="uploadStatusTitle">Publishing Video to YouTube</h3>
+                                        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 20px;" id="uploadStatusMessage">Please keep this window open while your media is transferred.</p>
+
+                                        <!-- Progress Bar -->
+                                        <div style="max-width:480px; margin:0 auto;" id="uploadProgressBarContainer">
+                                            <div style="height:10px; border-radius:5px; background:var(--surface-1); overflow:hidden; border:1px solid var(--border);">
+                                                <div style="height:100%; width:0%; background:linear-gradient(90deg, var(--primary), #34D399); border-radius:5px; transition:width 0.3s ease;" id="uploadProgressBarFill"></div>
+                                            </div>
+                                            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-top:8px;">
+                                                <span id="uploadPercentText">0%</span>
+                                                <span id="uploadSpeedText">Transferring...</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Actions on Finish/Error -->
+                                        <div style="display:none; justify-content:center; gap:12px; margin-top:24px;" id="uploadActionButtons">
+                                            <button class="btn btn-secondary btn-sm" id="btnUploadAnother">Upload Another Video</button>
+                                            <button class="btn btn-primary btn-sm" data-nav="history" id="btnGoToHistory">View in History</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- ==================== Upload Queue View ==================== -->
-            <div id="view-queue" class="yt-view" hidden>
-                <div class="yt-glass-card">
-                    <div class="yt-section-title">Upload Queue</div>
-                    <div id="ytQueueList">
-                        <div class="yt-empty">
-                            <div class="yt-empty-icon">📭</div>
-                            <h3>Queue empty</h3>
-                            <p>Add videos to the queue to start uploading.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== History View ==================== -->
-            <div id="view-history" class="yt-view" hidden>
-                <div class="yt-glass-card">
-                    <div class="yt-section-title">Upload History</div>
-                    <input type="text" id="ytHistorySearch" class="yt-form-input" placeholder="Search history..." style="margin-bottom:16px;">
-                    <div id="ytHistoryList">
-                        <div class="yt-empty">
-                            <div class="yt-empty-icon">📭</div>
-                            <h3>No history yet</h3>
-                            <p>Your published videos will appear here.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== Errors View ==================== -->
-            <div id="view-errors" class="yt-view" hidden>
-                <div class="yt-glass-card">
-                    <div class="yt-section-title">Error Center</div>
-                    <div id="ytErrorsList">
-                        <div class="yt-empty">
-                            <div class="yt-empty-icon">✅</div>
-                            <h3>No errors</h3>
-                            <p>All uploads processed successfully.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== Settings View ==================== -->
-            <div id="view-settings" class="yt-view" hidden>
-                <div class="yt-glass-card">
-                    <div class="yt-section-title">Upload Defaults</div>
-                    <div class="yt-upload-grid">
-                        <div class="yt-form-group">
-                            <label class="yt-form-label" for="ytSetVisibility">Default Visibility</label>
-                            <select id="ytSetVisibility" class="yt-form-select">
-                                <option value="public">Public</option>
-                                <option value="unlisted">Unlisted</option>
-                                <option value="private">Private</option>
-                            </select>
-                        </div>
-                        <div class="yt-form-group">
-                            <label class="yt-form-label" for="ytSetCategory">Default Category</label>
-                            <select id="ytSetCategory" class="yt-form-select">
-                                <option value="">Select</option>
-                                <option value="22" selected>People &amp; Blogs</option>
-                                <option value="20">Gaming</option>
-                                <option value="10">Music</option>
-                                <option value="24">Entertainment</option>
-                                <option value="26">Howto & Style</option>
-                                <option value="28">Science &amp; Technology</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="yt-btn-row">
-                        <button class="btn btn-primary" id="ytSaveSettingsBtn">Save Settings</button>
-                        <button class="btn btn-secondary" id="ytExportDataBtn">Export Data</button>
-                        <button class="btn btn-danger" id="ytClearDataBtn">Clear Local Data</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==================== Connect YouTube View ==================== -->
-            <div id="view-connect" class="yt-view" hidden>
-                <div class="yt-glass-card" style="max-width:640px;margin:0 auto;">
-                    <div class="yt-section-title">Connect YouTube Channel</div>
-                    <div id="connectStatus">
-                        <div class="yt-channel-badge connected" id="connectChannelCard" hidden>
-                            <img class="yt-channel-avatar" id="connectAvatar" src="" alt="">
-                            <div class="yt-channel-info">
-                                <h3 id="connectChannelName" style="margin:0;font-size:16px;">-</h3>
-                                <p id="connectChannelId" style="margin:0;font-size:12px;">-</p>
-                                <p id="connectStatusText" style="margin:0;color:var(--success);font-size:12px;">Connected</p>
+                            <!-- Wizard Bottom Navigation -->
+                            <div class="wizard-footer" id="wizardFooter">
+                                <button type="button" class="btn btn-secondary" id="btnWizardBack" disabled>
+                                    <svg data-lucide="arrow-left" width="14" height="14"></svg>
+                                    <span>Back</span>
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btnWizardNext">
+                                    <span>Continue</span>
+                                    <svg data-lucide="arrow-right" width="14" height="14"></svg>
+                                </button>
                             </div>
                         </div>
-                        <div id="connectEmpty">
-                            <p style="color:var(--text-muted);margin-bottom:20px;font-size:14px;">
-                                Connect your YouTube channel to start publishing directly from UpClip Studio.
-                                We use official Google OAuth — we never ask for or store your YouTube password.
-                            </p>
-                            <button class="yt-connect-btn" id="connectYtBtn">
-                                Connect with Google
-                            </button>
+                    </div>
+
+                    <!-- ========================================================
+                         VIEW 3: UPLOAD QUEUE (Section 11)
+                         ======================================================== -->
+                    <div class="desk-view-pane" id="view-queue" style="display:none;">
+                        <div class="filter-bar">
+                            <div class="filter-tabs" id="queueFilterTabs">
+                                <button class="filter-tab active" data-filter="all">All</button>
+                                <button class="filter-tab" data-filter="uploading">Uploading</button>
+                                <button class="filter-tab" data-filter="processing">Processing</button>
+                                <button class="filter-tab" data-filter="scheduled">Scheduled</button>
+                                <button class="filter-tab" data-filter="failed">Failed</button>
+                            </div>
+                            <div class="filter-search">
+                                <svg data-lucide="search" width="14" height="14"></svg>
+                                <input type="text" id="queueSearchInput" placeholder="Search queue by title...">
+                            </div>
+                        </div>
+
+                        <div id="queueItemsList">
+                            <!-- Populated dynamically -->
                         </div>
                     </div>
-                    <div class="yt-btn-row" id="connectActions" hidden style="margin-top:20px;">
-                        <button class="btn btn-secondary" id="refreshYtBtn">Refresh Connection</button>
-                        <button class="btn btn-danger" id="disconnectYtBtn">Disconnect</button>
+
+                    <!-- ========================================================
+                         VIEW 4: SCHEDULED (Section 12)
+                         ======================================================== -->
+                    <div class="desk-view-pane" id="view-scheduled" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4);">
+                            <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0;">Automated Release Schedule</h3>
+                            <button class="btn btn-primary btn-sm" data-nav="upload" data-mode="schedule">
+                                <svg data-lucide="plus" width="14" height="14"></svg>
+                                <span>Schedule Video</span>
+                            </button>
+                        </div>
+                        <div id="scheduledItemsList">
+                            <!-- Populated dynamically -->
+                        </div>
                     </div>
+
+                    <!-- ========================================================
+                         VIEW 5: UPLOAD HISTORY (Section 13)
+                         ======================================================== -->
+                    <div class="desk-view-pane" id="view-history" style="display:none;">
+                        <div class="filter-bar">
+                            <div class="filter-tabs" id="historyFilterTabs">
+                                <button class="filter-tab active" data-filter="all">All</button>
+                                <button class="filter-tab" data-filter="published">Published</button>
+                                <button class="filter-tab" data-filter="scheduled">Scheduled</button>
+                                <button class="filter-tab" data-filter="failed">Failed</button>
+                            </div>
+                            <div class="filter-search">
+                                <svg data-lucide="search" width="14" height="14"></svg>
+                                <input type="text" id="historySearchInput" placeholder="Search history...">
+                            </div>
+                        </div>
+
+                        <div class="data-table-container">
+                            <table class="data-table" id="historyTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width:80px;">Thumbnail</th>
+                                        <th>Video Title</th>
+                                        <th style="width:120px;">Status</th>
+                                        <th style="width:100px;">Visibility</th>
+                                        <th style="width:160px;">Date</th>
+                                        <th style="width:100px;">Views</th>
+                                        <th style="width:120px; text-align:right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ========================================================
+                         VIEW 6: YOUTUBE CONNECTION (Section 14)
+                         ======================================================== -->
+                    <div class="desk-view-pane" id="view-connection" style="display:none;">
+                        <!-- Connected State Card -->
+                        <div class="desk-card" id="connectionActiveCard" style="display:none; margin-bottom:var(--space-5);">
+                            <div class="desk-card-header">
+                                <h3>
+                                    <svg data-lucide="check-circle" width="18" height="18" style="color:var(--primary);"></svg>
+                                    <span>YouTube Channel Connected</span>
+                                </h3>
+                                <div class="status-pill connected">
+                                    <span class="dot"></span>
+                                    <span>Active</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:20px; padding:12px 0;">
+                                <img id="channelAvatar" src="" style="width:72px; height:72px; border-radius:50%; border:2px solid var(--border); object-fit:cover;">
+                                <div style="flex:1;">
+                                    <h3 id="channelTitle" style="font-size:20px; font-weight:800; color:var(--text-primary); margin:0 0 4px;">Channel Name</h3>
+                                    <p id="channelHandle" style="font-size:13px; color:var(--text-muted); margin:0 0 10px;">@handle</p>
+                                    <div style="display:flex; gap:16px; font-size:12px; color:var(--text-secondary);">
+                                        <span id="channelSubscribers">0 Subscribers</span>
+                                        <span id="channelVideoCount">0 Videos</span>
+                                    </div>
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:8px;">
+                                    <button class="btn btn-secondary btn-sm" id="btnRefreshConnection">
+                                        <svg data-lucide="refresh-cw" width="14" height="14"></svg>
+                                        <span>Refresh Status</span>
+                                    </button>
+                                    <button class="btn btn-outline btn-sm" id="btnDisconnectChannel" style="color:var(--error); border-color:rgba(239,68,68,0.3);">
+                                        <svg data-lucide="log-out" width="14" height="14"></svg>
+                                        <span>Disconnect</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Disconnected State Card -->
+                        <div class="desk-card" id="connectionInactiveCard">
+                            <div style="text-align:center; padding:32px 16px; max-width:540px; margin:0 auto;">
+                                <div style="width:64px; height:64px; border-radius:var(--radius-card); background:rgba(255,0,0,0.1); border:1px solid rgba(255,0,0,0.25); color:#FF0000; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                                    <svg data-lucide="youtube" width="36" height="36"></svg>
+                                </div>
+                                <h3 style="font-size:20px; font-weight:800; color:var(--text-primary); margin:0 0 8px;">Connect Your YouTube Channel</h3>
+                                <p style="font-size:13px; color:var(--text-secondary); margin:0 0 24px; line-height:1.5;">
+                                    Authorize UpClip Studio with Google OAuth to upload video shorts, schedule releases, manage playlists, and monitor video publishing directly from your desktop workspace.
+                                </p>
+                                <a href="/youtube/connect" class="btn btn-primary" style="padding:12px 28px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                                    <svg data-lucide="key" width="16" height="16"></svg>
+                                    <span>Connect YouTube Channel</span>
+                                </a>
+                                <div style="margin-top:20px; font-size:11px; color:var(--text-muted); line-height:1.4;">
+                                    Your access tokens and credentials remain stored strictly on your local machine. No third-party servers ever receive your YouTube login data.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========================================================
+                         VIEW 7: AUTOMATION SETTINGS
+                         ======================================================== -->
+                    <div class="desk-view-pane" id="view-settings" style="display:none;">
+                        <div class="desk-card" style="max-width:680px; margin:0 auto;">
+                            <div class="desk-card-header">
+                                <h3>
+                                    <svg data-lucide="settings" width="18" height="18" style="color:var(--primary);"></svg>
+                                    <span>Automation & Publishing Preferences</span>
+                                </h3>
+                            </div>
+                            <form id="deskSettingsForm" style="display:flex; flex-direction:column; gap:16px;">
+                                <div>
+                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Upload Visibility</label>
+                                    <select id="settingDefaultVisibility" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                                        <option value="public">Public</option>
+                                        <option value="unlisted">Unlisted</option>
+                                        <option value="private">Private</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Category</label>
+                                    <select id="settingDefaultCategory" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                                        <option value="22">People & Blogs</option>
+                                        <option value="24">Entertainment</option>
+                                        <option value="10">Music</option>
+                                        <option value="20">Gaming</option>
+                                        <option value="28">Science & Technology</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Tags (comma separated)</label>
+                                    <input type="text" id="settingDefaultTags" placeholder="shorts, viral, creator" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                                </div>
+                                <div style="padding-top:12px; border-top:1px solid var(--border-subtle); display:flex; justify-content:flex-end;">
+                                    <button type="submit" class="btn btn-primary btn-sm">Save Preferences</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
 
-    <!-- Toast -->
-    <div class="yt-toast" id="ytToast"></div>
-
-    <!-- Confirm Modal -->
-    <div class="yt-modal-overlay" id="ytConfirmModal" hidden>
-        <div class="yt-modal">
-            <h3 id="ytConfirmTitle">Confirm</h3>
-            <p id="ytConfirmText">Are you sure?</p>
-            <div class="yt-modal-actions">
-                <button class="btn btn-secondary" id="ytConfirmCancel">Cancel</button>
-                <button class="btn btn-primary" id="ytConfirmOk">Confirm</button>
+    <!-- Reusable Confirmation Modal -->
+    <div class="modal-overlay" id="deskConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalConfirmTitle">Confirm Action</h3>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnModalClose" style="padding:4px 8px;">✕</button>
+            </div>
+            <p id="modalConfirmText" style="font-size:13px; color:var(--text-secondary); margin:0 0 20px; line-height:1.5;">Are you sure you want to proceed?</p>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnModalCancel">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnModalOk">Confirm</button>
             </div>
         </div>
     </div>
 
+    <!-- Library Video Picker Modal -->
+    <div class="modal-overlay" id="libraryPickerModal">
+        <div class="modal-content" style="max-width:600px;">
+            <div class="modal-header">
+                <h3>Select Video from Project Library</h3>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnLibraryClose" style="padding:4px 8px;">✕</button>
+            </div>
+            <div id="libraryVideosList" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnLibraryCancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Shelf -->
+    <div class="toast-shelf" id="toastShelf"></div>
+
+    <!-- Initial Active Section Injection -->
+    <script>
+        window.INITIAL_SECTION = "{{ active_section or 'overview' }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/app_framework.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/youtube-desk.js') }}"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="{{ url_for('static', filename='js/youtube-desk.js') }}"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>

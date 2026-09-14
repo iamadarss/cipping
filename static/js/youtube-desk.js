@@ -1,1036 +1,1422 @@
-// ============================================
-// YouTube Desk - Frontend Logic
-// ============================================
+/**
+ * UpClip Studio — YouTube Desk Frontend Controller
+ * Complete UI/UX implementation matching Studio Hub standards.
+ */
 
 (function() {
     'use strict';
 
-    // ---------- State ----------
+    // =========================================================================
+    // 1. Application State
+    // =========================================================================
     const state = {
-        currentView: 'desk',
+        currentView: window.INITIAL_SECTION || 'overview',
         connected: false,
         channel: null,
-        videos: [],
+        playlists: [],
         queue: [],
         schedules: [],
-        templates: [],
         history: [],
         errors: [],
-        playlists: [],
-        currentVideo: null,
-        tags: [],
-        pollInterval: null,
+        pollTimer: null,
+
+        // Wizard State
+        wizard: {
+            step: 1,
+            maxSteps: 6,
+            file: null,
+            videoId: null,
+            filename: '',
+            videoUrl: '',
+            duration: 0,
+            resolution: '',
+            size: '',
+            title: '',
+            description: '',
+            tags: [],
+            categoryId: '22',
+            playlistId: '',
+            language: 'en',
+            visibility: 'public',
+            timingMode: 'now',
+            scheduleDate: '',
+            scheduleTime: '',
+            scheduleTimezone: 'Asia/Kolkata',
+            thumbnailUrl: '',
+            customThumbnailFile: null,
+        }
     };
 
-    // ---------- DOM Cache ----------
-    const views = document.querySelectorAll('.yt-view');
-    const navItems = document.querySelectorAll('.yt-nav-item[data-view]');
-    const toastEl = document.getElementById('ytToast');
-    const queueBadge = document.getElementById('queueBadge');
-    const errorBadge = document.getElementById('errorBadge');
-    const confirmModal = document.getElementById('ytConfirmModal');
-    const confirmTitle = document.getElementById('ytConfirmTitle');
-    const confirmText = document.getElementById('ytConfirmText');
-    const confirmOk = document.getElementById('ytConfirmOk');
-    const confirmCancel = document.getElementById('ytConfirmCancel');
+    // =========================================================================
+    // 2. DOM Elements Cache
+    // =========================================================================
+    const dom = {
+        // Topbar
+        topbarStatusPill: document.getElementById('topbarStatusPill'),
+        deskConnectionBadge: document.getElementById('deskConnectionBadge'),
+        btnDeskSettings: document.getElementById('btnDeskSettings'),
 
-    // ---------- Helpers ----------
+        // Navigation
+        navBar: document.getElementById('deskNavBar'),
+        navTabs: document.querySelectorAll('.desk-nav-tab'),
+        viewPanes: document.querySelectorAll('.desk-view-pane'),
+        queueBadgeCount: document.getElementById('queueBadgeCount'),
+        scheduledBadgeCount: document.getElementById('scheduledBadgeCount'),
 
+        // Overview
+        kpiTotal: document.getElementById('kpiTotal'),
+        kpiScheduled: document.getElementById('kpiScheduled'),
+        kpiProcessing: document.getElementById('kpiProcessing'),
+        kpiFailed: document.getElementById('kpiFailed'),
+        kpiNextScheduled: document.getElementById('kpiNextScheduled'),
+        kpiQueueStatus: document.getElementById('kpiQueueStatus'),
+        kpiErrorStatus: document.getElementById('kpiErrorStatus'),
+        recentUploadsList: document.getElementById('overviewRecentUploadsList'),
+        upcomingSchedulesList: document.getElementById('overviewUpcomingSchedulesList'),
+        overviewChannelAvatar: document.getElementById('overviewChannelAvatar'),
+        overviewChannelName: document.getElementById('overviewChannelName'),
+        overviewChannelDetails: document.getElementById('overviewChannelDetails'),
+        btnConnectShortcut: document.getElementById('btnConnectShortcut'),
+
+        // Quick Actions
+        btnQuickUpload: document.getElementById('btnQuickUpload'),
+        btnQuickSchedule: document.getElementById('btnQuickSchedule'),
+        btnQuickQueue: document.getElementById('btnQuickQueue'),
+        btnQuickHistory: document.getElementById('btnQuickHistory'),
+        btnQuickConnect: document.getElementById('btnQuickConnect'),
+
+        // Wizard Steps & Controls
+        wizardStepper: document.getElementById('wizardStepper'),
+        wizardStepNodes: document.querySelectorAll('.wizard-step-node'),
+        wizardPanes: document.querySelectorAll('.wizard-step-pane'),
+        btnWizardBack: document.getElementById('btnWizardBack'),
+        btnWizardNext: document.getElementById('btnWizardNext'),
+        wizardFooter: document.getElementById('wizardFooter'),
+
+        // Step 1: Video
+        uploadDropzone: document.getElementById('uploadDropzone'),
+        videoFileInput: document.getElementById('videoFileInput'),
+        btnBrowseVideo: document.getElementById('btnBrowseVideo'),
+        btnPickLibrary: document.getElementById('btnPickLibrary'),
+        selectedVideoCard: document.getElementById('selectedVideoCard'),
+        videoElementPreview: document.getElementById('videoElementPreview'),
+        selectedVideoFilename: document.getElementById('selectedVideoFilename'),
+        selectedVideoDuration: document.getElementById('selectedVideoDuration'),
+        selectedVideoResolution: document.getElementById('selectedVideoResolution'),
+        selectedVideoSize: document.getElementById('selectedVideoSize'),
+        btnChangeVideo: document.getElementById('btnChangeVideo'),
+
+        // Step 2: Details
+        inputVideoTitle: document.getElementById('inputVideoTitle'),
+        titleCharCounter: document.getElementById('titleCharCounter'),
+        inputVideoDescription: document.getElementById('inputVideoDescription'),
+        descCharCounter: document.getElementById('descCharCounter'),
+
+        // Step 3: Metadata
+        tagInputBox: document.getElementById('tagInputBox'),
+        tagInputField: document.getElementById('tagInputField'),
+        selectCategory: document.getElementById('selectCategory'),
+        selectPlaylist: document.getElementById('selectPlaylist'),
+        selectLanguage: document.getElementById('selectLanguage'),
+
+        // Step 4: Publish
+        radioVisibility: document.querySelectorAll('input[name="videoVisibility"]'),
+        radioTimingMode: document.querySelectorAll('input[name="publishingMode"]'),
+        scheduleFieldsWrapper: document.getElementById('scheduleFieldsWrapper'),
+        inputScheduleDate: document.getElementById('inputScheduleDate'),
+        inputScheduleTime: document.getElementById('inputScheduleTime'),
+        selectScheduleTimezone: document.getElementById('selectScheduleTimezone'),
+
+        // Step 5: Thumbnail
+        wizardThumbnailPreview: document.getElementById('wizardThumbnailPreview'),
+        wizardThumbnailPlaceholder: document.getElementById('wizardThumbnailPlaceholder'),
+        customThumbFileInput: document.getElementById('customThumbFileInput'),
+        btnUploadThumbFile: document.getElementById('btnUploadThumbFile'),
+        btnCaptureVideoFrame: document.getElementById('btnCaptureVideoFrame'),
+        btnResetThumbnail: document.getElementById('btnResetThumbnail'),
+
+        // Step 6: Review
+        reviewThumbnailImg: document.getElementById('reviewThumbnailImg'),
+        reviewTitle: document.getElementById('reviewTitle'),
+        reviewDescription: document.getElementById('reviewDescription'),
+        reviewVisibility: document.getElementById('reviewVisibility'),
+        reviewTiming: document.getElementById('reviewTiming'),
+        reviewCategory: document.getElementById('reviewCategory'),
+        reviewTagsCount: document.getElementById('reviewTagsCount'),
+
+        // Upload Progress State
+        wizardProgressState: document.getElementById('wizard-progress-state'),
+        uploadStatusIcon: document.getElementById('uploadStatusIcon'),
+        uploadStatusTitle: document.getElementById('uploadStatusTitle'),
+        uploadStatusMessage: document.getElementById('uploadStatusMessage'),
+        uploadProgressBarContainer: document.getElementById('uploadProgressBarContainer'),
+        uploadProgressBarFill: document.getElementById('uploadProgressBarFill'),
+        uploadPercentText: document.getElementById('uploadPercentText'),
+        uploadSpeedText: document.getElementById('uploadSpeedText'),
+        uploadActionButtons: document.getElementById('uploadActionButtons'),
+        btnUploadAnother: document.getElementById('btnUploadAnother'),
+
+        // Queue
+        queueFilterTabs: document.getElementById('queueFilterTabs'),
+        queueSearchInput: document.getElementById('queueSearchInput'),
+        queueItemsList: document.getElementById('queueItemsList'),
+
+        // Scheduled
+        scheduledItemsList: document.getElementById('scheduledItemsList'),
+
+        // History
+        historyFilterTabs: document.getElementById('historyFilterTabs'),
+        historySearchInput: document.getElementById('historySearchInput'),
+        historyTableBody: document.getElementById('historyTableBody'),
+
+        // Connection
+        connectionActiveCard: document.getElementById('connectionActiveCard'),
+        connectionInactiveCard: document.getElementById('connectionInactiveCard'),
+        channelAvatar: document.getElementById('channelAvatar'),
+        channelTitle: document.getElementById('channelTitle'),
+        channelHandle: document.getElementById('channelHandle'),
+        channelSubscribers: document.getElementById('channelSubscribers'),
+        channelVideoCount: document.getElementById('channelVideoCount'),
+        btnRefreshConnection: document.getElementById('btnRefreshConnection'),
+        btnDisconnectChannel: document.getElementById('btnDisconnectChannel'),
+
+        // Settings
+        deskSettingsForm: document.getElementById('deskSettingsForm'),
+        settingDefaultVisibility: document.getElementById('settingDefaultVisibility'),
+        settingDefaultCategory: document.getElementById('settingDefaultCategory'),
+        settingDefaultTags: document.getElementById('settingDefaultTags'),
+
+        // Modals & Toasts
+        deskConfirmModal: document.getElementById('deskConfirmModal'),
+        modalConfirmTitle: document.getElementById('modalConfirmTitle'),
+        modalConfirmText: document.getElementById('modalConfirmText'),
+        btnModalClose: document.getElementById('btnModalClose'),
+        btnModalCancel: document.getElementById('btnModalCancel'),
+        btnModalOk: document.getElementById('btnModalOk'),
+        libraryPickerModal: document.getElementById('libraryPickerModal'),
+        libraryVideosList: document.getElementById('libraryVideosList'),
+        btnLibraryClose: document.getElementById('btnLibraryClose'),
+        btnLibraryCancel: document.getElementById('btnLibraryCancel'),
+        toastShelf: document.getElementById('toastShelf'),
+    };
+
+    // =========================================================================
+    // 3. UI Helpers & Modals
+    // =========================================================================
     function showToast(message, type = 'info') {
-        toastEl.textContent = message;
-        toastEl.className = 'yt-toast ' + type + ' show';
-        setTimeout(() => toastEl.classList.remove('show'), 3000);
+        const toast = document.createElement('div');
+        toast.className = `toast-pill ${type}`;
+        const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+        toast.innerHTML = `<svg data-lucide="${iconName}" width="16" height="16"></svg><span>${escapeHtml(message)}</span>`;
+        dom.toastShelf.appendChild(toast);
+        if (window.lucide) window.lucide.createIcons();
+        setTimeout(() => {
+            toast.style.animation = 'slideInRight 0.25s ease reverse forwards';
+            setTimeout(() => toast.remove(), 250);
+        }, 3500);
     }
 
     function showConfirm(title, text) {
         return new Promise((resolve) => {
-            confirmTitle.textContent = title;
-            confirmText.textContent = text;
-            confirmModal.hidden = false;
+            dom.modalConfirmTitle.textContent = title;
+            dom.modalConfirmText.textContent = text;
+            dom.deskConfirmModal.classList.add('active');
+
+            const cleanup = () => {
+                dom.btnModalOk.removeEventListener('click', onOk);
+                dom.btnModalCancel.removeEventListener('click', onCancel);
+                dom.btnModalClose.removeEventListener('click', onCancel);
+                dom.deskConfirmModal.classList.remove('active');
+            };
             const onOk = () => { cleanup(); resolve(true); };
             const onCancel = () => { cleanup(); resolve(false); };
-            const cleanup = () => {
-                confirmOk.removeEventListener('click', onOk);
-                confirmCancel.removeEventListener('click', onCancel);
-                confirmModal.hidden = true;
-            };
-            confirmOk.addEventListener('click', onOk);
-            confirmCancel.addEventListener('click', onCancel);
+
+            dom.btnModalOk.addEventListener('click', onOk);
+            dom.btnModalCancel.addEventListener('click', onCancel);
+            dom.btnModalClose.addEventListener('click', onCancel);
         });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[m]));
+    }
+
+    function formatBytes(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function formatDuration(seconds) {
+        if (!seconds) return '0:00';
+        seconds = Math.round(seconds);
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        const h = Math.floor(m / 60);
+        if (h > 0) {
+            return `${h}:${String(m % 60).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        return `${m}:${String(s).padStart(2, '0')}`;
     }
 
     function formatDate(ts) {
         if (!ts) return '-';
         const d = new Date(ts * 1000);
-        return d.toLocaleString();
+        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
-    function formatBytes(bytes) {
-        if (!bytes) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    function formatDuration(seconds) {
-        if (!seconds) return '0:00';
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = Math.floor(seconds % 60);
-        if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        return `${m}:${String(s).padStart(2, '0')}`;
-    }
-
-    /**
-     * Fetch wrapper that does NOT force Content-Type: application/json.
-     * When `body` is a FormData, the browser sets the multipart boundary.
-     * When `body` is a string (JSON), Content-Type: application/json is set automatically.
-     */
-    async function api(url, options = {}) {
-        const res = await fetch(url, options);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        return data;
-    }
-
-    function showView(viewName) {
+    // =========================================================================
+    // 4. Navigation & View Routing
+    // =========================================================================
+    function switchView(viewName, pushHistory = true) {
         state.currentView = viewName;
 
-        views.forEach(v => {
-            v.hidden = !v.id.startsWith('view-' + viewName);
+        // Update nav tabs
+        dom.navTabs.forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.view === viewName);
         });
 
-        navItems.forEach(n => {
-            n.classList.toggle('active', n.dataset.view === viewName);
+        // Update view panes
+        dom.viewPanes.forEach(pane => {
+            const isTarget = pane.id === `view-${viewName}`;
+            pane.style.display = isTarget ? 'block' : 'none';
+            if (isTarget) pane.classList.add('active');
+            else pane.classList.remove('active');
         });
 
-        const viewLabels = {
-            desk: 'YouTube Desk',
-            connect: 'Connect YouTube',
-            queue: 'Upload Queue',
-            history: 'Upload History',
-            errors: 'Error Center',
-            settings: 'Settings',
-        };
-        const h1El = document.querySelector('.yt-topbar h1');
-        if (h1El) {
-            const label = viewLabels[viewName] || 'YouTube Desk';
-            h1El.innerHTML = viewName === 'desk'
-                ? '<span class="yt-icon">📺</span> YouTube Desk'
-                : `<span class="yt-icon">${viewLabels[viewName] === 'YouTube Desk' ? '📺' : '•'}</span> ${label}`;
+        // Update URL cleanly without reloading
+        if (pushHistory) {
+            const url = viewName === 'overview' ? '/youtube-desk' : `/youtube-desk/${viewName}`;
+            history.pushState({ view: viewName }, '', url);
         }
 
-        // Refresh view data
+        // Fetch view-specific data
         switch (viewName) {
-            case 'desk': loadDashboard(); break;
-            case 'connect': loadConnectStatus(); break;
+            case 'overview': loadOverview(); break;
             case 'queue': loadQueue(); break;
+            case 'scheduled': loadScheduled(); break;
             case 'history': loadHistory(); break;
-            case 'errors': loadErrors(); break;
+            case 'connection': loadConnection(); break;
             case 'settings': loadSettings(); break;
+            case 'upload':
+                if (state.wizard.step === 1) resetWizard();
+                break;
         }
+
+        if (window.lucide) window.lucide.createIcons();
     }
 
-    // ---------- Navigation ----------
-    navItems.forEach(item => {
-        item.addEventListener('click', () => showView(item.dataset.view));
+    // Handle browser forward/back
+    window.addEventListener('popstate', (e) => {
+        const view = (e.state && e.state.view) || 'overview';
+        switchView(view, false);
     });
 
-    document.getElementById('ytSettingsBtn').addEventListener('click', () => {
-        showView('settings');
+    // Sub-nav tab clicks
+    dom.navTabs.forEach(tab => {
+        tab.addEventListener('click', () => switchView(tab.dataset.view));
     });
 
-    // ---------- Dashboard (Desk) ----------
-    async function loadDashboard() {
+    // Delegated data-nav clicks across the page
+    document.addEventListener('click', (e) => {
+        const navEl = e.target.closest('[data-nav]');
+        if (navEl) {
+            e.preventDefault();
+            const targetView = navEl.dataset.nav;
+            const targetMode = navEl.dataset.mode;
+            switchView(targetView);
+            if (targetMode === 'schedule' && targetView === 'upload') {
+                state.wizard.timingMode = 'schedule';
+                const rad = document.querySelector('input[name="publishingMode"][value="schedule"]');
+                if (rad) {
+                    rad.checked = true;
+                    rad.dispatchEvent(new Event('change'));
+                }
+            }
+        }
+    });
+
+    // Settings shortcut button
+    dom.btnDeskSettings.addEventListener('click', () => switchView('settings'));
+
+    // =========================================================================
+    // 5. Data Fetching & Overview
+    // =========================================================================
+    async function loadOverview() {
         try {
-            const [statusData, queueData, historyData, errorsData] = await Promise.all([
-                fetch('/youtube/status').then(r => r.json()),
-                fetch('/youtube/upload-queue').then(r => r.json()),
-                fetch('/youtube/history').then(r => r.json()),
-                fetch('/youtube/errors').then(r => r.json()),
+            const [statusRes, queueRes, schedRes, histRes, errRes] = await Promise.all([
+                fetch('/youtube/status').then(r => r.json()).catch(() => ({ connected: false })),
+                fetch('/youtube/upload-queue').then(r => r.json()).catch(() => ({ items: [] })),
+                fetch('/youtube/schedules').then(r => r.json()).catch(() => ({ schedules: [] })),
+                fetch('/youtube/history').then(r => r.json()).catch(() => ({ history: [] })),
+                fetch('/youtube/errors').then(r => r.json()).catch(() => ({ errors: [] })),
             ]);
 
-            state.queue = queueData.items || [];
-            state.history = historyData.history || [];
-            state.errors = errorsData.errors || [];
+            state.connected = statusRes.connected;
+            state.channel = statusRes.channel;
+            state.queue = queueRes.items || [];
+            state.schedules = schedRes.schedules || [];
+            state.history = histRes.history || [];
+            state.errors = errRes.errors || [];
 
-            document.getElementById('statTotal').textContent =
-                state.history.filter(h => h.status === 'published').length;
-            document.getElementById('statScheduled').textContent =
-                await fetch('/youtube/schedules').then(r => r.json()).then(d => d.schedules.length).catch(() => 0);
-            document.getElementById('statProcessing').textContent =
-                state.queue.filter(q => q.status === 'uploading' || q.status === 'processing').length;
-            document.getElementById('statFailed').textContent = state.errors.length;
+            // Update Connection Badges
+            updateConnectionUI();
 
-            // Queue list
-            const dashQueueList = document.getElementById('dashQueueList');
-            if (state.queue.length) {
-                dashQueueList.innerHTML = state.queue.slice(0, 5).map(q => `
-                    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${q.title || 'Untitled'}</div>
-                            <div style="font-size:12px;color:var(--text-muted);">Status: ${q.status}</div>
-                        </div>
-                        <span class="yt-badge ${q.status}">${q.status}</span>
-                    </div>
-                `).join('');
+            // Update KPI values
+            dom.kpiTotal.textContent = state.history.length;
+            dom.kpiScheduled.textContent = state.schedules.length;
+            dom.kpiProcessing.textContent = state.queue.filter(q => q.status === 'uploading' || q.status === 'processing').length;
+            dom.kpiFailed.textContent = state.errors.length;
+
+            // Badges in navbar
+            dom.queueBadgeCount.textContent = state.queue.length;
+            dom.scheduledBadgeCount.textContent = state.schedules.length;
+
+            // Subtitle status details
+            if (state.schedules.length > 0) {
+                const next = state.schedules[0];
+                dom.kpiNextScheduled.innerHTML = `<svg data-lucide="clock" width="12" height="12"></svg><span>Next: ${formatDate(next.scheduled_at)}</span>`;
             } else {
-                dashQueueList.innerHTML = `<div class="yt-empty"><div class="yt-empty-icon">📭</div><h3>Queue empty</h3><p>Your upload queue is empty.</p></div>`;
+                dom.kpiNextScheduled.innerHTML = `<svg data-lucide="clock" width="12" height="12"></svg><span>No upcoming releases</span>`;
             }
 
-            // Schedule list
-            const schedRes = await fetch('/youtube/schedules').then(r => r.json()).catch(() => ({ schedules: [] }));
-            const schedules = schedRes.schedules || [];
-            const dashScheduleList = document.getElementById('dashScheduleList');
-            if (schedules.length) {
-                dashScheduleList.innerHTML = schedules.slice(0, 5).map(s => `
-                    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:600;font-size:14px;">${s.title || 'Untitled'}</div>
-                            <div style="font-size:12px;color:var(--text-muted);">${formatDate(s.scheduled_at)}</div>
-                        </div>
-                        <span class="yt-badge scheduled">scheduled</span>
-                    </div>
-                `).join('');
+            const activeQueue = state.queue.filter(q => q.status === 'uploading' || q.status === 'processing');
+            if (activeQueue.length > 0) {
+                dom.kpiQueueStatus.innerHTML = `<svg data-lucide="loader" width="12" height="12"></svg><span style="color:var(--primary);">${activeQueue.length} in progress</span>`;
             } else {
-                dashScheduleList.innerHTML = `<div class="yt-empty"><div class="yt-empty-icon">📭</div><h3>No schedules</h3><p>No videos are scheduled yet.</p></div>`;
+                dom.kpiQueueStatus.innerHTML = `<svg data-lucide="check-circle" width="12" height="12"></svg><span>Queue is idle</span>`;
             }
 
-            // Today's uploads
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const todayTs = Math.floor(today.getTime() / 1000);
-            const todayItems = state.history.filter(h => h.published_at && h.published_at >= todayTs);
-            const dashTodayList = document.getElementById('dashTodayList');
-            if (todayItems.length) {
-                dashTodayList.innerHTML = todayItems.map(h => `
-                    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:600;font-size:14px;">${h.title || 'Untitled'}</div>
-                            <div style="font-size:12px;color:var(--text-muted);">${formatDate(h.published_at)}</div>
-                        </div>
-                        <span class="yt-badge published">published</span>
-                    </div>
-                `).join('');
+            if (state.errors.length > 0) {
+                dom.kpiErrorStatus.innerHTML = `<svg data-lucide="alert-triangle" width="12" height="12"></svg><span style="color:var(--error);">${state.errors.length} failed upload</span>`;
             } else {
-                dashTodayList.innerHTML = `<div class="yt-empty"><div class="yt-empty-icon">📭</div><h3>No uploads today</h3><p>Videos uploaded today will appear here.</p></div>`;
+                dom.kpiErrorStatus.innerHTML = `<svg data-lucide="shield-check" width="12" height="12"></svg><span>All systems clear</span>`;
             }
 
-            // Badges
-            const qLen = state.queue.length;
-            queueBadge.hidden = qLen === 0;
-            queueBadge.textContent = qLen;
-            const eLen = state.errors.length;
-            errorBadge.hidden = eLen === 0;
-            errorBadge.textContent = eLen;
+            // Render Recent Uploads (Max 3-4 items)
+            renderOverviewRecentUploads();
 
-            // Show stats section
-            document.getElementById('deskStats').style.display = '';
-        } catch (e) {
-            console.error('Dashboard load failed:', e);
+            // Render Upcoming Schedules (Max 3 items)
+            renderOverviewSchedules();
+
+            // Render Channel Card
+            renderOverviewChannel();
+
+            if (window.lucide) window.lucide.createIcons();
+        } catch (err) {
+            console.error('Error loading overview:', err);
         }
     }
 
-    // ---------- Connect YouTube ----------
-    async function loadConnectStatus() {
-        try {
-            const data = await fetch('/youtube/status').then(r => r.json());
-            state.connected = data.connected || false;
-            document.getElementById('ytChannelName').textContent = data.channel_name || 'Not connected';
-            document.getElementById('ytConnectDot').classList.toggle('offline', !state.connected);
-            document.getElementById('ytChannelAvatar').hidden = !state.connected;
-            if (data.channel_avatar) {
-                document.getElementById('ytChannelAvatar').src = data.channel_avatar;
-            }
-            const badge = document.getElementById('ytChannelBadge');
-            badge.classList.toggle('connected', state.connected);
-        } catch (e) {
-            console.error('Connect status failed:', e);
+    function updateConnectionUI() {
+        if (state.connected && state.channel) {
+            dom.topbarStatusPill.className = 'status-pill connected';
+            dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Connected</span>';
+            dom.deskConnectionBadge.className = 'status-pill connected';
+            dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Connected</span>';
+        } else {
+            dom.topbarStatusPill.className = 'status-pill disconnected';
+            dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
+            dom.deskConnectionBadge.className = 'status-pill disconnected';
+            dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
         }
     }
 
-    document.getElementById('connectYtBtn').addEventListener('click', async () => {
-        try {
-            const data = await api('/youtube/connect');
-            if (data.success && data.authorization_url) {
-                window.open(data.authorization_url, '_blank', 'width=600,height=700');
-                showToast('Complete the Google sign-in in the new window.', 'info');
-            } else {
-                showToast(data.error || 'Failed to start OAuth flow. Ensure oauth_client_secrets.json exists.', 'error');
-            }
-        } catch (e) {
-            showToast('OAuth error: ' + e.message, 'error');
-        }
-    });
-
-    document.getElementById('refreshYtBtn').addEventListener('click', async () => {
-        try {
-            const data = await api('/youtube/connect');
-            if (data.success && data.authorization_url) {
-                window.open(data.authorization_url, '_blank', 'width=600,height=700');
-                showToast('Reconnect in the new window.', 'info');
-            }
-        } catch (e) {
-            showToast('Reconnect failed: ' + e.message, 'error');
-        }
-    });
-
-    document.getElementById('disconnectYtBtn').addEventListener('click', async () => {
-        const ok = await showConfirm('Disconnect YouTube', 'This will remove your YouTube connection. Continue?');
-        if (!ok) return;
-        try {
-            await api('/youtube/disconnect', { method: 'POST' });
-            state.connected = false;
-            state.channel = null;
-            showToast('Disconnected successfully.', 'success');
-            loadConnectStatus();
-        } catch (e) {
-            showToast('Disconnect failed: ' + e.message, 'error');
-        }
-    });
-
-    // ---------- Drag & Drop + Video Import ----------
-
-    function setupDropzone(dropzoneId, inputId, onFile) {
-        const dropzone = document.getElementById(dropzoneId);
-        const input = document.getElementById(inputId);
-        if (!dropzone || !input) return;
-
-        dropzone.addEventListener('click', (e) => {
-            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
-                input.click();
-            }
-        });
-
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
-
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) {
-                onFile(e.dataTransfer.files[0]);
-            }
-        });
-
-        input.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                onFile(e.target.files[0]);
-            }
-        });
-    }
-
-    async function handleVideoFile(file) {
-        const formData = new FormData();
-        formData.append('video', file);
-
-        const progressEl = document.getElementById('ytImportProgress');
-        const progressFill = document.getElementById('ytImportProgressFill');
-        const progressText = document.getElementById('ytImportProgressText');
-        progressEl.hidden = false;
-        progressFill.style.width = '0%';
-        progressText.textContent = 'Importing video...';
-
-        try {
-            // Use fetch directly with progress tracking
-            const xhr = new XMLHttpRequest();
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    const pct = Math.round((e.loaded / e.total) * 100);
-                    progressFill.style.width = pct + '%';
-                    progressText.textContent = `Importing... ${pct}%`;
-                }
-            });
-
-            xhr.open('POST', '/youtube/import');
-            xhr.responseType = 'json';
-
-            xhr.onload = function() {
-                progressEl.hidden = true;
-                if (xhr.status === 200 || xhr.status === 201) {
-                    const data = xhr.response;
-                    setActiveVideo(data);
-                    showToast('Video imported successfully.', 'success');
-                } else {
-                    const data = xhr.response;
-                    showToast(data?.error || 'Import failed.', 'error');
-                }
-            };
-
-            xhr.onerror = function() {
-                progressEl.hidden = true;
-                showToast('Network error during import.', 'error');
-            };
-
-            xhr.send(formData);
-        } catch (e) {
-            progressEl.hidden = true;
-            showToast('Import failed: ' + e.message, 'error');
-        }
-    }
-
-    function setActiveVideo(videoData) {
-        state.currentVideo = videoData;
-        const meta = videoData.metadata || {};
-        const thumbEl = document.getElementById('ytActiveVideoThumb');
-        const nameEl = document.getElementById('ytActiveVideoName');
-        const metaEl = document.getElementById('ytActiveVideoMeta');
-        const sourceEl = document.getElementById('ytActiveVideoSource');
-        const clearBtn = document.getElementById('ytClearVideo');
-        const infoBar = document.getElementById('ytActiveVideoInfo');
-        const placeholder = document.querySelector('.yt-video-placeholder');
-        const videoEl = document.querySelector('#ytVideoPreview video');
-
-        // Update video preview
-        if (videoData.video_url) {
-            if (videoEl) {
-                videoEl.src = videoData.video_url;
-                videoEl.hidden = false;
-            }
-            if (placeholder) placeholder.hidden = true;
+    function renderOverviewRecentUploads() {
+        if (!state.history || state.history.length === 0) {
+            dom.recentUploadsList.innerHTML = `
+                <div class="compact-empty-state">
+                    <svg data-lucide="video" width="32" height="32"></svg>
+                    <h4>No Recent Uploads</h4>
+                    <p>Videos you publish or schedule through UpClip Studio will appear here.</p>
+                    <button class="btn btn-primary btn-sm" data-nav="upload">Upload First Video</button>
+                </div>`;
+            return;
         }
 
-        // Update active video info bar
-        if (infoBar) infoBar.hidden = false;
-        if (nameEl) nameEl.textContent = videoData.filename || 'Unknown video';
-        if (metaEl) metaEl.textContent = `${formatBytes(meta.size_bytes || 0)} • ${formatDuration(meta.duration)} • ${meta.width || '?'}x${meta.height || '?'}`;
-        if (sourceEl) sourceEl.textContent = videoData.source || 'local';
-        if (clearBtn) clearBtn.hidden = false;
-
-        if (videoData.thumbnail) {
-            thumbEl.src = videoData.thumbnail;
-            thumbEl.hidden = false;
-        }
-
-        // Populate the Video tab info
-        document.getElementById('ytVideoFilename').textContent = videoData.filename || '-';
-        document.getElementById('ytVideoResolution').textContent = meta.width ? `${meta.width}x${meta.height}` : '-';
-        document.getElementById('ytVideoDuration').textContent = meta.duration ? formatDuration(meta.duration) : '-';
-        document.getElementById('ytVideoSize').textContent = formatBytes(meta.size_bytes || 0);
-        document.getElementById('ytVideoSource').textContent = videoData.source || 'local';
-
-        // Set default title from filename
-        const titleInput = document.getElementById('ytTitle');
-        if (titleInput && !titleInput.value) {
-            titleInput.value = (videoData.filename || '').replace(/\.[^.]+$/, '');
-            updateTitleCount();
-        }
-    }
-
-    setupDropzone('ytDropzone', 'ytVideoInput', handleVideoFile);
-
-    document.getElementById('ytBrowseBtn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('ytVideoInput').click();
-    });
-
-    document.getElementById('ytClearVideo').addEventListener('click', () => {
-        state.currentVideo = null;
-        document.getElementById('ytActiveVideoInfo').hidden = true;
-        document.getElementById('ytClearVideo').hidden = true;
-        const placeholder = document.querySelector('.yt-video-placeholder');
-        const videoEl = document.querySelector('#ytVideoPreview video');
-        if (placeholder) placeholder.hidden = false;
-        if (videoEl) {
-            videoEl.src = '';
-            videoEl.hidden = true;
-        }
-        // Clear video tab info
-        document.getElementById('ytVideoFilename').textContent = '-';
-        document.getElementById('ytVideoResolution').textContent = '-';
-        document.getElementById('ytVideoDuration').textContent = '-';
-        document.getElementById('ytVideoSize').textContent = '-';
-        document.getElementById('ytVideoSource').textContent = '-';
-    });
-
-    // ---------- Existing Videos (from /youtube/scan) ----------
-    async function loadExistingFiles() {
-        try {
-            const data = await fetch('/youtube/scan').then(r => r.json());
-            const videos = data.videos || [];
-            const container = document.getElementById('ytExistingFiles');
-
-            if (!videos.length) {
-                container.innerHTML = `<div class="yt-empty"><div class="yt-empty-icon">🎬</div><h3>No videos found</h3><p>Upload a video above or download one using the YT Downloader.</p></div>`;
-                return;
-            }
-
-            container.innerHTML = '<div class="yt-video-grid">' + videos.map(v => `
-                <div class="yt-video-item" data-filename="${v.filename}">
-                    ${v.thumbnail ? `<img class="yt-video-thumb" src="${v.thumbnail}" alt="${v.filename}">` : '<div class="yt-video-thumb-placeholder">🎬</div>'}
-                    <div class="yt-video-filename" title="${v.filename}">${v.filename}</div>
-                    <div class="yt-video-meta-row">${v.size_formatted || ''} • ${v.extension}</div>
+        const recent = state.history.slice(0, 4);
+        dom.recentUploadsList.innerHTML = recent.map(item => `
+            <div class="compact-video-row">
+                <div class="compact-video-thumb">
+                    ${item.thumbnail ? `<img src="${item.thumbnail}" style="width:100%;height:100%;object-fit:cover;">` : '<svg data-lucide="clapperboard" width="18" height="18"></svg>'}
                 </div>
-            `).join('') + '</div>';
-
-            container.querySelectorAll('.yt-video-item').forEach(item => {
-                item.addEventListener('click', async () => {
-                    const filename = item.dataset.filename;
-                    if (!filename) return;
-                    try {
-                        const data = await api('/youtube/import', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ filename: filename }),
-                        });
-                        if (data.success) {
-                            data.source = item.querySelector('.yt-video-meta-row').textContent;
-                            setActiveVideo(data);
-                            showToast(`"${filename}" loaded.`, 'success');
-                        }
-                    } catch (e) {
-                        showToast('Failed to load video: ' + e.message, 'error');
-                    }
-                });
-            });
-        } catch (e) {
-            console.error('Failed to load existing files:', e);
-        }
-    }
-
-    // ---------- Upload Button ----------
-    document.getElementById('ytUploadBtn').addEventListener('click', async () => {
-        if (!state.currentVideo) {
-            showToast('Select a video first.', 'error');
-            return;
-        }
-
-        // Check YouTube connection
-        const statusData = await fetch('/youtube/status').then(r => r.json());
-        if (!statusData.connected) {
-            showToast('Connect your YouTube channel first.', 'error');
-            return;
-        }
-
-        // Save metadata first via /youtube/videos POST
-        const metadataPayload = collectMetadata();
-        try {
-            const metaRes = await api('/youtube/videos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(metadataPayload),
-            });
-
-            const video_id = metaRes.video_id || state.currentVideo.video_id;
-            if (!video_id) {
-                showToast('Could not resolve video ID.', 'error');
-                return;
-            }
-
-            // Check if scheduled
-            const visibility = document.getElementById('ytVisibility').value;
-            if (visibility === 'scheduled') {
-                const scheduledAt = document.getElementById('ytScheduleAt').value;
-                if (!scheduledAt) {
-                    showToast('Please select a schedule date and time.', 'error');
-                    return;
-                }
-                const payload = {
-                    video_id: video_id,
-                    scheduled_at: new Date(scheduledAt).toISOString(),
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    title: metadataPayload.title,
-                    description: metadataPayload.description,
-                    tags: metadataPayload.tags,
-                    category_id: metadataPayload.category_id,
-                    visibility: visibility,
-                };
-                try {
-                    await api('/youtube/schedules', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                    });
-                    showToast('Video scheduled successfully.', 'success');
-                    showView('queue');
-                    loadQueue();
-                } catch (e) {
-                    showToast('Scheduling failed: ' + e.message, 'error');
-                }
-                return;
-            }
-
-            // Normal upload — execute in background
-            const uploadRes = await api('/youtube/upload/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ video_id: video_id, title: metadataPayload.title }),
-            });
-
-            if (uploadRes.success) {
-                showToast('Upload started!', 'success');
-                startUploadProgressPolling(video_id);
-                showView('queue');
-                loadQueue();
-            }
-        } catch (e) {
-            showToast('Upload failed: ' + e.message, 'error');
-        }
-    });
-
-    // ---------- Upload Progress Polling ----------
-    let progressPollTimer = null;
-
-    function startUploadProgressPolling(videoId) {
-        if (progressPollTimer) clearInterval(progressPollTimer);
-        const progressEl = document.getElementById('ytUploadProgress');
-        const progressFill = document.getElementById('ytUploadProgressFill');
-        const progressText = document.getElementById('ytUploadProgressText');
-
-        progressEl.hidden = false;
-        progressFill.style.width = '0%';
-        progressText.textContent = 'Starting upload...';
-
-        progressPollTimer = setInterval(async () => {
-            try {
-                const data = await fetch(`/youtube/upload/progress/${videoId}`).then(r => r.json());
-                const pct = data.progress || 0;
-                const status = data.status || 'unknown';
-
-                progressFill.style.width = pct + '%';
-                progressFill.className = 'yt-progress-fill ' + (status === 'failed' ? 'error' : '');
-                progressText.textContent = `Status: ${status} (${pct}%)`;
-
-                if (status === 'done' || status === 'uploaded') {
-                    clearInterval(progressPollTimer);
-                    progressText.textContent = 'Upload complete!';
-                    showToast('Upload completed successfully!', 'success');
-                } else if (status === 'failed') {
-                    clearInterval(progressPollTimer);
-                    progressText.textContent = `Upload failed: ${data.error_message || 'Unknown error'}`;
-                    showToast('Upload failed. Check the Error Center.', 'error');
-                }
-            } catch (e) {
-                clearInterval(progressPollTimer);
-                progressText.textContent = 'Lost connection to server.';
-            }
-        }, 2000);
-    }
-
-    // ---------- Metadata Editor ----------
-    function collectMetadata() {
-        const visibility = document.getElementById('ytVisibility').value;
-        const scheduleAt = document.getElementById('ytScheduleAt').value;
-        return {
-            filename: state.currentVideo ? state.currentVideo.filename : '',
-            title: document.getElementById('ytTitle').value,
-            description: document.getElementById('ytDescription').value,
-            tags: state.tags,
-            category_id: document.getElementById('ytCategory').value,
-            language: document.getElementById('ytLanguage') ? document.getElementById('ytLanguage').value : '',
-            recording_date: document.getElementById('ytRecordDate') ? document.getElementById('ytRecordDate').value : '',
-            visibility: visibility,
-            scheduled_at: visibility === 'scheduled' && scheduleAt ? new Date(scheduleAt).toISOString() : null,
-            playlist_id: document.getElementById('ytPlaylist').value,
-        };
-    }
-
-    function loadMetadataDefaults() {
-        if (!state.currentVideo) return;
-        const meta = state.currentVideo.metadata || {};
-        const titleInput = document.getElementById('ytTitle');
-        if (!titleInput.value) {
-            titleInput.value = (state.currentVideo.filename || '').replace(/\.[^.]+$/, '');
-        }
-        updateTitleCount();
-        state.tags = [];
-        renderTags();
-    }
-
-    function updateTitleCount() {
-        const el = document.getElementById('ytTitle');
-        if (!el) return;
-        const count = el.value.length;
-        const counter = document.getElementById('titleCount');
-        if (counter) {
-            counter.textContent = count + '/100';
-            counter.className = 'yt-char-count' + (count > 90 ? ' error' : count > 70 ? ' warn' : '');
-        }
-    }
-
-    document.getElementById('ytTitle').addEventListener('input', updateTitleCount);
-
-    document.getElementById('ytDescription').addEventListener('input', function() {
-        const count = this.value.length;
-        const counter = document.getElementById('descCount');
-        if (counter) {
-            counter.textContent = count + '/5000';
-            counter.className = 'yt-char-count' + (count > 4500 ? ' error' : count > 4000 ? ' warn' : '');
-        }
-    });
-
-    function renderTags() {
-        const wrap = document.getElementById('ytTagsWrap');
-        wrap.innerHTML = state.tags.map((t, i) => `
-            <span class="yt-tag-chip">${t}<button data-idx="${i}">×</button></span>
+                <div class="compact-video-info">
+                    <div class="compact-video-title">${escapeHtml(item.title || 'Untitled Video')}</div>
+                    <div class="compact-video-meta">
+                        <span class="status-pill connected" style="padding:2px 8px; font-size:10px;">${escapeHtml(item.status || 'published')}</span>
+                        <span>•</span>
+                        <span>${formatDate(item.published_at || item.created_at)}</span>
+                        <span>•</span>
+                        <span style="text-transform:capitalize;">${escapeHtml(item.visibility || 'public')}</span>
+                    </div>
+                </div>
+                <div class="compact-video-actions">
+                    ${item.youtube_video_id ? `<a href="https://youtu.be/${item.youtube_video_id}" target="_blank" class="btn btn-secondary btn-sm" style="padding:4px 8px;" title="View on YouTube"><svg data-lucide="external-link" width="13" height="13"></svg></a>` : ''}
+                </div>
+            </div>
         `).join('');
-        wrap.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                state.tags.splice(parseInt(btn.dataset.idx, 10), 1);
-                renderTags();
-            });
-        });
     }
 
-    document.getElementById('ytTagInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const val = this.value.trim();
-            if (val && !state.tags.includes(val)) {
-                state.tags.push(val);
-                renderTags();
-                this.value = '';
-            }
+    function renderOverviewSchedules() {
+        if (!state.schedules || state.schedules.length === 0) {
+            dom.upcomingSchedulesList.innerHTML = `
+                <div class="compact-empty-state">
+                    <svg data-lucide="calendar-x" width="28" height="28"></svg>
+                    <h4>No Scheduled Uploads</h4>
+                    <p>Schedule your next clip to automate publishing at peak hours.</p>
+                    <button class="btn btn-secondary btn-sm" data-nav="upload" data-mode="schedule">Schedule Upload</button>
+                </div>`;
+            return;
         }
-    });
 
-    document.getElementById('ytVisibility').addEventListener('change', function() {
-        document.getElementById('ytScheduleGroup').hidden = this.value !== 'scheduled';
-    });
-
-    document.getElementById('ytSaveDraftBtn').addEventListener('click', async () => {
-        try {
-            const payload = collectMetadata();
-            const data = await api('/youtube/videos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            if (data.success) {
-                showToast('Draft saved.', 'success');
-            }
-        } catch (e) {
-            showToast('Save failed: ' + e.message, 'error');
-        }
-    });
-
-    // ---------- Tabs ----------
-    document.querySelectorAll('.yt-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.yt-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.yt-tab-panel').forEach(p => p.hidden = true);
-            tab.classList.add('active');
-            const panel = document.getElementById('ytTab-' + tab.dataset.tab);
-            if (panel) panel.hidden = false;
-        });
-    });
-
-    // ---------- Thumbnail Manager ----------
-    setupDropzone('ytThumbDropzone', 'ytThumbInput', async (file) => {
-        const formData = new FormData();
-        formData.append('thumbnail', file);
-        try {
-            const data = await api('/youtube/thumbnail/upload', { method: 'POST', body: formData });
-            if (data.success) {
-                showToast('Thumbnail uploaded.', 'success');
-                renderThumbPreview(data.url);
-            }
-        } catch (e) {
-            showToast('Thumbnail upload failed: ' + e.message, 'error');
-        }
-    });
-
-    function renderThumbPreview(url) {
-        const container = document.getElementById('ytThumbPreviewLarge');
-        container.innerHTML = `<img src="${url}" style="width:100%;display:block;" alt="Thumbnail">`;
+        const upcoming = state.schedules.slice(0, 3);
+        dom.upcomingSchedulesList.innerHTML = upcoming.map(s => `
+            <div class="compact-video-row">
+                <div class="compact-video-thumb">
+                    <svg data-lucide="calendar" width="18" height="18" style="color:var(--primary);"></svg>
+                </div>
+                <div class="compact-video-info">
+                    <div class="compact-video-title">${escapeHtml(s.title || 'Scheduled Upload')}</div>
+                    <div class="compact-video-meta">
+                        <span style="color:var(--primary); font-weight:600;">${formatDate(s.scheduled_at)}</span>
+                    </div>
+                </div>
+                <div class="compact-video-actions">
+                    <button class="btn btn-outline btn-sm btn-cancel-schedule" data-id="${s.id}" style="padding:4px 8px; color:var(--error); border-color:rgba(239,68,68,0.3);" title="Cancel schedule">
+                        <svg data-lucide="x" width="13" height="13"></svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
     }
 
-    async function loadThumbVideoSelect() {
-        try {
-            const data = await fetch('/download/list').then(r => r.json());
-            const videos = (data.input || []).filter(f => /\.(mp4|mov|avi|webm|mkv)$/i.test(f));
-            const select = document.getElementById('ytThumbVideoSelect');
-            select.innerHTML = '<option value="">Select video...</option>' + videos.map(v => `<option value="${v}">${v}</option>`).join('');
-        } catch (e) {
-            console.error('Failed to load videos for thumbnail:', e);
+    function renderOverviewChannel() {
+        if (state.connected && state.channel) {
+            dom.overviewChannelAvatar.innerHTML = state.channel.avatar
+                ? `<img src="${state.channel.avatar}" style="width:100%;height:100%;object-fit:cover;">`
+                : '<svg data-lucide="user" width="22" height="22"></svg>';
+            dom.overviewChannelName.textContent = state.channel.title || 'YouTube Channel';
+            dom.overviewChannelDetails.textContent = `${state.channel.subscribers || '0'} Subscribers • ${state.channel.video_count || '0'} Videos`;
+            dom.btnConnectShortcut.textContent = 'Manage';
+        } else {
+            dom.overviewChannelAvatar.innerHTML = '<svg data-lucide="youtube" width="24" height="24"></svg>';
+            dom.overviewChannelName.textContent = 'Channel Not Connected';
+            dom.overviewChannelDetails.textContent = 'Connect your YouTube account to publish directly.';
+            dom.btnConnectShortcut.textContent = 'Connect';
         }
     }
 
-    document.getElementById('ytCaptureFrameBtn').addEventListener('click', async () => {
-        const video = document.getElementById('ytThumbVideoSelect').value;
-        if (!video) { showToast('Select a video first.', 'error'); return; }
-        try {
-            const data = await api('/youtube/thumbnail/capture', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: video }),
-            });
-            if (data.success) {
-                renderThumbPreview(data.url);
-                showToast('Frame captured.', 'success');
-            }
-        } catch (e) {
-            showToast('Capture failed: ' + e.message, 'error');
-        }
-    });
+    // =========================================================================
+    // 6. Multi-Step Upload Wizard Logic (Sections 9 & 10)
+    // =========================================================================
+    function setWizardStep(step) {
+        state.wizard.step = step;
 
-    // ---------- Playlists ----------
-    async function loadPlaylists() {
-        try {
-            const data = await api('/youtube/playlists');
-            state.playlists = data.playlists || [];
-            const select = document.getElementById('ytPlaylist');
-            if (state.playlists.length) {
-                select.innerHTML = '<option value="">None</option>' + state.playlists.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+        // Update Stepper Pill Nodes
+        dom.wizardStepNodes.forEach(node => {
+            const nodeStep = parseInt(node.dataset.step, 10);
+            node.classList.toggle('active', nodeStep === step);
+            node.classList.toggle('completed', nodeStep < step);
+            const circle = node.querySelector('.wizard-step-circle');
+            if (nodeStep < step) {
+                circle.innerHTML = '✓';
             } else {
-                select.innerHTML = '<option value="">None</option>';
+                circle.textContent = nodeStep;
             }
-        } catch (e) {
-            console.error('Failed to load playlists:', e);
+        });
+
+        // Update Panes
+        dom.wizardPanes.forEach(pane => {
+            pane.classList.toggle('active', pane.id === `wizard-step-${step}`);
+        });
+
+        // Update Bottom Nav Buttons
+        dom.btnWizardBack.disabled = (step === 1);
+        if (step === 6) {
+            dom.btnWizardNext.innerHTML = state.wizard.timingMode === 'schedule'
+                ? '<svg data-lucide="calendar-check" width="14" height="14"></svg><span>Schedule Release</span>'
+                : '<svg data-lucide="upload-cloud" width="14" height="14"></svg><span>Publish to YouTube</span>';
+        } else {
+            dom.btnWizardNext.innerHTML = '<span>Continue</span><svg data-lucide="arrow-right" width="14" height="14"></svg>';
+        }
+
+        // Validate current step to enable/disable Next button
+        validateCurrentStep();
+
+        // Step-specific initializations
+        if (step === 3 && state.playlists.length === 0) {
+            loadPlaylistsDropdown();
+        }
+        if (step === 6) {
+            populateReviewSummary();
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    function validateCurrentStep() {
+        let isValid = false;
+        switch (state.wizard.step) {
+            case 1:
+                isValid = !!state.wizard.videoId;
+                break;
+            case 2:
+                isValid = !!state.wizard.title.trim();
+                break;
+            case 3:
+                isValid = true; // Metadata is optional
+                break;
+            case 4:
+                isValid = state.wizard.timingMode === 'now' || (!!state.wizard.scheduleDate && !!state.wizard.scheduleTime);
+                break;
+            case 5:
+                isValid = true; // Thumbnail has fallback
+                break;
+            case 6:
+                isValid = true;
+                break;
+        }
+        dom.btnWizardNext.disabled = !isValid;
+    }
+
+    function resetWizard() {
+        state.wizard = {
+            step: 1,
+            maxSteps: 6,
+            file: null,
+            videoId: null,
+            filename: '',
+            videoUrl: '',
+            duration: 0,
+            resolution: '',
+            size: '',
+            title: '',
+            description: '',
+            tags: [],
+            categoryId: '22',
+            playlistId: '',
+            language: 'en',
+            visibility: 'public',
+            timingMode: 'now',
+            scheduleDate: '',
+            scheduleTime: '',
+            scheduleTimezone: 'Asia/Kolkata',
+            thumbnailUrl: '',
+            customThumbnailFile: null,
+        };
+
+        dom.uploadDropzone.style.display = 'flex';
+        dom.selectedVideoCard.style.display = 'none';
+        dom.inputVideoTitle.value = '';
+        dom.inputVideoDescription.value = '';
+        dom.tagInputBox.querySelectorAll('.tag-chip').forEach(c => c.remove());
+        dom.titleCharCounter.textContent = '0/100';
+        dom.descCharCounter.textContent = '0/5000';
+        dom.wizardFooter.style.display = 'flex';
+        dom.wizardProgressState.style.display = 'none';
+
+        // Reset default dates
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        dom.inputScheduleDate.value = tomorrow.toISOString().split('T')[0];
+        dom.inputScheduleTime.value = '19:00';
+
+        setWizardStep(1);
+    }
+
+    // Step 1: File selection & upload to /youtube/import
+    dom.btnBrowseVideo.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dom.videoFileInput.click();
+    });
+
+    dom.uploadDropzone.addEventListener('click', () => dom.videoFileInput.click());
+
+    dom.uploadDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dom.uploadDropzone.classList.add('dragover');
+    });
+
+    dom.uploadDropzone.addEventListener('dragleave', () => {
+        dom.uploadDropzone.classList.remove('dragover');
+    });
+
+    dom.uploadDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dom.uploadDropzone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleVideoFileSelection(e.dataTransfer.files[0]);
+        }
+    });
+
+    dom.videoFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            handleVideoFileSelection(e.target.files[0]);
+        }
+    });
+
+    dom.btnChangeVideo.addEventListener('click', () => {
+        dom.uploadDropzone.style.display = 'flex';
+        dom.selectedVideoCard.style.display = 'none';
+        state.wizard.videoId = null;
+        validateCurrentStep();
+    });
+
+    async function handleVideoFileSelection(file) {
+        state.wizard.file = file;
+        state.wizard.filename = file.name;
+        state.wizard.size = formatBytes(file.size);
+
+        // Immediate local video preview
+        const objUrl = URL.createObjectURL(file);
+        dom.videoElementPreview.src = objUrl;
+        dom.selectedVideoFilename.textContent = file.name;
+        dom.selectedVideoSize.textContent = state.wizard.size;
+
+        dom.uploadDropzone.style.display = 'none';
+        dom.selectedVideoCard.style.display = 'flex';
+
+        // Auto-fill initial title
+        const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+        state.wizard.title = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+        dom.inputVideoTitle.value = state.wizard.title;
+        dom.titleCharCounter.textContent = `${state.wizard.title.length}/100`;
+
+        showToast('Uploading video to workspace...', 'info');
+
+        try {
+            const formData = new FormData();
+            formData.append('video', file);
+
+            const res = await fetch('/youtube/import', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Failed to import video');
+            }
+
+            state.wizard.videoId = data.video_id;
+            state.wizard.thumbnailUrl = data.thumbnail || '';
+            state.wizard.duration = data.metadata ? data.metadata.duration : 0;
+            state.wizard.resolution = data.metadata ? `${data.metadata.width}x${data.metadata.height}` : 'HD';
+
+            dom.selectedVideoDuration.textContent = formatDuration(state.wizard.duration);
+            dom.selectedVideoResolution.textContent = state.wizard.resolution;
+
+            if (state.wizard.thumbnailUrl) {
+                dom.wizardThumbnailPreview.src = state.wizard.thumbnailUrl;
+                dom.wizardThumbnailPreview.style.display = 'block';
+                dom.wizardThumbnailPlaceholder.style.display = 'none';
+                dom.reviewThumbnailImg.src = state.wizard.thumbnailUrl;
+            }
+
+            showToast('Video ready for configuration', 'success');
+            validateCurrentStep();
+        } catch (err) {
+            showToast(err.message, 'error');
+            dom.uploadDropzone.style.display = 'flex';
+            dom.selectedVideoCard.style.display = 'none';
         }
     }
 
-    document.getElementById('ytRefreshPlaylists').addEventListener('click', loadPlaylists);
+    // Step 1: Project Library Picker Modal
+    dom.btnPickLibrary.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dom.libraryPickerModal.classList.add('active');
+        dom.libraryVideosList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Loading workspace media...</div>';
 
-    // ---------- Upload Queue ----------
+        try {
+            const res = await fetch('/download/downloaded');
+            const data = await res.json();
+            const files = data.files || [];
+
+            if (files.length === 0) {
+                dom.libraryVideosList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">No videos found in your input library.</div>';
+                return;
+            }
+
+            dom.libraryVideosList.innerHTML = files.map(f => `
+                <div class="compact-video-row" style="cursor:pointer;" data-filename="${escapeHtml(f.name)}">
+                    <div class="compact-video-thumb">
+                        <svg data-lucide="file-video" width="20" height="20"></svg>
+                    </div>
+                    <div class="compact-video-info">
+                        <div class="compact-video-title">${escapeHtml(f.name)}</div>
+                        <div class="compact-video-meta">
+                            <span>${f.size}</span>
+                            <span>•</span>
+                            <span>${f.modified}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" style="pointer-events:none;">Select</button>
+                </div>
+            `).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+
+            dom.libraryVideosList.querySelectorAll('.compact-video-row').forEach(row => {
+                row.addEventListener('click', async () => {
+                    const filename = row.dataset.filename;
+                    dom.libraryPickerModal.classList.remove('active');
+                    await importExistingLibraryVideo(filename);
+                });
+            });
+        } catch (err) {
+            dom.libraryVideosList.innerHTML = `<div style="color:var(--error); padding:10px;">Failed to load library: ${err.message}</div>`;
+        }
+    });
+
+    dom.btnLibraryCancel.addEventListener('click', () => dom.libraryPickerModal.classList.remove('active'));
+    dom.btnLibraryClose.addEventListener('click', () => dom.libraryPickerModal.classList.remove('active'));
+
+    async function importExistingLibraryVideo(filename) {
+        showToast('Linking library video...', 'info');
+        try {
+            const res = await fetch('/youtube/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Failed to select video');
+            }
+
+            state.wizard.videoId = data.video_id;
+            state.wizard.filename = filename;
+            state.wizard.thumbnailUrl = data.thumbnail || '';
+            state.wizard.duration = data.metadata ? data.metadata.duration : 0;
+            state.wizard.resolution = data.metadata ? `${data.metadata.width}x${data.metadata.height}` : 'HD';
+            state.wizard.size = formatBytes(data.metadata ? data.metadata.file_size : 0);
+
+            dom.selectedVideoFilename.textContent = filename;
+            dom.selectedVideoSize.textContent = state.wizard.size;
+            dom.selectedVideoDuration.textContent = formatDuration(state.wizard.duration);
+            dom.selectedVideoResolution.textContent = state.wizard.resolution;
+
+            dom.videoElementPreview.src = `/download/input/${filename}`;
+            dom.uploadDropzone.style.display = 'none';
+            dom.selectedVideoCard.style.display = 'flex';
+
+            const cleanName = filename.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+            state.wizard.title = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+            dom.inputVideoTitle.value = state.wizard.title;
+            dom.titleCharCounter.textContent = `${state.wizard.title.length}/100`;
+
+            if (state.wizard.thumbnailUrl) {
+                dom.wizardThumbnailPreview.src = state.wizard.thumbnailUrl;
+                dom.wizardThumbnailPreview.style.display = 'block';
+                dom.wizardThumbnailPlaceholder.style.display = 'none';
+                dom.reviewThumbnailImg.src = state.wizard.thumbnailUrl;
+            }
+
+            showToast('Video linked successfully', 'success');
+            validateCurrentStep();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+
+    // Step 2: Details & Char Counters
+    dom.inputVideoTitle.addEventListener('input', (e) => {
+        state.wizard.title = e.target.value;
+        dom.titleCharCounter.textContent = `${e.target.value.length}/100`;
+        validateCurrentStep();
+    });
+
+    dom.inputVideoDescription.addEventListener('input', (e) => {
+        state.wizard.description = e.target.value;
+        dom.descCharCounter.textContent = `${e.target.value.length}/5000`;
+    });
+
+    // Step 3: Tags Chip Input
+    dom.tagInputField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const tag = dom.tagInputField.value.trim().replace(/^#/, '');
+            if (tag && !state.wizard.tags.includes(tag)) {
+                addTagChip(tag);
+                dom.tagInputField.value = '';
+            }
+        } else if (e.key === 'Backspace' && !dom.tagInputField.value && state.wizard.tags.length > 0) {
+            removeTagChip(state.wizard.tags[state.wizard.tags.length - 1]);
+        }
+    });
+
+    function addTagChip(tag) {
+        state.wizard.tags.push(tag);
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.dataset.tag = tag;
+        chip.innerHTML = `${escapeHtml(tag)} <span class="tag-chip-remove">&times;</span>`;
+        chip.querySelector('.tag-chip-remove').addEventListener('click', () => removeTagChip(tag));
+        dom.tagInputBox.insertBefore(chip, dom.tagInputField);
+    }
+
+    function removeTagChip(tag) {
+        state.wizard.tags = state.wizard.tags.filter(t => t !== tag);
+        const chip = dom.tagInputBox.querySelector(`.tag-chip[data-tag="${tag}"]`);
+        if (chip) chip.remove();
+    }
+
+    dom.selectCategory.addEventListener('change', (e) => {
+        state.wizard.categoryId = e.target.value;
+    });
+
+    dom.selectPlaylist.addEventListener('change', (e) => {
+        state.wizard.playlistId = e.target.value;
+    });
+
+    dom.selectLanguage.addEventListener('change', (e) => {
+        state.wizard.language = e.target.value;
+    });
+
+    async function loadPlaylistsDropdown() {
+        try {
+            const res = await fetch('/youtube/playlists');
+            const data = await res.json();
+            state.playlists = data.playlists || [];
+            dom.selectPlaylist.innerHTML = '<option value="">None (Don\'t add to playlist)</option>' +
+                state.playlists.map(p => `<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');
+        } catch (err) {
+            console.warn('Could not load playlists:', err);
+        }
+    }
+
+    // Step 4: Publish Settings
+    dom.radioVisibility.forEach(rad => {
+        rad.addEventListener('change', (e) => {
+            state.wizard.visibility = e.target.value;
+            dom.radioVisibility.forEach(r => r.closest('.radio-card').classList.toggle('active', r.checked));
+        });
+    });
+
+    dom.radioTimingMode.forEach(rad => {
+        rad.addEventListener('change', (e) => {
+            state.wizard.timingMode = e.target.value;
+            dom.radioTimingMode.forEach(r => r.closest('.radio-card').classList.toggle('active', r.checked));
+            dom.scheduleFieldsWrapper.style.display = e.target.value === 'schedule' ? 'block' : 'none';
+            validateCurrentStep();
+        });
+    });
+
+    dom.inputScheduleDate.addEventListener('change', (e) => {
+        state.wizard.scheduleDate = e.target.value;
+        validateCurrentStep();
+    });
+
+    dom.inputScheduleTime.addEventListener('change', (e) => {
+        state.wizard.scheduleTime = e.target.value;
+        validateCurrentStep();
+    });
+
+    dom.selectScheduleTimezone.addEventListener('change', (e) => {
+        state.wizard.scheduleTimezone = e.target.value;
+    });
+
+    // Step 5: Thumbnail Customization
+    dom.btnUploadThumbFile.addEventListener('click', () => dom.customThumbFileInput.click());
+
+    dom.customThumbFileInput.addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            state.wizard.customThumbnailFile = file;
+            const thumbUrl = URL.createObjectURL(file);
+            dom.wizardThumbnailPreview.src = thumbUrl;
+            dom.wizardThumbnailPreview.style.display = 'block';
+            dom.wizardThumbnailPlaceholder.style.display = 'none';
+            dom.btnResetThumbnail.style.display = 'inline-block';
+            dom.reviewThumbnailImg.src = thumbUrl;
+
+            // Upload thumbnail to server
+            if (state.wizard.videoId) {
+                const fd = new FormData();
+                fd.append('video_id', state.wizard.videoId);
+                fd.append('thumbnail', file);
+                try {
+                    await fetch('/youtube/thumbnail/upload', { method: 'POST', body: fd });
+                    showToast('Thumbnail applied', 'success');
+                } catch (err) {
+                    console.warn('Custom thumb upload deferred:', err);
+                }
+            }
+        }
+    });
+
+    dom.btnCaptureVideoFrame.addEventListener('click', async () => {
+        if (!state.wizard.videoId) return;
+        showToast('Capturing video frame...', 'info');
+        try {
+            const res = await fetch('/youtube/thumbnail/capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    video_id: state.wizard.videoId,
+                    filename: state.wizard.filename,
+                    timestamp: Math.min(2.0, state.wizard.duration || 1.0)
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.thumbnail_url) {
+                state.wizard.thumbnailUrl = data.thumbnail_url;
+                dom.wizardThumbnailPreview.src = data.thumbnail_url;
+                dom.wizardThumbnailPreview.style.display = 'block';
+                dom.wizardThumbnailPlaceholder.style.display = 'none';
+                dom.btnResetThumbnail.style.display = 'inline-block';
+                dom.reviewThumbnailImg.src = data.thumbnail_url;
+                showToast('Frame captured as thumbnail', 'success');
+            } else {
+                throw new Error(data.error || 'Frame capture failed');
+            }
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    dom.btnResetThumbnail.addEventListener('click', () => {
+        state.wizard.customThumbnailFile = null;
+        if (state.wizard.thumbnailUrl) {
+            dom.wizardThumbnailPreview.src = state.wizard.thumbnailUrl;
+            dom.reviewThumbnailImg.src = state.wizard.thumbnailUrl;
+        } else {
+            dom.wizardThumbnailPreview.style.display = 'none';
+            dom.wizardThumbnailPlaceholder.style.display = 'block';
+        }
+        dom.btnResetThumbnail.style.display = 'none';
+    });
+
+    // Step 6: Review Summary
+    function populateReviewSummary() {
+        dom.reviewTitle.textContent = state.wizard.title || 'Untitled Video';
+        dom.reviewDescription.textContent = state.wizard.description || 'No description provided.';
+        dom.reviewVisibility.textContent = state.wizard.visibility;
+        dom.reviewTagsCount.textContent = `${state.wizard.tags.length} tags`;
+
+        const catText = dom.selectCategory.options[dom.selectCategory.selectedIndex].text;
+        dom.reviewCategory.textContent = catText;
+
+        if (state.wizard.timingMode === 'schedule') {
+            dom.reviewTiming.textContent = `Scheduled: ${state.wizard.scheduleDate} at ${state.wizard.scheduleTime} (${state.wizard.scheduleTimezone})`;
+        } else {
+            dom.reviewTiming.textContent = 'Publish Immediately';
+        }
+    }
+
+    // Wizard Stepper Back / Next Buttons
+    dom.btnWizardBack.addEventListener('click', () => {
+        if (state.wizard.step > 1) {
+            setWizardStep(state.wizard.step - 1);
+        }
+    });
+
+    dom.btnWizardNext.addEventListener('click', async () => {
+        if (state.wizard.step < 6) {
+            setWizardStep(state.wizard.step + 1);
+        } else {
+            // Step 6: Trigger final publish or schedule
+            await executeFinalPublish();
+        }
+    });
+
+    async function executeFinalPublish() {
+        const confirmed = await showConfirm(
+            state.wizard.timingMode === 'schedule' ? 'Confirm Schedule' : 'Confirm Publish',
+            `Are you ready to ${state.wizard.timingMode === 'schedule' ? 'schedule' : 'publish'} "${state.wizard.title}" to YouTube?`
+        );
+        if (!confirmed) return;
+
+        // Hide wizard panes and footer, display progress state
+        dom.wizardPanes.forEach(p => p.classList.remove('active'));
+        dom.wizardProgressState.style.display = 'block';
+        dom.wizardFooter.style.display = 'none';
+        dom.uploadProgressBarFill.style.width = '20%';
+        dom.uploadPercentText.textContent = '20%';
+        dom.uploadSpeedText.textContent = 'Saving metadata...';
+
+        try {
+            // 1. Update Video Metadata
+            await fetch(`/youtube/videos/${state.wizard.videoId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: state.wizard.title,
+                    description: state.wizard.description,
+                    tags: state.wizard.tags,
+                    category_id: state.wizard.categoryId,
+                    visibility: state.wizard.visibility,
+                })
+            });
+
+            dom.uploadProgressBarFill.style.width = '50%';
+            dom.uploadPercentText.textContent = '50%';
+
+            if (state.wizard.timingMode === 'schedule') {
+                // Schedule Mode
+                dom.uploadSpeedText.textContent = 'Registering automated schedule...';
+                const schedTimestamp = Math.floor(new Date(`${state.wizard.scheduleDate}T${state.wizard.scheduleTime}`).getTime() / 1000);
+
+                const res = await fetch('/youtube/schedules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        video_id: state.wizard.videoId,
+                        scheduled_at: schedTimestamp,
+                        timezone: state.wizard.scheduleTimezone,
+                        title: state.wizard.title,
+                        description: state.wizard.description
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed to schedule');
+
+                dom.uploadProgressBarFill.style.width = '100%';
+                dom.uploadPercentText.textContent = '100%';
+                dom.uploadStatusIcon.innerHTML = '<svg data-lucide="calendar-check" width="32" height="32"></svg>';
+                dom.uploadStatusTitle.textContent = 'Upload Scheduled Successfully!';
+                dom.uploadStatusMessage.textContent = `Your video is queued to release on ${state.wizard.scheduleDate} at ${state.wizard.scheduleTime}.`;
+                dom.uploadActionButtons.style.display = 'flex';
+                showToast('Release scheduled!', 'success');
+            } else {
+                // Publish Now Mode
+                dom.uploadSpeedText.textContent = 'Uploading to YouTube channels...';
+
+                const res = await fetch('/youtube/upload/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_id: state.wizard.videoId })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed to publish video');
+
+                dom.uploadProgressBarFill.style.width = '100%';
+                dom.uploadPercentText.textContent = '100%';
+                dom.uploadStatusIcon.innerHTML = '<svg data-lucide="check-circle" width="32" height="32" style="color:var(--primary);"></svg>';
+                dom.uploadStatusTitle.textContent = 'Video Published Successfully!';
+                dom.uploadStatusMessage.textContent = 'Your video is now live on your YouTube channel.';
+                dom.uploadActionButtons.style.display = 'flex';
+                showToast('Video published to YouTube!', 'success');
+            }
+
+            if (window.lucide) window.lucide.createIcons();
+        } catch (err) {
+            dom.uploadProgressBarFill.style.background = 'var(--error)';
+            dom.uploadStatusIcon.innerHTML = '<svg data-lucide="alert-circle" width="32" height="32" style="color:var(--error);"></svg>';
+            dom.uploadStatusTitle.textContent = 'Upload Encountered an Issue';
+            dom.uploadStatusMessage.textContent = err.message || 'Could not complete YouTube publish.';
+            dom.uploadProgressBarContainer.style.display = 'none';
+            dom.uploadActionButtons.style.display = 'flex';
+            dom.uploadActionButtons.innerHTML = `
+                <button class="btn btn-secondary btn-sm" id="btnEditSettings">Edit Settings</button>
+                <button class="btn btn-primary btn-sm" id="btnRetryPublish">Retry</button>
+            `;
+            document.getElementById('btnEditSettings').addEventListener('click', () => {
+                dom.wizardProgressState.style.display = 'none';
+                dom.wizardFooter.style.display = 'flex';
+                setWizardStep(4);
+            });
+            document.getElementById('btnRetryPublish').addEventListener('click', () => executeFinalPublish());
+            if (window.lucide) window.lucide.createIcons();
+            showToast(err.message, 'error');
+        }
+    }
+
+    dom.btnUploadAnother.addEventListener('click', () => resetWizard());
+
+    // =========================================================================
+    // 7. Dedicated Pages: Queue, Scheduled, History, Connection
+    // =========================================================================
     async function loadQueue() {
+        dom.queueItemsList.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted);">Loading active queue...</div>';
         try {
-            const data = await api('/youtube/upload-queue');
+            const res = await fetch('/youtube/upload-queue');
+            const data = await res.json();
             state.queue = data.items || [];
-            const container = document.getElementById('ytQueueList');
-            if (!state.queue.length) {
-                container.innerHTML = `<div class="yt-empty"><div class="yt-empty-icon">📭</div><h3>Queue empty</h3><p>Add videos to the queue to start uploading.</p></div>`;
+            dom.queueBadgeCount.textContent = state.queue.length;
+
+            if (state.queue.length === 0) {
+                dom.queueItemsList.innerHTML = `
+                    <div class="compact-empty-state">
+                        <svg data-lucide="layers" width="32" height="32"></svg>
+                        <h4>Queue is Empty</h4>
+                        <p>No videos are currently queued or uploading.</p>
+                        <button class="btn btn-primary btn-sm" data-nav="upload">Add Video to Queue</button>
+                    </div>`;
                 return;
             }
-            container.innerHTML = '<div class="yt-table-wrap"><table class="yt-table"><thead><tr><th>Title</th><th>Status</th><th>Progress</th><th>Error</th><th>Actions</th></tr></thead><tbody>' +
-                state.queue.map(q => `
-                    <tr>
-                        <td>${q.title || 'Untitled'}</td>
-                        <td><span class="yt-badge ${q.status}">${q.status}</span></td>
-                        <td>${q.progress || 0}%</td>
-                        <td>${q.error_message || '-'}</td>
-                        <td>
-                            ${q.status === 'failed' ? `<button class="btn-sm" data-action="retry" data-id="${q.id}">Retry</button>` : ''}
-                            <button class="btn-sm danger" data-action="remove" data-id="${q.id}">Remove</button>
-                        </td>
-                    </tr>
-                `).join('') + '</tbody></table></div>';
 
-            container.querySelectorAll('[data-action="retry"]').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    try {
-                        await api(`/youtube/upload-queue/${btn.dataset.id}/retry`, { method: 'POST' });
-                        showToast('Retrying...', 'info');
-                        loadQueue();
-                    } catch (e) {
-                        showToast('Retry failed: ' + e.message, 'error');
-                    }
-                });
-            });
-            container.querySelectorAll('[data-action="remove"]').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const ok = await showConfirm('Remove from Queue', 'Remove this item from the queue?');
-                    if (!ok) return;
-                    try {
-                        await api(`/youtube/upload-queue/${btn.dataset.id}`, { method: 'DELETE' });
-                        showToast('Item removed from queue.', 'success');
-                        loadQueue();
-                    } catch (e) {
-                        showToast('Remove failed: ' + e.message, 'error');
-                    }
-                });
-            });
-        } catch (e) {
-            console.error('Queue load failed:', e);
+            renderQueueList(state.queue);
+        } catch (err) {
+            dom.queueItemsList.innerHTML = `<div style="color:var(--error); padding:20px;">Failed to load queue: ${err.message}</div>`;
         }
     }
 
-    // ---------- History ----------
+    function renderQueueList(items) {
+        dom.queueItemsList.innerHTML = items.map(q => `
+            <div class="desk-card" style="margin-bottom:12px; padding:16px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                    <div style="font-weight:700; font-size:14px; color:var(--text-primary);">${escapeHtml(q.title || 'Untitled Upload')}</div>
+                    <span class="status-pill ${q.status === 'completed' ? 'connected' : q.status === 'failed' ? 'disconnected' : ''}">${q.status}</span>
+                </div>
+                <div style="height:6px; border-radius:3px; background:var(--surface-1); overflow:hidden; margin-bottom:8px;">
+                    <div style="height:100%; width:${q.progress || (q.status === 'completed' ? 100 : 35)}%; background:var(--primary);"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted);">
+                    <span>Visibility: ${escapeHtml(q.visibility || 'public')}</span>
+                    <button class="btn btn-outline btn-sm btn-delete-queue" data-id="${q.id}" style="padding:2px 6px; font-size:11px; color:var(--error); border-color:rgba(239,68,68,0.3);">Cancel</button>
+                </div>
+            </div>
+        `).join('');
+
+        dom.queueItemsList.querySelectorAll('.btn-delete-queue').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await showConfirm('Cancel Upload', 'Are you sure you want to remove this item from the upload queue?');
+                if (confirmed) {
+                    await fetch(`/youtube/upload-queue/${btn.dataset.id}`, { method: 'DELETE' });
+                    showToast('Item removed from queue', 'info');
+                    loadQueue();
+                }
+            });
+        });
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function loadScheduled() {
+        dom.scheduledItemsList.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted);">Loading scheduled uploads...</div>';
+        try {
+            const res = await fetch('/youtube/schedules');
+            const data = await res.json();
+            state.schedules = data.schedules || [];
+            dom.scheduledBadgeCount.textContent = state.schedules.length;
+
+            if (state.schedules.length === 0) {
+                dom.scheduledItemsList.innerHTML = `
+                    <div class="compact-empty-state">
+                        <svg data-lucide="calendar-x" width="32" height="32"></svg>
+                        <h4>No Scheduled Releases</h4>
+                        <p>Plan your video releases in advance to automate your YouTube publishing workflow.</p>
+                        <button class="btn btn-primary btn-sm" data-nav="upload" data-mode="schedule">Schedule a Video</button>
+                    </div>`;
+                return;
+            }
+
+            dom.scheduledItemsList.innerHTML = state.schedules.map(s => `
+                <div class="compact-video-row" style="padding:14px; margin-bottom:10px;">
+                    <div class="compact-video-thumb" style="width:84px; height:48px;">
+                        <svg data-lucide="calendar" width="22" height="22" style="color:var(--primary);"></svg>
+                    </div>
+                    <div class="compact-video-info">
+                        <div class="compact-video-title" style="font-size:14px;">${escapeHtml(s.title || 'Scheduled Video')}</div>
+                        <div class="compact-video-meta">
+                            <span style="color:var(--primary); font-weight:700;">${formatDate(s.scheduled_at)} (${escapeHtml(s.timezone || 'UTC')})</span>
+                        </div>
+                    </div>
+                    <div class="compact-video-actions">
+                        <button class="btn btn-outline btn-sm btn-cancel-schedule" data-id="${s.id}" style="color:var(--error); border-color:rgba(239,68,68,0.3);">Cancel</button>
+                    </div>
+                </div>
+            `).join('');
+
+            dom.scheduledItemsList.querySelectorAll('.btn-cancel-schedule').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const confirmed = await showConfirm('Cancel Schedule', 'Are you sure you want to cancel this scheduled release?');
+                    if (confirmed) {
+                        await fetch(`/youtube/schedules/${btn.dataset.id}`, { method: 'DELETE' });
+                        showToast('Schedule cancelled', 'info');
+                        loadScheduled();
+                    }
+                });
+            });
+
+            if (window.lucide) window.lucide.createIcons();
+        } catch (err) {
+            dom.scheduledItemsList.innerHTML = `<div style="color:var(--error); padding:20px;">Failed to load schedules: ${err.message}</div>`;
+        }
+    }
+
     async function loadHistory() {
+        dom.historyTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--text-muted);">Loading publishing history...</td></tr>';
         try {
-            const query = (document.getElementById('ytHistorySearch')?.value || '').toLowerCase();
-            const url = query ? `/youtube/history/search?q=${encodeURIComponent(query)}` : '/youtube/history';
-            const data = await api(url);
+            const res = await fetch('/youtube/history');
+            const data = await res.json();
             state.history = data.history || [];
-            const container = document.getElementById('ytHistoryList');
-            const items = state.history.filter(h => (h.title || '').toLowerCase().includes(query));
-            if (!items.length) {
-                container.innerHTML = `<div class="yt-empty"><div class="yt-empty-icon">📭</div><h3>No history</h3><p>Your published videos will appear here.</p></div>`;
+
+            if (state.history.length === 0) {
+                dom.historyTableBody.innerHTML = `
+                    <tr><td colspan="7">
+                        <div class="compact-empty-state">
+                            <svg data-lucide="file-text" width="32" height="32"></svg>
+                            <h4>No Upload History Found</h4>
+                            <p>Published and scheduled video uploads will be recorded here.</p>
+                        </div>
+                    </td></tr>`;
                 return;
             }
-            container.innerHTML = '<div class="yt-table-wrap"><table class="yt-table"><thead><tr><th>Title</th><th>Status</th><th>Visibility</th><th>Published</th><th>Actions</th></tr></thead><tbody>' +
-                items.map(h => `
-                    <tr>
-                        <td>${h.title || 'Untitled'}</td>
-                        <td><span class="yt-badge ${h.status}">${h.status}</span></td>
-                        <td>${h.visibility || '-'}</td>
-                        <td>${formatDate(h.published_at)}</td>
-                        <td>
-                            ${h.youtube_video_id ? `<a href="https://www.youtube.com/watch?v=${h.youtube_video_id}" target="_blank" class="btn-sm">Open</a>` : ''}
-                        </td>
-                    </tr>
-                `).join('') + '</tbody></table></div>';
-        } catch (e) {
-            console.error('History load failed:', e);
+
+            renderHistoryTable(state.history);
+        } catch (err) {
+            dom.historyTableBody.innerHTML = `<tr><td colspan="7" style="color:var(--error); padding:20px;">Failed to load history: ${err.message}</td></tr>`;
         }
     }
 
-    document.getElementById('ytHistorySearch').addEventListener('input', loadHistory);
+    function renderHistoryTable(items) {
+        dom.historyTableBody.innerHTML = items.map(h => `
+            <tr>
+                <td>
+                    <div style="width:60px; height:34px; border-radius:4px; overflow:hidden; background:#000;">
+                        ${h.thumbnail ? `<img src="${h.thumbnail}" style="width:100%;height:100%;object-fit:cover;">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;"><svg data-lucide="video" width="14" height="14" style="color:var(--text-muted);"></svg></div>'}
+                    </div>
+                </td>
+                <td style="font-weight:600; color:var(--text-primary); max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${escapeHtml(h.title || 'Untitled Video')}
+                </td>
+                <td>
+                    <span class="status-pill connected" style="padding:2px 8px; font-size:10px;">${escapeHtml(h.status || 'published')}</span>
+                </td>
+                <td style="text-transform:capitalize;">${escapeHtml(h.visibility || 'public')}</td>
+                <td>${formatDate(h.published_at || h.created_at)}</td>
+                <td>${h.view_count || 0}</td>
+                <td style="text-align:right;">
+                    ${h.youtube_video_id ? `<a href="https://youtu.be/${h.youtube_video_id}" target="_blank" class="btn btn-secondary btn-sm" style="padding:4px 8px;" title="Watch on YouTube"><svg data-lucide="external-link" width="12" height="12"></svg></a>` : '-'}
+                </td>
+            </tr>
+        `).join('');
 
-    // ---------- Errors ----------
-    async function loadErrors() {
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function loadConnection() {
         try {
-            const data = await api('/youtube/errors');
-            state.errors = data.errors || [];
-            const container = document.getElementById('ytErrorsList');
-            if (!state.errors.length) {
-                container.innerHTML = `<div class="yt-empty"><div class="yt-empty-icon">✅</div><h3>No errors</h3><p>All uploads processed successfully.</p></div>`;
-                return;
-            }
-            container.innerHTML = '<div class="yt-table-wrap"><table class="yt-table"><thead><tr><th>Time</th><th>Error</th><th>Message</th><th>Actions</th></tr></thead><tbody>' +
-                state.errors.map(e => `
-                    <tr>
-                        <td>${formatDate(e.created_at)}</td>
-                        <td>${e.error_type || 'Unknown'}</td>
-                        <td>${e.error_message || '-'}</td>
-                        <td><button class="btn-sm" data-id="${e.id}" data-action="retry">Retry</button></td>
-                    </tr>
-                `).join('') + '</tbody></table></div>';
+            const res = await fetch('/youtube/status');
+            const data = await res.json();
+            state.connected = data.connected;
+            state.channel = data.channel;
 
-            container.querySelectorAll('[data-action="retry"]').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    try {
-                        await api(`/youtube/upload-queue/${btn.dataset.id}/retry`, { method: 'POST' });
-                        showToast('Retrying...', 'info');
-                        loadErrors();
-                    } catch (e) {
-                        showToast('Retry failed: ' + e.message, 'error');
-                    }
-                });
-            });
-        } catch (e) {
-            console.error('Errors load failed:', e);
+            updateConnectionUI();
+
+            if (state.connected && state.channel) {
+                dom.connectionActiveCard.style.display = 'block';
+                dom.connectionInactiveCard.style.display = 'none';
+
+                dom.channelTitle.textContent = state.channel.title || 'Connected YouTube Channel';
+                dom.channelHandle.textContent = state.channel.handle || '';
+                dom.channelSubscribers.textContent = `${state.channel.subscribers || '0'} Subscribers`;
+                dom.channelVideoCount.textContent = `${state.channel.video_count || '0'} Uploaded Videos`;
+
+                if (state.channel.avatar) {
+                    dom.channelAvatar.src = state.channel.avatar;
+                } else {
+                    dom.channelAvatar.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="%23888" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                }
+            } else {
+                dom.connectionActiveCard.style.display = 'none';
+                dom.connectionInactiveCard.style.display = 'block';
+            }
+
+            if (window.lucide) window.lucide.createIcons();
+        } catch (err) {
+            console.error('Failed to load connection status:', err);
         }
     }
 
-    // ---------- Settings ----------
+    dom.btnRefreshConnection.addEventListener('click', async () => {
+        showToast('Refreshing connection...', 'info');
+        await loadConnection();
+        showToast('Connection status updated', 'success');
+    });
+
+    dom.btnDisconnectChannel.addEventListener('click', async () => {
+        const confirmed = await showConfirm('Disconnect Channel', 'Are you sure you want to disconnect this YouTube channel from UpClip Studio?');
+        if (confirmed) {
+            try {
+                await fetch('/youtube/disconnect', { method: 'POST' });
+                showToast('Channel disconnected', 'info');
+                await loadConnection();
+                await loadOverview();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    });
+
     async function loadSettings() {
         try {
-            const data = await api('/youtube/settings');
+            const res = await fetch('/youtube/settings');
+            const data = await res.json();
             if (data.settings) {
-                state.settings = data.settings;
-                const visEl = document.getElementById('ytSetVisibility');
-                const catEl = document.getElementById('ytSetCategory');
-                const langEl = document.getElementById('ytSetLanguage');
-                if (visEl && data.settings.default_visibility) visEl.value = data.settings.default_visibility;
-                if (catEl && data.settings.default_category) catEl.value = data.settings.default_category;
-                if (langEl && data.settings.default_language) langEl.value = data.settings.default_language;
+                if (data.settings.default_visibility) dom.settingDefaultVisibility.value = data.settings.default_visibility;
+                if (data.settings.default_category) dom.settingDefaultCategory.value = data.settings.default_category;
+                if (data.settings.default_tags) dom.settingDefaultTags.value = data.settings.default_tags;
             }
-        } catch (e) {
-            console.error('Settings load failed:', e);
+        } catch (err) {
+            console.warn('Could not load settings:', err);
         }
     }
 
-    const saveSettingsBtn = document.getElementById('ytSaveSettingsBtn');
-    if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', async () => {
-            try {
-                const payload = {
-                    default_visibility: document.getElementById('ytSetVisibility').value,
-                    default_category: document.getElementById('ytSetCategory').value,
-                    default_language: document.getElementById('ytSetLanguage') ? document.getElementById('ytSetLanguage').value : '',
-                };
-                await api('/youtube/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                showToast('Settings saved.', 'success');
-            } catch (e) {
-                showToast('Save failed: ' + e.message, 'error');
-            }
-        });
-    }
-
-    const clearDataBtn = document.getElementById('ytClearDataBtn');
-    if (clearDataBtn) {
-        clearDataBtn.addEventListener('click', async () => {
-            const ok = await showConfirm('Clear Data', 'This will delete all local YouTube automation data. Continue?');
-            if (!ok) return;
-            try {
-                await api('/youtube/data/clear', { method: 'POST' });
-                showToast('Local data cleared.', 'success');
-            } catch (e) {
-                showToast('Clear failed: ' + e.message, 'error');
-            }
-        });
-    }
-
-    const exportDataBtn = document.getElementById('ytExportDataBtn');
-    if (exportDataBtn) {
-        exportDataBtn.addEventListener('click', async () => {
-            try {
-                const data = await api('/youtube/data/export');
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'youtube-desk-export.json';
-                a.click();
-                URL.revokeObjectURL(url);
-                showToast('Data exported.', 'success');
-            } catch (e) {
-                showToast('Export failed: ' + e.message, 'error');
-            }
-        });
-    }
-
-    // ---------- Polling ----------
-    function startPolling() {
-        if (state.pollInterval) clearInterval(state.pollInterval);
-        state.pollInterval = setInterval(async () => {
-            if (state.currentView === 'queue') loadQueue();
-            if (state.currentView === 'desk') {
-                const dash = document.getElementById('view-desk');
-                if (!dash.hidden) loadDashboard();
-            }
-        }, 5000);
-    }
-
-    // ---------- Init ----------
-    showView('desk');
-    loadDashboard();
-    loadConnectStatus();
-    loadExistingFiles();
-    loadPlaylists();
-    loadThumbVideoSelect();
-    startPolling();
-
-    // Handle file query param (from Clip Cutter "Send to YouTube")
-    const urlParams = new URLSearchParams(window.location.search);
-    const ytFile = urlParams.get('file');
-    if (ytFile) {
-        setTimeout(async () => {
-            try {
-                const data = await api('/youtube/import', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: ytFile }),
-                });
-                if (data.success) {
-                    data.source = 'clip_cutter';
-                    setActiveVideo(data);
-                    showToast(`Clip "${ytFile}" loaded from library.`, 'success');
-                }
-            } catch (e) {
-                showToast('Could not load clip: ' + e.message, 'error');
-            }
-        }, 300);
-    }
-
-    // Handle OAuth callback message
-    window.addEventListener('message', (event) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data && event.data.type === 'youtube-oauth-callback') {
-            loadConnectStatus();
-            showToast('YouTube connection updated.', 'success');
+    dom.deskSettingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await fetch('/youtube/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    default_visibility: dom.settingDefaultVisibility.value,
+                    default_category: dom.settingDefaultCategory.value,
+                    default_tags: dom.settingDefaultTags.value,
+                })
+            });
+            showToast('Settings saved successfully', 'success');
+        } catch (err) {
+            showToast('Failed to save settings', 'error');
         }
     });
+
+    // Quick action buttons
+    dom.btnQuickUpload.addEventListener('click', () => switchView('upload'));
+    dom.btnQuickSchedule.addEventListener('click', () => {
+        switchView('upload');
+        state.wizard.timingMode = 'schedule';
+        const rad = document.querySelector('input[name="publishingMode"][value="schedule"]');
+        if (rad) {
+            rad.checked = true;
+            rad.dispatchEvent(new Event('change'));
+        }
+    });
+    dom.btnQuickQueue.addEventListener('click', () => switchView('queue'));
+    dom.btnQuickHistory.addEventListener('click', () => switchView('history'));
+    dom.btnQuickConnect.addEventListener('click', () => switchView('connection'));
+
+    // =========================================================================
+    // 8. Initialization
+    // =========================================================================
+    function init() {
+        // Initial view activation
+        switchView(state.currentView, false);
+
+        // Fetch initial overview
+        loadOverview();
+
+        // Background polling for queue if items are in flight (every 10s)
+        setInterval(() => {
+            if (state.currentView === 'overview' || state.currentView === 'queue') {
+                const hasInFlight = state.queue.some(q => q.status === 'uploading' || q.status === 'processing');
+                if (hasInFlight) {
+                    if (state.currentView === 'overview') loadOverview();
+                    if (state.currentView === 'queue') loadQueue();
+                }
+            }
+        }, 10000);
+    }
+
+    init();
 
 })();

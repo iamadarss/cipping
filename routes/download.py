@@ -12,6 +12,9 @@ from datetime import datetime
 import config
 from pathlib import Path
 
+import threading
+import time
+import uuid
 from flask import Blueprint, send_from_directory, send_file, jsonify, request
 
 try:
@@ -239,6 +242,163 @@ def _format_size(size_bytes):
     return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
 
 
+_active_downloads = {}
+_downloads_lock = threading.Lock()
+
+
+def _format_duration(seconds):
+    """Format duration in H:MM:SS or M:SS."""
+    if not seconds:
+        return "0:00"
+    seconds = int(seconds)
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    if h > 0:
+        return f"{h}:{m:02d}:{s:02d}"
+    return f"{m}:{s:02d}"
+
+
+def _format_views(count):
+    """Format view count with K/M abbreviation."""
+    if not count:
+        return "0 views"
+    if count >= 1_000_000:
+        return f"{count / 1_000_000:.1f}M views"
+    if count >= 1_000:
+        return f"{count / 1_000:.1f}K views"
+    return f"{count:,} views"
+
+
+@download_bp.route("/analyze", methods=["POST"])
+def analyze_youtube_url():
+    """Analyze a YouTube URL to retrieve metadata, available formats, and playlist info."""
+    payload = request.get_json(silent=True) or {}
+    url = payload.get("url", "").strip()
+
+    if not _is_valid_youtube_url(url):
+        return jsonify({"success": False, "error": "Please enter a valid YouTube URL."}), 400
+
+    if yt_dlp is None:
+        return jsonify({"success": False, "error": "YouTube downloader engine is not available."}), 500
+
+    try:
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "extract_flat": "in_playlist",
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        if not info:
+            return jsonify({"success": False, "error": "Could not extract video metadata from URL."}), 400
+
+        is_playlist = "entries" in info
+        title = info.get("title") or "YouTube Video"
+        channel = info.get("uploader") or info.get("channel") or "YouTube Creator"
+        duration = info.get("duration") or 0
+        duration_str = _format_duration(duration)
+        view_count = info.get("view_count") or 0
+        view_count_str = _format_views(view_count)
+        thumbnail = info.get("thumbnail") or ""
+
+        # Calculate estimated sizes based on duration
+        dur_mins = max(1, duration // 60)
+        formats = [
+            {"id": "1080p", "label": "1080p Full HD", "ext": "MP4", "size": f"~{dur_mins * 22} MB", "type": "video", "recommended": True},
+            {"id": "720p", "label": "720p HD", "ext": "MP4", "size": f"~{dur_mins * 12} MB", "type": "video"},
+            {"id": "480p", "label": "480p SD", "ext": "MP4", "size": f"~{dur_mins * 7} MB", "type": "video"},
+            {"id": "360p", "label": "360p", "ext": "MP4", "size": f"~{dur_mins * 4} MB", "type": "video"},
+            {"id": "mp3", "label": "MP3 Audio (192k)", "ext": "MP3", "size": f"~{max(1, dur_mins * 1.5):.1f} MB", "type": "audio"},
+            {"id": "m4a", "label": "M4A AAC (256k)", "ext": "M4A", "size": f"~{max(1, dur_mins * 1.8):.1f} MB", "type": "audio"},
+            {"id": "wav", "label": "WAV Lossless", "ext": "WAV", "size": f"~{dur_mins * 10} MB", "type": "audio"},
+        ]
+
+        playlist_entries = []
+        if is_playlist:
+            for i, entry in enumerate(info.get("entries", [])[:50], 1):
+                if entry:
+                    playlist_entries.append({
+                        "index": i,
+                        "id": entry.get("id"),
+                        "title": entry.get("title", f"Video {i}"),
+                        "duration": entry.get("duration") or 0,
+                        "duration_str": _format_duration(entry.get("duration") or 0),
+                        "url": entry.get("url") or f"https://www.youtube.com/watch?v={entry.get('id')}",
+                    })
+
+        return jsonify({
+            "success": True,
+            "is_playlist": is_playlist,
+            "title": title,
+            "channel": channel,
+            "duration": duration,
+            "duration_str": duration_str,
+            "view_count": view_count,
+            "view_count_str": view_count_str,
+            "thumbnail": thumbnail,
+            "formats": formats,
+            "playlist_entries": playlist_entries,
+            "video_count": len(playlist_entries) if is_playlist else 1,
+        })
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"Failed to analyze URL: {str(exc)}"}), 400
+
+
+def _execute_download(task_id, ydl_opts, url, fmt, quality):
+    """Background download worker with progress updates."""
+    with _downloads_lock:
+        if task_id not in _active_downloads:
+            return
+        _active_downloads[task_id]["status"] = "downloading"
+
+    def progress_hook(d):
+        with _downloads_lock:
+            if task_id not in _active_downloads:
+                return
+            t = _active_downloads[task_id]
+            if t.get("cancelled"):
+                raise Exception("Download cancelled by user")
+            status = d.get("status")
+            if status == "downloading":
+                total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+                downloaded = d.get("downloaded_bytes") or 0
+                speed = d.get("speed") or 0
+                eta = d.get("eta") or 0
+                if total > 0:
+                    t["percent"] = round((downloaded / total) * 100, 1)
+                    t["downloaded_str"] = _format_size(downloaded)
+                    t["total_str"] = _format_size(total)
+                else:
+                    t["downloaded_str"] = _format_size(downloaded)
+                if speed > 0:
+                    t["speed_str"] = f"{_format_size(speed)}/s"
+                if eta:
+                    t["eta_str"] = f"{int(eta // 60):02d}:{int(eta % 60):02d}"
+
+    ydl_opts["progress_hooks"] = [progress_hook]
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+        title = (info or {}).get("title", "youtube_video")
+        match = _find_downloaded_file(config.INPUT_DIR, title)
+        with _downloads_lock:
+            t = _active_downloads[task_id]
+            t["status"] = "completed"
+            t["percent"] = 100.0
+            if match:
+                t["filename"] = match.name
+                t["path"] = f"/download/input/{match.name}"
+                t["size_str"] = _format_size(match.stat().st_size)
+    except Exception as exc:
+        with _downloads_lock:
+            t = _active_downloads[task_id]
+            t["status"] = "cancelled" if "cancelled by user" in str(exc).lower() else "error"
+            t["error"] = str(exc)
+
+
 @download_bp.route("/youtube", methods=["POST"])
 def download_youtube_video():
     """Download a YouTube video to the input folder for later processing."""
@@ -248,6 +408,8 @@ def download_youtube_video():
     quality = payload.get("quality", "best")  # "best", "1080p", "720p", "480p", "360p"
     audio_format = payload.get("audio_format", "mp3")  # mp3, m4a, wav, flac
     limit = payload.get("limit")  # max videos for batch downloads
+    is_async = payload.get("async", True)
+    title_hint = payload.get("title", "YouTube Video")
 
     if not _is_valid_youtube_url(url):
         return jsonify({"success": False, "error": "Please provide a valid YouTube URL."}), 400
@@ -271,7 +433,6 @@ def download_youtube_video():
         }]
         merge_format = None
     else:
-        # Video format based on quality - prefer combined MP4 to avoid merge issues
         quality_map = {
             "best": "best[ext=mp4]/best[height<=1080]/best[height<=720]/best[height<=480]/best[height<=360]/best",
             "1080p": "best[height<=1080]/best[height<=720]/best[height<=480]/best[height<=360]/best",
@@ -296,29 +457,96 @@ def download_youtube_video():
         "format_sort_force": True,
     }
 
-    # Handle playlist/batch downloads
     if limit:
         ydl_opts["noplaylist"] = False
         ydl_opts["playlist_items"] = f"1-{limit}"
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-        title = (info or {}).get("title", "youtube_video")
-        match = _find_downloaded_file(config.INPUT_DIR, title)
-        if not match:
-            return jsonify({"success": False, "error": "Download completed but no file was created."}), 500
+    task_id = str(uuid.uuid4())[:8]
+    task_info = {
+        "id": task_id,
+        "url": url,
+        "title": title_hint,
+        "format": fmt,
+        "quality": quality,
+        "status": "queued",
+        "percent": 0.0,
+        "speed_str": "0 KB/s",
+        "eta_str": "--:--",
+        "downloaded_str": "0 B",
+        "total_str": "--",
+        "filename": None,
+        "path": None,
+        "error": None,
+        "created_at": time.time(),
+    }
+
+    with _downloads_lock:
+        _active_downloads[task_id] = task_info
+
+    if is_async:
+        # Run in background thread
+        thread = threading.Thread(
+            target=_execute_download,
+            args=(task_id, ydl_opts, url, fmt, quality),
+            daemon=True,
+        )
+        thread.start()
+        return jsonify({
+            "success": True,
+            "task_id": task_id,
+            "message": "Download task queued.",
+            "title": title_hint,
+        })
+
+    # Synchronous execution fallback for legacy callers
+    _execute_download(task_id, ydl_opts, url, fmt, quality)
+    final_task = _active_downloads.get(task_id, {})
+    if final_task.get("status") == "completed":
         return jsonify({
             "success": True,
             "message": "Download completed successfully.",
-            "filename": match.name,
-            "path": f"/download/input/{match.name}",
-            "size": _format_size(match.stat().st_size),
+            "filename": final_task.get("filename"),
+            "path": final_task.get("path"),
+            "size": final_task.get("size_str", "Unknown"),
             "format": fmt,
             "quality": quality,
         })
-    except Exception as exc:
-        return jsonify({"success": False, "error": f"Download failed: {exc}"}), 500
+    else:
+        return jsonify({"success": False, "error": final_task.get("error", "Download failed.")}), 500
+
+
+@download_bp.route("/progress/<string:task_id>", methods=["GET"])
+def get_download_progress(task_id):
+    """Poll progress for an active download task."""
+    with _downloads_lock:
+        task = _active_downloads.get(task_id)
+        if not task:
+            return jsonify({"success": False, "error": "Task not found"}), 404
+        return jsonify({"success": True, "task": task})
+
+
+@download_bp.route("/queue", methods=["GET"])
+def get_download_queue():
+    """Get all active and recent download tasks."""
+    with _downloads_lock:
+        # Return recent tasks sorted by creation time
+        tasks = sorted(
+            _active_downloads.values(),
+            key=lambda x: x.get("created_at", 0),
+            reverse=True,
+        )
+        return jsonify({"success": True, "queue": tasks[:20]})
+
+
+@download_bp.route("/cancel/<string:task_id>", methods=["POST"])
+def cancel_download(task_id):
+    """Cancel an active download task."""
+    with _downloads_lock:
+        if task_id in _active_downloads:
+            _active_downloads[task_id]["cancelled"] = True
+            _active_downloads[task_id]["status"] = "cancelled"
+            return jsonify({"success": True, "message": "Download cancelled."})
+        return jsonify({"success": False, "error": "Task not found."}), 404
 
 
 @download_bp.route("/list")

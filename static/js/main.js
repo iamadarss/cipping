@@ -15,11 +15,19 @@ var ICONS = {
     sliders: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
 };
 
-// ---------- Theme Toggle ----------
+// ---------- Theme & Palette Toggle ----------
 const themeToggle = document.getElementById('themeToggle');
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    if (themeToggle) themeToggle.innerHTML = theme === 'dark' ? ICONS.moon : ICONS.sun;
+    if (themeToggle) {
+        if (theme === 'dark') {
+            themeToggle.innerHTML = '<span class="palette-indicator" style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:12px; background:#292929; border:1px solid #3E3E3E;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981;"></span><span style="font-size:11px; font-weight:700; color:#FFF7E8; letter-spacing:0.3px;">Emerald Graphite</span></span>';
+            themeToggle.title = 'Switch to Royal Blue + Ice White Theme';
+        } else {
+            themeToggle.innerHTML = '<span class="palette-indicator" style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:12px; background:#F8FAFC; border:1px solid #CBD5E1;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#2563EB; box-shadow:0 0 8px #2563EB;"></span><span style="font-size:11px; font-weight:700; color:#0F172A; letter-spacing:0.3px;">Royal Ice Silver</span></span>';
+            themeToggle.title = 'Switch to Emerald + Cream Theme';
+        }
+    }
 }
 function initTheme() {
     const saved = localStorage.getItem('theme') || 'dark';
@@ -131,7 +139,7 @@ function setStepState(step, className) {
     }
 }
 function resetSteps() {
-    for (let i = 1; i <= 9; i++) setStepState(i, '');
+    for (let i = 1; i <= 8; i++) setStepState(i, '');
 }
 
 // ---------- Wizard Navigation ----------
@@ -468,9 +476,8 @@ function startPolling(jobId) {
 function updateProgressUI(data) {
     const percent = Math.round((data.steps_completed / data.total_steps) * 100);
     pipelineFill.style.width = `${percent}%`;
-    pipelinePercent.textContent = `${percent}%`;
-
-    for (let i = 1; i <= 9; i++) {
+    const maxSteps = data.total_steps || 8;
+    for (let i = 1; i <= maxSteps; i++) {
         if (data.status === 'error') {
             setStepState(i, i === data.steps_completed ? 'error' : (i < data.steps_completed ? 'done' : ''));
         } else if (i < data.steps_completed) {

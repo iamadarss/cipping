@@ -21,6 +21,7 @@ def studio_hub():
 
 
 @home_bp.route("/yt-downloader")
+@home_bp.route("/downloader")
 def youtube_downloader():
     """Dedicated YouTube downloader page."""
     return render_template("yt_downloader.html")
@@ -79,6 +80,9 @@ def guide():
 
 
 @home_bp.route("/youtube-desk")
-def youtube_desk():
-    """YouTube Automation Desk page."""
-    return render_template("youtube_desk.html")
+@home_bp.route("/youtube-desk/<string:section>")
+def youtube_desk(section="overview"):
+    """YouTube Automation Desk page with sub-section support."""
+    valid_sections = {"overview", "upload", "queue", "scheduled", "history", "connection", "settings"}
+    active_section = section if section in valid_sections else "overview"
+    return render_template("youtube_desk.html", active_section=active_section)

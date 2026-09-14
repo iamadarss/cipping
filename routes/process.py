@@ -36,7 +36,7 @@ class PipelineJob:
         self.status = "queued"          # queued | running | done | error
         self.step = ""
         self.steps_completed = 0
-        self.total_steps = 9
+        self.total_steps = 8
         self.logs = []
         self.error = None
         self.result = None
@@ -235,22 +235,17 @@ def run_pipeline_job(job):
 
         thumb = config.THUMBNAIL_DIR / f"{Path(job.filename).stem}_thumb.jpg"
         loader.thumbnail(thumb)
+        loader.close()
         job.add_log(f"Thumbnail saved: {thumb.name}")
 
-        # 3. Frame extraction
-        job.set_step(3, "Extracting frames")
-        total_frames = loader.extract_frames(config.FRAMES_DIR)
-        loader.close()
-        job.add_log(f"Frames extracted: {total_frames}")
-
-        # 4. Scene detection
-        job.set_step(4, "Detecting scenes")
+        # 3. Scene detection
+        job.set_step(3, "Detecting scenes")
         detector = SceneDetector(video)
         scenes = detector.detect_scenes(threshold=config.SCENE_THRESHOLD)
         job.add_log(f"Original scenes: {len(scenes)}")
 
-        # 5. Merge scenes
-        job.set_step(5, "Merging scenes")
+        # 4. Merge scenes
+        job.set_step(4, "Merging scenes")
         merger = SceneMerger()
         merged_scenes = merger.merge(scenes)
         job.add_log(f"Merged clips: {len(merged_scenes)}")
@@ -270,8 +265,8 @@ def run_pipeline_job(job):
                 )
                 clip_count = available
 
-        # 6. Generate clips
-        job.set_step(6, "Generating clips")
+        # 5. Generate clips
+        job.set_step(5, "Generating clips")
         generator = ClipGenerator(video)
         # Clear old clips first
         for old in config.CLIPS_DIR.glob("*.mp4"):
@@ -353,8 +348,8 @@ def run_pipeline_job(job):
             for name in clip_files
         ]
 
-        # 7. Whisper transcription (with caching for speed)
-        job.set_step(7, "Transcribing with Whisper")
+        # 6. Whisper transcription (with caching for speed)
+        job.set_step(6, "Transcribing with Whisper")
         whisper = WhisperEngine(config.WHISPER_MODEL)
 
         # Language: auto or specific
@@ -369,8 +364,8 @@ def run_pipeline_job(job):
         )
         job.add_log(f"Transcript: {len(transcript)} segments")
 
-        # 8. Subtitle generation (with optional translation)
-        job.set_step(8, "Generating subtitles")
+        # 7. Subtitle generation (with optional translation)
+        job.set_step(7, "Generating subtitles")
         subtitle = SubtitleBuilder()
         stem = Path(job.filename).stem
 
@@ -391,7 +386,8 @@ def run_pipeline_job(job):
             {"filename": vtt_file.name, "media_type": "vtt", "url": f"/download/subtitle/{vtt_file.name}"},
         ]
 
-        # 9. Apply animated captions directly into each generated clip
+        # 8. Apply animated captions & render final clips
+        job.set_step(8, "Rendering final clips")
         captioned_clips = []
         if caption_enabled:
             job.add_log("Rendering animated captions into each clip...")

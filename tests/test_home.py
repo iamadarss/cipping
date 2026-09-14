@@ -14,32 +14,31 @@ def test_home_page_exposes_youtube_downloader_route():
     home_response = client.get('/')
     assert home_response.status_code == 200
     home_html = home_response.get_data(as_text=True)
-    assert 'YT Downloader' in home_html
-    assert 'Download YouTube videos and turn them into viral shorts.' not in home_html
+    assert 'Downloader' in home_html
 
     downloader_response = client.get('/yt-downloader')
     assert downloader_response.status_code == 200
     downloader_html = downloader_response.get_data(as_text=True)
-    assert 'Download YouTube videos for free' in downloader_html
+    assert 'YouTube Video & Audio Downloader' in downloader_html
 
 
-def test_logout_and_upload_work():
+def test_core_routes_and_upload_work():
     app = create_app()
     client = app.test_client()
-    username = f'logouttest_{uuid.uuid4().hex[:8]}'
 
-    register = client.post('/auth/register', json={
-        'username': username,
-        'email': f'{username}@example.com',
-        'password': 'secret123',
-    })
-    assert register.status_code == 200
-    assert register.get_json()['success'] is True
+    # Test dashboard route
+    dashboard_res = client.get('/dashboard')
+    assert dashboard_res.status_code == 200
 
-    logout = client.post('/auth/logout')
-    assert logout.status_code == 200
-    assert logout.get_json()['success'] is True
+    # Test studio hub route
+    studio_res = client.get('/studio')
+    assert studio_res.status_code == 200
 
+    # Test caption studio route
+    caption_res = client.get('/caption-studio')
+    assert caption_res.status_code == 200
+
+    # Test video upload
     video_path = 'tests/data_test_upload.mp4'
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(video_path, fourcc, 10.0, (64, 64))

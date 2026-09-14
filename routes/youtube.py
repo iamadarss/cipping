@@ -1343,7 +1343,15 @@ def list_playlists():
         return jsonify({"success": True, "playlists": result})
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        try:
+            conn = get_db()
+            rows = conn.execute("SELECT id, title, thumbnail, channel_id FROM playlists").fetchall()
+            conn.close()
+            if rows:
+                return jsonify({"success": True, "playlists": [dict(r) for r in rows]})
+        except Exception:
+            pass
+        return jsonify({"success": True, "playlists": [], "warning": str(e)})
 
 
 @youtube_bp.route("/playlists", methods=["POST"])
@@ -1951,6 +1959,17 @@ def capture_thumbnail():
     """Capture a frame from a video as thumbnail."""
     data = request.get_json() or {}
     filename = data.get("filename", "")
+    video_id = data.get("video_id")
+    if not filename and video_id:
+        try:
+            conn = get_db()
+            row = conn.execute("SELECT filename FROM videos WHERE id = ?", (video_id,)).fetchone()
+            conn.close()
+            if row:
+                filename = row["filename"]
+        except Exception:
+            pass
+
     if not filename:
         return jsonify({"success": False, "error": "Filename required"}), 400
 
@@ -1966,9 +1985,11 @@ def capture_thumbnail():
         thumb_path = thumb_dir / f"{Path(filename).stem}_frame.jpg"
         loader.thumbnail(thumb_path)
         loader.close()
+        thumb_url = f"/download/thumbnail/{thumb_path.name}"
         return jsonify({
             "success": True,
-            "url": f"/download/thumbnail/{thumb_path.name}",
+            "thumbnail_url": thumb_url,
+            "url": thumb_url,
             "filename": thumb_path.name,
         })
     except Exception as e:

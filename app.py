@@ -22,24 +22,24 @@ def _ensure_environment():
     except OSError:
         pass
 
-    # Project .venv exists → relaunch with it
-    if venv_python.is_file():
+    # Project .venv exists and running directly → relaunch with it
+    if __name__ == "__main__" and venv_python.is_file():
         print(f"Using project interpreter: {venv_python}")
-
-        os.execv(
-            str(venv_python),
-            [
-                str(venv_python),
-                str(Path(__file__).resolve()),
-                *sys.argv[1:],
-            ],
-        )
-        # exec replaces the process; the following code is not reached
-        return
+        try:
+            ret = subprocess.call(
+                [
+                    str(venv_python),
+                    str(Path(__file__).resolve()),
+                    *sys.argv[1:],
+                ]
+            )
+            sys.exit(ret)
+        except KeyboardInterrupt:
+            sys.exit(0)
 
     # .venv not found; continue with current interpreter
-    print("[Warning] .venv not found; running with current Python interpreter.")
-    # Continue without exiting
+    if __name__ == "__main__" and not venv_python.is_file():
+        print("[Warning] .venv not found; running with current Python interpreter.")
 
 
 _ensure_environment()
@@ -126,26 +126,9 @@ def main():
     thumb = config.THUMBNAIL_DIR / "thumbnail.jpg"
 
     loader.thumbnail(thumb)
+    loader.close()
 
     print("✅ Thumbnail Saved")
-
-    print()
-
-    # ---------------------------------
-    # Frame Extraction
-    # ---------------------------------
-
-    print("=" * 60)
-    print("Extracting Frames")
-    print("=" * 60)
-
-    total_frames = loader.extract_frames(
-        config.FRAMES_DIR
-    )
-
-    print(f"✅ Frames Extracted : {total_frames}")
-
-    loader.close()
 
     print()
 
@@ -311,7 +294,9 @@ def create_app():
     app.config["SECRET_KEY"] = config.SECRET_KEY
     app.config["SESSION_COOKIE_HTTPONLY"] = config.SESSION_COOKIE_HTTPONLY
     app.config["SESSION_COOKIE_SAMESITE"] = config.SESSION_COOKIE_SAMESITE
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{config.DATA_DIR / 'app.db'}"
+    config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    db_path = (config.DATA_DIR / "app.db").resolve().as_posix()
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     # Path to media root for MediaManager and thumbnail endpoint
     app.config["MEDIA_ROOT"] = str(config.MEDIA_ROOT)

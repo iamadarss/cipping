@@ -1,6 +1,7 @@
 import sys, io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.path.insert(0, r'C:\Users\LENOVO\Desktop\New folder\UpClipStudio')
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config
 from utils.scene_detector import SceneDetector
 from utils.scene_merger import SceneMerger

@@ -1187,19 +1187,6 @@ def get_media_thumbnail(filename):
     return send_from_directory(THUMBNAILS_DIR, filename)
 
 
-@editor_bp.route("/api/editor/media/relink", methods=["POST"])
-def relink_media_asset():
-    """Relink a missing asset reference to a replacement file path."""
-    data = request.get_json(silent=True) or {}
-    old_filename = data.get("oldFilename", "")
-    new_path_str = data.get("newPath", "")
-
-    if not old_filename or not new_path_str:
-        return jsonify({ "success": False, "error": "oldFilename and newPath required" }), 400
-
-    from core.media_manager import media_manager
-    success, msg = media_manager.relink_asset(old_filename, new_path_str)
-    return jsonify({ "success": success, "message": msg })
 
 
 @editor_bp.route("/api/editor/media/stats", methods=["GET"])

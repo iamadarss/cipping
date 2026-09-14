@@ -26,7 +26,14 @@ input/*.mov
 input/*.mkv
 
 # Downloaded AI model weights
-models/
+*.pt
+*.bin
+*.onnx
+weights/
+
+# Node modules
+node_modules/
+caption_studio/node_modules/
 
 # Assets large binaries
 assets/intro/

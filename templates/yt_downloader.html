@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YT Downloader | UpClip Studio</title>
+    <title>YouTube Downloader | UpClip Studio</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/creator_desk.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -72,7 +73,7 @@
                         <div class="sidebar-icon"><svg data-lucide="download" width="18" height="18"></svg></div>
                         <span class="sidebar-label">Downloader</span>
                     </a>
-                    <a href="/youtube-desk" class="sidebar-item" data-tooltip="YouTube Automation">
+                    <a href="/youtube-desk" class="sidebar-item" data-tooltip="YouTube Desk">
                         <div class="sidebar-icon"><svg data-lucide="tv" width="18" height="18"></svg></div>
                         <span class="sidebar-label">YouTube Desk</span>
                     </a>
@@ -94,528 +95,348 @@
 
             <!-- Main Workspace Container -->
             <main class="app-workspace">
-                <div class="workspace-content">
-                    <div style="margin-bottom: var(--space-2);">
-                        <h1 style="font-family: var(--font-heading); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">YouTube Video & Audio Downloader</h1>
-                        <p style="color: var(--text-secondary); font-size: 13px;">Download videos, audio, or playlists directly into your <code>input/</code> library for AI clipping.</p>
+                <div class="workspace-content" style="max-width: 1200px; margin: 0 auto; width: 100%;">
+                    <!-- Header -->
+                    <div class="desk-header">
+                        <div class="desk-header-title">
+                            <h1>
+                                <svg data-lucide="download" width="28" height="28" style="color:var(--primary);"></svg>
+                                <span>YouTube Video & Audio Downloader</span>
+                            </h1>
+                            <p>Download videos, audio, and playlists directly into your UpClip Studio library for AI clipping.</p>
+                        </div>
+                        <div class="desk-header-actions">
+                            <button class="btn btn-secondary btn-sm" id="btnOpenInputFolder" title="Open local input folder">
+                                <svg data-lucide="folder-open" width="15" height="15"></svg>
+                                <span>Open Folder</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Download Form Card -->
-                    <div class="card yt-download-card">
-                        <h2 class="card-title"><svg data-lucide="download" width="18" height="18" style="color:var(--primary);"></svg> Download from YouTube</h2>
+                    <!-- Downloader Sub-Nav Tabs -->
+                    <div class="desk-nav-bar" id="dlNavBar">
+                        <button class="desk-nav-tab active" data-tab="download">
+                            <svg data-lucide="download-cloud" width="15" height="15"></svg>
+                            <span>Download Source</span>
+                        </button>
+                        <button class="desk-nav-tab" data-tab="queue">
+                            <svg data-lucide="layers" width="15" height="15"></svg>
+                            <span>Download Queue</span>
+                            <span class="tab-badge" id="dlQueueBadge">0</span>
+                        </button>
+                        <button class="desk-nav-tab" data-tab="library">
+                            <svg data-lucide="folder" width="15" height="15"></svg>
+                            <span>Downloaded Media Library</span>
+                            <span class="tab-badge" id="dlLibraryBadge">0</span>
+                        </button>
+                    </div>
 
-                        <!-- Tab Navigation -->
-                        <div class="yt-tabs yt-download-tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                            <button class="btn btn-secondary btn-sm yt-tab active" data-tab="video-download"><svg data-lucide="clapperboard" width="14" height="14"></svg> Video Download</button>
-                            <button class="btn btn-secondary btn-sm yt-tab" data-tab="audio-download"><svg data-lucide="music" width="14" height="14"></svg> Audio Download</button>
-                            <button class="btn btn-secondary btn-sm yt-tab" data-tab="batch-download"><svg data-lucide="list-video" width="14" height="14"></svg> Batch / Playlist</button>
+                    <!-- ========================================================
+                         TAB 1: DOWNLOAD SOURCE
+                         ======================================================== -->
+                    <div class="dl-tab-pane active" id="tab-download">
+                        <!-- Main Download Card (Section 17) -->
+                        <div class="dl-hero-card">
+                            <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0 0 4px; display:flex; align-items:center; gap:8px;">
+                                <svg data-lucide="link-2" width="18" height="18" style="color:var(--primary);"></svg>
+                                <span>Paste YouTube URL</span>
+                            </h3>
+                            <p style="font-size:12px; color:var(--text-secondary); margin:0 0 12px;">Supports videos, YouTube Shorts, and playlist links.</p>
+
+                            <div class="dl-input-wrapper">
+                                <input type="url" id="inputYoutubeUrl" placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..." autocomplete="off">
+                                <button type="button" class="btn btn-secondary" id="btnPasteUrl" title="Paste from clipboard">
+                                    <svg data-lucide="clipboard" width="15" height="15"></svg>
+                                    <span>Paste</span>
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btnAnalyzeUrl" disabled>
+                                    <svg data-lucide="search" width="15" height="15"></svg>
+                                    <span>Analyze</span>
+                                </button>
+                            </div>
+
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div id="urlValidationStatus" style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:4px;">
+                                    <span>Enter a valid YouTube URL to inspect available formats.</span>
+                                </div>
+                                <div style="display:flex; gap:8px; font-size:11px; color:var(--text-muted);">
+                                    <span>✓ Video (1080p, 720p)</span>
+                                    <span>•</span>
+                                    <span>✓ Audio (MP3, M4A)</span>
+                                    <span>•</span>
+                                    <span>✓ Batch Playlists</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Video Download Form -->
-                        <form id="ytDownloaderForm" class="yt-form yt-tab-panel" data-tab-panel="video-download">
-                            <div class="form-group">
-                                <label for="ytUrl">YouTube Video URL</label>
-                                <input type="url" id="ytUrl" placeholder="https://youtube.com/watch?v=..." required>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="downloadQuality">Quality</label>
-                                    <select id="downloadQuality">
-                                        <option value="best" selected>Best Available</option>
-                                        <option value="1080p">1080p Full HD</option>
-                                        <option value="720p">720p HD</option>
-                                        <option value="480p">480p SD</option>
-                                        <option value="360p">360p</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="downloadFormatPreset">Format</label>
-                                    <select id="downloadFormatPreset">
-                                        <option value="mp4" selected>MP4</option>
-                                        <option value="webm">WebM</option>
-                                        <option value="mkv">MKV</option>
-                                    </select>
+                        <!-- Skeleton Loader during URL analysis -->
+                        <div class="desk-card" id="analysisSkeleton" style="display:none; padding:24px; margin-bottom:var(--space-6);">
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div style="width:200px; height:112px; border-radius:var(--radius-sm); background:var(--surface-1); animation:pulse 1.5s infinite;"></div>
+                                <div style="flex:1;">
+                                    <div style="height:20px; width:60%; background:var(--surface-1); border-radius:4px; margin-bottom:10px; animation:pulse 1.5s infinite;"></div>
+                                    <div style="height:14px; width:40%; background:var(--surface-1); border-radius:4px; margin-bottom:8px; animation:pulse 1.5s infinite;"></div>
+                                    <div style="height:12px; width:30%; background:var(--surface-1); border-radius:4px; animation:pulse 1.5s infinite;"></div>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block" id="downloadBtn" style="margin-top: 8px;">
-                                <svg data-lucide="download" width="14" height="14"></svg> Download Video
-                            </button>
-                            <div class="yt-download-progress" id="downloadProgress" hidden style="margin-top: 12px;">
-                                <div class="progress-bar"><div class="progress-fill" id="downloadProgressFill"></div></div>
-                                <p id="downloadProgressText" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Downloading...</p>
-                            </div>
-                            <p class="download-note" id="downloadNote" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Paste a valid link to begin downloading.</p>
-                        </form>
+                        </div>
 
-                        <!-- Audio Download Form -->
-                        <form id="ytAudioDownloaderForm" class="yt-form yt-tab-panel" data-tab-panel="audio-download" hidden>
-                            <div class="form-group">
-                                <label for="ytAudioUrl">YouTube URL</label>
-                                <input type="url" id="ytAudioUrl" placeholder="https://youtube.com/watch?v=..." required>
+                        <!-- URL Analysis Result Card (Sections 18 & 19) -->
+                        <div class="analysis-result-card" id="analysisResultCard" style="display:none; margin-bottom:var(--space-6);">
+                            <!-- Thumbnail Column -->
+                            <div class="analysis-thumb-col">
+                                <img id="analysisThumbImg" src="" alt="Thumbnail">
+                                <div class="analysis-duration-badge" id="analysisDurationBadge">0:00</div>
                             </div>
-                            <div class="form-group">
-                                <label for="audioFormat">Audio Format</label>
-                                <select id="audioFormat">
-                                    <option value="mp3" selected>MP3 (192 kbps)</option>
-                                    <option value="m4a">M4A (256 kbps)</option>
-                                    <option value="wav">WAV (Lossless)</option>
-                                    <option value="flac">FLAC (Lossless)</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-block" id="downloadAudioBtn" style="margin-top: 8px;">
-                                <svg data-lucide="music" width="14" height="14"></svg> Extract Audio
-                            </button>
-                            <div class="yt-download-progress" id="downloadAudioProgress" hidden style="margin-top: 12px;">
-                                <div class="progress-bar"><div class="progress-fill" id="downloadAudioProgressFill"></div></div>
-                                <p id="downloadAudioProgressText" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Extracting audio...</p>
-                            </div>
-                            <p class="download-note" id="downloadAudioNote" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Paste a valid link to begin extracting audio.</p>
-                        </form>
 
-                        <!-- Batch Download Form -->
-                        <form id="ytBatchDownloaderForm" class="yt-form yt-tab-panel" data-tab-panel="batch-download" hidden>
-                            <div class="form-group">
-                                <label for="ytBatchUrl">Playlist or Video URL</label>
-                                <input type="url" id="ytBatchUrl" placeholder="https://youtube.com/playlist?list=... or video URL" required>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="batchFormat">Format</label>
-                                    <select id="batchFormat">
-                                        <option value="video" selected>Video (MP4)</option>
-                                        <option value="audio">Audio (MP3)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="batchQuality">Quality</label>
-                                    <select id="batchQuality">
-                                        <option value="best" selected>Best Available</option>
-                                        <option value="1080p">1080p Full HD</option>
-                                        <option value="720p">720p HD</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="batchLimit">Max Videos to Download</label>
-                                <input type="number" id="batchLimit" min="1" max="100" value="10">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-block" id="downloadBatchBtn" style="margin-top: 8px;">
-                                <svg data-lucide="download" width="14" height="14"></svg> Download Batch
-                            </button>
-                            <div class="yt-download-progress" id="downloadBatchProgress" hidden style="margin-top: 12px;">
-                                <div class="progress-bar"><div class="progress-fill" id="downloadBatchProgressFill"></div></div>
-                                <p id="downloadBatchProgressText" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Downloading batch...</p>
-                            </div>
-                            <p class="download-note" id="downloadBatchNote" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Paste a playlist URL to begin batch downloading.</p>
-                        </form>
-                    </div>
-
-                    <!-- Downloaded Library Section -->
-                    <div class="card yt-library-card" style="margin-top: 16px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                            <!-- Details Column -->
                             <div>
-                                <h2 class="card-title" style="margin-bottom: 2px;"><svg data-lucide="folder" width="18" height="18" style="color:var(--primary);"></svg> Downloaded Media Library</h2>
-                                <p style="font-size: 12px; color: var(--text-muted);">Source media stored in your local <code>input/</code> project workspace.</p>
-                            </div>
-                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button class="btn btn-secondary btn-sm" id="refreshBtn"><span class="spinner" hidden id="refreshSpinner"></span><svg data-lucide="refresh-cw" width="14" height="14"></svg> Refresh</button>
-                                <button class="btn btn-secondary btn-sm" id="openFolderBtn"><svg data-lucide="folder-open" width="14" height="14"></svg> Open Folder</button>
-                                <button class="btn btn-danger btn-sm" id="deleteAllBtn"><svg data-lucide="trash-2" width="14" height="14"></svg> Delete All</button>
+                                <h3 id="analysisVideoTitle" style="font-size:18px; font-weight:800; color:var(--text-primary); margin:0 0 6px; line-height:1.3;">Video Title</h3>
+                                <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                                    <span id="analysisChannelName" style="color:var(--text-primary); font-weight:600;">Channel Name</span>
+                                    <span>•</span>
+                                    <span id="analysisViewsCount">0 views</span>
+                                </div>
+
+                                <!-- Format Selection Grid -->
+                                <div class="format-selection-group">
+                                    <label style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Select Format & Quality</label>
+                                    <div class="format-pill-grid" id="formatPillGrid">
+                                        <!-- Dynamically generated format pills -->
+                                    </div>
+                                </div>
+
+                                <!-- Expandable Advanced Options (Section 19) -->
+                                <div class="accordion-wrapper">
+                                    <button type="button" class="accordion-toggle" id="btnToggleAdvanced">
+                                        <span style="display:flex; align-items:center; gap:6px;">
+                                            <svg data-lucide="sliders" width="14" height="14"></svg>
+                                            <span>Advanced Download Options</span>
+                                        </span>
+                                        <svg data-lucide="chevron-down" width="14" height="14" id="advancedChevron"></svg>
+                                    </button>
+                                    <div class="accordion-body" id="advancedBody" style="display:none;">
+                                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:12px;">
+                                            <div>
+                                                <label for="advAudioBitrate" style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:4px;">Audio Quality Bitrate</label>
+                                                <select id="advAudioBitrate" style="width:100%; padding:6px 10px; font-size:12px; border-radius:var(--radius-xs); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary);">
+                                                    <option value="320">320 kbps (Extreme High)</option>
+                                                    <option value="256">256 kbps (High Quality)</option>
+                                                    <option value="192" selected>192 kbps (Standard)</option>
+                                                    <option value="128">128 kbps (Compact)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="advCustomFilename" style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:4px;">Custom Filename (Optional)</label>
+                                                <input type="text" id="advCustomFilename" placeholder="my_clip_source" style="width:100%; padding:6px 10px; font-size:12px; border-radius:var(--radius-xs); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary);">
+                                            </div>
+                                        </div>
+                                        <div style="display:flex; gap:16px; font-size:12px; color:var(--text-secondary);">
+                                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                                                <input type="checkbox" id="chkEmbedSubs" style="accent-color:var(--primary);">
+                                                <span>Download English subtitles if available</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action CTA -->
+                                <div style="margin-top:18px; display:flex; gap:10px;">
+                                    <button type="button" class="btn btn-primary" id="btnStartDownload" style="padding:10px 24px;">
+                                        <svg data-lucide="download" width="16" height="16"></svg>
+                                        <span id="btnStartDownloadText">Download Video</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="empty-state" id="emptyState">
-                            <div class="empty-state-icon"><svg data-lucide="folder-open" width="28" height="28"></svg></div>
-                            <h3 class="empty-state-title">No downloaded videos yet</h3>
-                            <p class="empty-state-desc">Paste a YouTube link above to download source files into your local project workspace.</p>
+                        <!-- Playlist Batch Downloader Card (Section 23) -->
+                        <div class="desk-card" id="playlistCard" style="display:none; margin-bottom:var(--space-6);">
+                            <div class="desk-card-header">
+                                <div>
+                                    <h3 style="margin-bottom:2px;">
+                                        <svg data-lucide="list-video" width="18" height="18" style="color:var(--primary);"></svg>
+                                        <span id="playlistTitle">YouTube Playlist Detected</span>
+                                    </h3>
+                                    <p style="font-size:12px; color:var(--text-muted); margin:0;" id="playlistMeta">0 videos in playlist</p>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnPlaylistSelectAll">Select All</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnPlaylistClearAll">Clear All</button>
+                                </div>
+                            </div>
+
+                            <!-- Playlist Items List -->
+                            <div id="playlistItemsList" style="max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+                                <!-- Checkbox items dynamically populated -->
+                            </div>
+
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid var(--border-subtle);">
+                                <span style="font-size:12px; color:var(--text-secondary);" id="playlistSelectedCount">0 videos selected</span>
+                                <button type="button" class="btn btn-primary btn-sm" id="btnDownloadSelectedPlaylist">
+                                    <svg data-lucide="download" width="14" height="14"></svg>
+                                    <span>Download Selected</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="yt-files-list" id="filesList" hidden style="display: flex; flex-direction: column; gap: 8px;"></div>
+                        <!-- Active Download Live Progress Card (Section 20) -->
+                        <div class="dl-queue-card" id="activeDownloadProgressCard" style="display:none;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <div style="width:28px; height:28px; border-radius:var(--radius-xs); background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center;">
+                                        <svg data-lucide="download-cloud" width="16" height="16"></svg>
+                                    </div>
+                                    <div>
+                                        <h4 id="activeDlTitle" style="font-size:14px; font-weight:700; color:var(--text-primary); margin:0;">Downloading Video...</h4>
+                                        <span id="activeDlFormat" style="font-size:11px; color:var(--text-muted);">1080p MP4</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline btn-sm" id="btnCancelActiveDl" style="color:var(--error); border-color:rgba(239,68,68,0.3); padding:3px 8px; font-size:11px;">
+                                    Cancel
+                                </button>
+                            </div>
+
+                            <div class="dl-progress-bar-wrap">
+                                <div class="dl-progress-bar-fill" id="activeDlProgressFill" style="width:0%;"></div>
+                            </div>
+
+                            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);">
+                                <span id="activeDlPercent">0%</span>
+                                <span id="activeDlSpeed">Connecting...</span>
+                                <span id="activeDlEta">ETA: --:--</span>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- ========================================================
+                         TAB 2: DOWNLOAD QUEUE (Section 21)
+                         ======================================================== -->
+                    <div class="dl-tab-pane" id="tab-queue" style="display:none;">
+                        <div class="filter-bar">
+                            <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0;">Active & Recent Downloads</h3>
+                            <button class="btn btn-secondary btn-sm" id="btnRefreshQueue">
+                                <svg data-lucide="refresh-cw" width="14" height="14"></svg>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                        <div id="dlQueueItemsContainer">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- ========================================================
+                         TAB 3: MEDIA LIBRARY (Section 22)
+                         ======================================================== -->
+                    <div class="dl-tab-pane" id="tab-library" style="display:none;">
+                        <div class="filter-bar">
+                            <div class="filter-tabs" id="libraryFilterTabs">
+                                <button class="filter-tab active" data-filter="all">All Media</button>
+                                <button class="filter-tab" data-filter="video">Videos</button>
+                                <button class="filter-tab" data-filter="audio">Audio Only</button>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <div class="filter-search">
+                                    <svg data-lucide="search" width="14" height="14"></svg>
+                                    <input type="text" id="librarySearchInput" placeholder="Search downloaded files...">
+                                </div>
+                                <button class="btn btn-secondary btn-sm" id="btnRefreshLibrary">
+                                    <svg data-lucide="refresh-cw" width="14" height="14"></svg>
+                                    <span>Refresh</span>
+                                </button>
+                                <button class="btn btn-outline btn-sm" id="btnDeleteAllLibrary" style="color:var(--error); border-color:rgba(239,68,68,0.3);">
+                                    <svg data-lucide="trash-2" width="14" height="14"></svg>
+                                    <span>Delete All</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:48px;">Type</th>
+                                        <th>Filename</th>
+                                        <th style="width:100px;">Size</th>
+                                        <th style="width:140px;">Downloaded</th>
+                                        <th style="width:240px; text-align:right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="libraryTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </main>
         </div>
     </div>
 
     <!-- Preview Modal -->
-    <div class="modal-overlay" id="previewModal" hidden>
-        <div class="modal yt-preview-modal">
-            <button class="modal-close" id="previewClose">✕</button>
-            <h3 id="previewTitle" style="margin-bottom: 12px; font-size: 16px;">Preview</h3>
-            <div class="yt-preview-body" style="margin-bottom: 16px;">
-                <video id="previewVideo" controls style="display:none; width: 100%; border-radius: var(--radius-sm);"></video>
-                <audio id="previewAudio" controls style="display:none; width: 100%;"></audio>
+    <div class="modal-overlay" id="dlPreviewModal">
+        <div class="modal-content" style="max-width:640px;">
+            <div class="modal-header">
+                <h3 id="dlPreviewTitle">Media Preview</h3>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnDlPreviewClose">✕</button>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <a href="#" class="btn btn-primary" id="previewDownloadBtn" download><svg data-lucide="download" width="14" height="14"></svg> Download</a>
-                <button class="btn btn-secondary" id="previewUseInStudioBtn"><svg data-lucide="wand-sparkles" width="14" height="14"></svg> Use in Clip Studio</button>
-                <button class="btn btn-secondary" id="previewCaptionBtn"><svg data-lucide="captions" width="14" height="14"></svg> Open in Caption Studio</button>
+            <div style="margin-bottom:16px;">
+                <video id="dlModalVideo" controls style="width:100%; border-radius:var(--radius-sm); display:none;"></video>
+                <audio id="dlModalAudio" controls style="width:100%; display:none;"></audio>
+            </div>
+            <div class="modal-footer" style="justify-content:space-between;">
+                <div style="display:flex; gap:8px;">
+                    <a href="#" class="btn btn-primary btn-sm" id="btnDlModalStudio">
+                        <svg data-lucide="wand-sparkles" width="14" height="14"></svg>
+                        <span>Send to AI Clip Studio</span>
+                    </a>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnDlModalCloseFooter">Close</button>
             </div>
         </div>
     </div>
 
     <!-- Rename Modal -->
-    <div class="modal-overlay" id="renameModal" hidden>
-        <div class="modal">
-            <button class="modal-close" id="renameClose">✕</button>
-            <h3 style="margin-bottom: 12px; font-size: 16px;">Rename File</h3>
-            <div class="form-group">
-                <label for="renameInput">New filename</label>
-                <input type="text" id="renameInput" placeholder="my_video.mp4">
+    <div class="modal-overlay" id="dlRenameModal">
+        <div class="modal-content" style="max-width:440px;">
+            <div class="modal-header">
+                <h3>Rename Downloaded Media</h3>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnDlRenameClose">✕</button>
             </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="renameCancel">Cancel</button>
-                <button class="btn btn-primary" id="renameConfirm">Rename</button>
+            <div style="margin-bottom:16px;">
+                <label for="inputRenameFilename" style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:4px;">New Filename</label>
+                <input type="text" id="inputRenameFilename" style="width:100%; padding:8px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnDlRenameCancel">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnDlRenameConfirm">Save Name</button>
             </div>
         </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="dlConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="dlConfirmTitle">Confirm Action</h3>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnDlConfirmClose">✕</button>
+            </div>
+            <p id="dlConfirmText" style="font-size:13px; color:var(--text-secondary); margin:0 0 20px; line-height:1.5;">Are you sure?</p>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnDlConfirmCancel">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnDlConfirmOk">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Shelf -->
+    <div class="toast-shelf" id="dlToastShelf"></div>
+
+    <script src="{{ url_for('static', filename='js/app_framework.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
-        // ============================================
-        // YT Downloader - Frontend Logic
-        // ============================================
-        const ytDownloaderForm = document.getElementById('ytDownloaderForm');
-        const ytAudioDownloaderForm = document.getElementById('ytAudioDownloaderForm');
-        const ytBatchDownloaderForm = document.getElementById('ytBatchDownloaderForm');
-        const ytUrlInput = document.getElementById('ytUrl');
-        const downloadNote = document.getElementById('downloadNote');
-        const downloadQuality = document.getElementById('downloadQuality');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const downloadProgress = document.getElementById('downloadProgress');
-        const downloadProgressFill = document.getElementById('downloadProgressFill');
-        const downloadProgressText = document.getElementById('downloadProgressText');
-
-        const filesList = document.getElementById('filesList');
-        const emptyState = document.getElementById('emptyState');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const openFolderBtn = document.getElementById('openFolderBtn');
-        const deleteAllBtn = document.getElementById('deleteAllBtn');
-
-        const previewModal = document.getElementById('previewModal');
-        const previewVideo = document.getElementById('previewVideo');
-        const previewAudio = document.getElementById('previewAudio');
-        const previewTitle = document.getElementById('previewTitle');
-        const previewDownloadBtn = document.getElementById('previewDownloadBtn');
-        const previewUseInStudioBtn = document.getElementById('previewUseInStudioBtn');
-        const previewClose = document.getElementById('previewClose');
-
-        const renameModal = document.getElementById('renameModal');
-        const renameInput = document.getElementById('renameInput');
-        const renameClose = document.getElementById('renameClose');
-        const renameCancel = document.getElementById('renameCancel');
-        const renameConfirm = document.getElementById('renameConfirm');
-
-        let currentFiles = [];
-        let renameTarget = null;
-
-        // Tabs
-        document.querySelectorAll('.yt-download-tabs .yt-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.yt-download-tabs .yt-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                document.querySelectorAll('.yt-tab-panel').forEach(p => p.hidden = true);
-                const target = document.querySelector(`.yt-tab-panel[data-tab-panel="${tab.dataset.tab}"]`);
-                if (target) target.hidden = false;
-            });
-        });
-
-        function getFileIcon(file) {
-            if (file.is_audio) return '<svg data-lucide="music" width="20" height="20" style="color:var(--primary);"></svg>';
-            return '<svg data-lucide="film" width="20" height="20" style="color:var(--text-secondary);"></svg>';
-        }
-
-        async function loadDownloadedFiles() {
-            try {
-                const res = await fetch('/download/downloaded');
-                const data = await res.json();
-                if (!data.success) return;
-                currentFiles = data.files || [];
-                renderFiles();
-            } catch (err) {
-                console.error('Error loading files:', err);
-            }
-        }
-
-        function renderFiles() {
-            if (!currentFiles.length) {
-                filesList.hidden = true;
-                emptyState.hidden = false;
-                return;
-            }
-
-            filesList.hidden = false;
-            emptyState.hidden = true;
-            filesList.innerHTML = '';
-
-            currentFiles.forEach((file, idx) => {
-                const item = document.createElement('div');
-                item.className = 'yt-file-item card';
-                item.style.padding = '12px 16px';
-                item.style.display = 'flex';
-                item.style.alignItems = 'center';
-                item.style.justifyContent = 'space-between';
-                item.style.gap = '12px';
-                item.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                        <div class="yt-file-icon">${getFileIcon(file)}</div>
-                        <div style="min-width: 0;">
-                            <div class="yt-file-name" style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</div>
-                            <div style="font-size: 11px; color: var(--text-muted); display: flex; gap: 8px;">
-                                <span>${file.size}</span>
-                                <span>•</span>
-                                <span>${file.modified}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                        <button class="btn btn-secondary btn-sm" data-action="preview" data-idx="${idx}" title="Preview"><svg data-lucide="eye" width="14" height="14"></svg></button>
-                        <button class="btn btn-secondary btn-sm" data-action="download" data-idx="${idx}" title="Download"><svg data-lucide="download" width="14" height="14"></svg></button>
-                        <button class="btn btn-secondary btn-sm" data-action="rename" data-idx="${idx}" title="Rename"><svg data-lucide="pencil" width="14" height="14"></svg></button>
-                        <button class="btn btn-primary btn-sm" data-action="clip-cutter" data-idx="${idx}" title="Open in Clip Studio"><svg data-lucide="wand-sparkles" width="14" height="14"></svg></button>
-                        <button class="btn btn-secondary btn-sm" data-action="caption-studio" data-idx="${idx}" title="Open in Caption Studio"><svg data-lucide="captions" width="14" height="14"></svg></button>
-                        <button class="btn btn-danger btn-sm" data-action="delete" data-idx="${idx}" title="Delete"><svg data-lucide="trash-2" width="14" height="14"></svg></button>
-                    </div>
-                `;
-                filesList.appendChild(item);
-            });
-            lucide.createIcons();
-        }
-
-        filesList.addEventListener('click', async (e) => {
-            const btn = e.target.closest('[data-action]');
-            if (!btn) return;
-            const idx = parseInt(btn.dataset.idx, 10);
-            const file = currentFiles[idx];
-            if (!file) return;
-
-            const action = btn.dataset.action;
-
-            if (action === 'download') {
-                window.open(file.path, '_blank');
-            } else if (action === 'preview') {
-                openPreview(file);
-            } else if (action === 'rename') {
-                openRename(file);
-            } else if (action === 'delete') {
-                const confirmed = confirm(`Delete "${file.name}"?`);
-                if (!confirmed) return;
-                const res = await fetch('/download/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: file.name }),
-                });
-                const data = await res.json();
-                if (data.success) {
-                    loadDownloadedFiles();
-                    window.UpClipToast.show(`Deleted ${file.name}`, 'info');
-                } else {
-                    alert('Delete failed: ' + data.error);
-                }
-            } else if (action === 'clip-cutter') {
-                window.location.href = `/dashboard?file=${encodeURIComponent(file.name)}`;
-            } else if (action === 'caption-studio') {
-                window.location.href = `/caption-studio?src=${encodeURIComponent(file.name)}`;
-            }
-        });
-
-        function openPreview(file) {
-            previewTitle.textContent = file.name;
-            previewVideo.style.display = 'none';
-            previewAudio.style.display = 'none';
-
-            if (file.is_audio) {
-                previewAudio.src = file.stream_path;
-                previewAudio.style.display = 'block';
-            } else {
-                previewVideo.src = file.stream_path;
-                previewVideo.style.display = 'block';
-            }
-
-            previewDownloadBtn.href = file.path;
-            previewDownloadBtn.setAttribute('download', file.name);
-            previewUseInStudioBtn.onclick = () => {
-                window.location.href = `/dashboard?file=${encodeURIComponent(file.name)}`;
-            };
-            const previewCaptionBtn = document.getElementById('previewCaptionBtn');
-            if (previewCaptionBtn) {
-                previewCaptionBtn.onclick = () => {
-                    window.location.href = `/caption-studio?src=${encodeURIComponent(file.name)}`;
-                };
-            }
-
-            previewModal.hidden = false;
-        }
-
-        previewClose.addEventListener('click', () => {
-            previewModal.hidden = true;
-            previewVideo.pause();
-            previewAudio.pause();
-        });
-
-        // ESC key for preview modal
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !previewModal.hidden) {
-                previewModal.hidden = true;
-                previewVideo.pause();
-                previewAudio.pause();
-            }
-        });
-        previewModal.addEventListener('click', (e) => {
-            if (e.target === previewModal) {
-                previewModal.hidden = true;
-                previewVideo.pause();
-                previewAudio.pause();
-            }
-        });
-
-        function openRename(file) {
-            renameTarget = file;
-            renameInput.value = file.name;
-            renameModal.hidden = false;
-            renameInput.focus();
-            renameInput.select();
-        }
-
-        renameClose.addEventListener('click', () => { renameModal.hidden = true; });
-        renameCancel.addEventListener('click', () => { renameModal.hidden = true; });
-        renameModal.addEventListener('click', (e) => {
-            if (e.target === renameModal) renameModal.hidden = true;
-        });
-
-        renameConfirm.addEventListener('click', async () => {
-            if (!renameTarget) return;
-            const newName = renameInput.value.trim();
-            if (!newName || newName === renameTarget.name) {
-                renameModal.hidden = true;
-                return;
-            }
-
-            const res = await fetch('/download/rename', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ old_name: renameTarget.name, new_name: newName }),
-            });
-            const data = await res.json();
-            renameModal.hidden = true;
-
-            if (data.success) {
-                window.UpClipToast.show(`Renamed to ${data.filename}`, 'success');
-                loadDownloadedFiles();
-
-                // ESC key for rename modal
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape' && !renameModal.hidden) {
-                        renameModal.hidden = true;
-                    }
-                });
-
-                // Click outside already handled, ensure backdrop closes
-                renameModal.addEventListener('click', (e) => {
-                    if (e.target === renameModal) {
-                        renameModal.hidden = true;
-                    }
-                });
-            } else {
-                alert('Rename failed: ' + data.error);
-            }
-        });
-
-        if (ytDownloaderForm && ytUrlInput) {
-            ytDownloaderForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const value = ytUrlInput.value.trim();
-                if (!value) return;
-
-                const quality = downloadQuality.value;
-                const preset = document.getElementById('downloadFormatPreset')?.value || 'mp4';
-
-                downloadBtn.disabled = true;
-                downloadProgress.hidden = false;
-                downloadProgressFill.style.width = '0%';
-                downloadProgressText.textContent = 'Starting download...';
-
-                let progress = 0;
-                const progressInterval = setInterval(() => {
-                    progress = Math.min(progress + Math.random() * 15, 90);
-                    downloadProgressFill.style.width = `${progress}%`;
-                    downloadProgressText.textContent = `Downloading... ${Math.round(progress)}%`;
-                }, 500);
-
-                try {
-                    const response = await fetch('/download/youtube', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: value, format: 'video', quality: quality, preset: preset })
-                    });
-                    const data = await response.json();
-
-                    clearInterval(progressInterval);
-                    downloadProgressFill.style.width = '100%';
-                    downloadProgressText.textContent = 'Complete!';
-
-                    if (!response.ok || !data.success) {
-                        throw new Error(data.error || 'Download failed');
-                    }
-
-                    window.UpClipToast.show(`Downloaded ${data.filename}`, 'success');
-                    ytUrlInput.value = '';
-
-                    setTimeout(() => {
-                        loadDownloadedFiles();
-                        downloadProgress.hidden = true;
-                        downloadProgressFill.style.width = '0%';
-                    }, 1000);
-                } catch (error) {
-                    clearInterval(progressInterval);
-                    downloadProgress.hidden = true;
-                    downloadProgressFill.style.width = '0%';
-                    window.UpClipToast.show(error.message || 'Download failed', 'error');
-                } finally {
-                    downloadBtn.disabled = false;
-                }
-            });
-        }
-
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', async () => {
-                refreshBtn.disabled = true;
-                const spinner = document.getElementById('refreshSpinner');
-                if (spinner) spinner.hidden = false;
-                try {
-                    await loadDownloadedFiles();
-                    window.UpClipToast.show('Refreshed file list', 'info');
-                } finally {
-                    refreshBtn.disabled = false;
-                    if (spinner) spinner.hidden = true;
-                }
-            });
-        }
-
-        if (openFolderBtn) {
-            openFolderBtn.addEventListener('click', async () => {
-                const res = await fetch('/download/open-folder');
-                const data = await res.json();
-                if (!data.success) alert('Could not open folder: ' + data.error);
-            });
-        }
-
-        if (deleteAllBtn) {
-            deleteAllBtn.addEventListener('click', async () => {
-                const confirmed = confirm('Delete every file in your downloads list?');
-                if (!confirmed) return;
-                const res = await fetch('/download/delete-all', { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                    window.UpClipToast.show(`Deleted ${data.count} file(s)`, 'info');
-                    loadDownloadedFiles();
-                }
-            });
-        }
-
-        loadDownloadedFiles();
-    </script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="{{ url_for('static', filename='js/yt-downloader.js') }}"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>

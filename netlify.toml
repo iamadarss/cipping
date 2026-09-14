@@ -1,9 +1,0 @@
-[build]
-  functions = "netlify/functions"
-  publish = "static"
-
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/app"
-  status = 200
-  force = true

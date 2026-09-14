@@ -6,11 +6,11 @@
    1. DESIGN TOKENS & CSS CUSTOM PROPERTIES
    -------------------------------------------------------------------------- */
 :root {
-    /* Surface Hierarchy (Dark Theme Default) */
-    --surface-0: #080808;  /* Application background */
-    --surface-1: #0E0E0E;  /* Sidebar, Topbar, Sub-headers */
-    --surface-2: #111111;  /* Cards, Workspaces, Timeline background */
-    --surface-3: #171717;  /* Elevated panels, Menus, Modals, Hover surfaces */
+    /* Surface Hierarchy (Emerald + Cream + Graphite Default Theme) */
+    --surface-0: #1B1B1B;  /* Deep Graphite Background */
+    --surface-1: #292929;  /* Pure Graphite: Sidebar, Topbar, Sub-headers */
+    --surface-2: #323232;  /* Graphite Cards, Workspaces, Timeline background */
+    --surface-3: #3E3E3E;  /* Elevated panels, Menus, Modals, Hover surfaces */
 
     /* Backwards compatibility aliases */
     --bg: var(--surface-0);
@@ -20,35 +20,37 @@
     --elevated: var(--surface-3);
 
     /* Border Hierarchy */
-    --border-strong: #2E2E2E;
-    --border: #272727;
-    --border-subtle: rgba(255, 255, 255, 0.07);
-    --border-focus: #8B5CF6;
+    --border-strong: #4A4A4A;
+    --border: #3A3A3A;
+    --border-subtle: rgba(255, 247, 232, 0.08);
+    --border-focus: #10B981;
 
-    /* Typography Color Hierarchy */
-    --text-primary: #F5F5F5;
-    --text-secondary: #A1A1A1;
-    --text-muted: #666666;
+    /* Typography Color Hierarchy — Warm Cream (#FFF7E8) */
+    --text-primary: #FFF7E8;
+    --text-secondary: #E3D9C8;
+    --text-muted: #9E9689;
     --text: var(--text-primary);
 
-    /* Accent Palette — Electric Violet (Restrained) */
-    --primary: #8B5CF6;
-    --primary-hover: #A78BFA;
-    --primary-active: #7C3AED;
-    --primary-soft: rgba(139, 92, 246, 0.12);
-    --primary-subtle: rgba(139, 92, 246, 0.06);
-    --primary-2: #A78BFA;
-    --accent: #8B5CF6;
+    /* Accent Palette — Emerald (#10B981) */
+    --primary: #10B981;
+    --primary-rgb: 16, 185, 129;
+    --primary-hover: #059669;
+    --primary-active: #047857;
+    --primary-soft: rgba(16, 185, 129, 0.16);
+    --primary-subtle: rgba(16, 185, 129, 0.08);
+    --primary-glow: 0 0 20px rgba(16, 185, 129, 0.35);
+    --primary-2: #34D399;
+    --accent: #10B981;
 
     /* Semantic Status Colors */
-    --success: #22C55E;
-    --success-soft: rgba(34, 197, 94, 0.12);
+    --success: #10B981;
+    --success-soft: rgba(16, 185, 129, 0.16);
     --warning: #F59E0B;
     --warning-soft: rgba(245, 158, 11, 0.12);
     --error: #EF4444;
     --error-soft: rgba(239, 68, 68, 0.12);
-    --info: #3B82F6;
-    --info-soft: rgba(59, 130, 246, 0.12);
+    --info: #2563EB;
+    --info-soft: rgba(37, 99, 235, 0.12);
 
     /* Typography Families */
     --font-heading: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -79,10 +81,10 @@
     --radius-lg: var(--radius-panel);
 
     /* Shadow Hierarchy */
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
-    --shadow-popover: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--border);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+    --shadow-popover: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border);
     --shadow: var(--shadow-md);
 
     /* Motion & Transitions */
@@ -101,48 +103,42 @@
     --z-toast: 1000;
 }
 
-/* Light Theme Design Tokens */
-[data-theme="light"] {
-    --surface-0: #F8FAFC;
-    --surface-1: #FFFFFF;
-    --surface-2: #F1F5F9;
-    --surface-3: #E2E8F0;
-    --border-strong: #CBD5E1;
-    --border: #E2E8F0;
-    --border-subtle: rgba(0, 0, 0, 0.08);
+/* Royal Blue + Ice White + Silver Palette (Light Theme) */
+[data-theme="light"],
+:root[data-theme="light"] {
+    --surface-0: #F8FAFC;  /* Ice White Base */
+    --surface-1: #FFFFFF;  /* Clean White Topbar, Sidebar */
+    --surface-2: #F1F5F9;  /* Slate-tinted Cards & Workspaces */
+    --surface-3: #E2E8F0;  /* Silver-tinted Elevated surfaces */
+
+    --border-strong: #94A3B8;
+    --border: #CBD5E1;     /* Crisp Silver Borders */
+    --border-subtle: rgba(203, 213, 225, 0.55);
+    --border-focus: #2563EB;
+
     --text-primary: #0F172A;
-    --text-secondary: #475569;
-    --text-muted: #94A3B8;
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+    --text-secondary: #334155;
+    --text-muted: #64748B;
+    --text: var(--text-primary);
+
+    --primary: #2563EB;     /* Royal Blue */
+    --primary-rgb: 37, 99, 235;
+    --primary-hover: #1D4ED8;
+    --primary-active: #1E40AF;
+    --primary-soft: rgba(37, 99, 235, 0.12);
+    --primary-subtle: rgba(37, 99, 235, 0.06);
+    --primary-glow: 0 0 20px rgba(37, 99, 235, 0.35);
+    --primary-2: #3B82F6;
+    --accent: #2563EB;
+
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.12);
+    --shadow-popover: 0 12px 36px rgba(15, 23, 42, 0.15), 0 0 0 1px var(--border);
 }
 
 [hidden] {
     display: none !important;
-}
-
-
-/* Light Theme Variables */
-:root[data-theme="light"] {
-    --surface-0: #F8F9FA;
-    --surface-1: #FFFFFF;
-    --surface-2: #F1F3F5;
-    --surface-3: #E9ECEF;
-
-    --border-strong: #CED4DA;
-    --border: #DEE2E6;
-    --border-subtle: rgba(0, 0, 0, 0.08);
-
-    --text-primary: #121212;
-    --text-secondary: #495057;
-    --text-muted: #868E96;
-
-    --primary-soft: rgba(139, 92, 246, 0.10);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
-    --shadow-popover: 0 12px 36px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border);
 }
 
 /* --------------------------------------------------------------------------
@@ -345,7 +341,7 @@ input, select, textarea {
 .topbar-btn.active {
     background: var(--primary-soft);
     color: var(--primary);
-    border-color: rgba(139, 92, 246, 0.25);
+    border-color: rgba(var(--primary-rgb), 0.25);
 }/* ==========================================================================
    UPCLIP STUDIO — PHASE 15 PROFESSIONAL AUDIO STUDIO STYLES
    ========================================================================== */
@@ -427,12 +423,12 @@ input, select, textarea {
     justify-content: center;
     gap: var(--space-2);
     transition: var(--transition-fast);
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.25);
 }
 
 .sidebar-new-btn:hover {
     background: var(--primary-hover);
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+    box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.35);
 }
 
 .app-sidebar.collapsed .sidebar-new-btn span {
@@ -667,7 +663,7 @@ input, select, textarea {
 .btn-primary:hover {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25);
 }
 .btn-primary:active {
     background: var(--primary-active);
@@ -1880,7 +1876,7 @@ input[type="checkbox"]:checked::after {
 /* Batch Actions Bar */
 .batch-actions-bar {
     background: var(--primary-subtle);
-    border: 1px solid rgba(139, 92, 246, 0.25);
+    border: 1px solid rgba(var(--primary-rgb), 0.25);
     border-radius: var(--radius-card);
     padding: var(--space-3) var(--space-4);
     display: flex;
@@ -2143,7 +2139,7 @@ input[type="checkbox"]:checked::after {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    border: 1px dashed rgba(139, 92, 246, 0.2);
+    border: 1px dashed rgba(var(--primary-rgb), 0.2);
 }
 
 .guide-vertical-left {
@@ -2440,8 +2436,8 @@ input[type="checkbox"]:checked::after {
     position: absolute;
     top: 6px;
     height: 52px;
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: rgba(var(--primary-rgb), 0.1);
+    border: 1px solid rgba(var(--primary-rgb), 0.3);
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -2454,7 +2450,7 @@ input[type="checkbox"]:checked::after {
 }
 
 .timeline-clip.selected {
-    background: rgba(139, 92, 246, 0.25);
+    background: rgba(var(--primary-rgb), 0.25);
     border: 2px solid var(--primary);
 }
 
@@ -2490,7 +2486,7 @@ input[type="checkbox"]:checked::after {
     top: 0;
     bottom: 0;
     position: absolute;
-    background: rgba(139, 92, 246, 0.4);
+    background: rgba(var(--primary-rgb), 0.4);
     cursor: ew-resize;
     z-index: 5;
 }
@@ -2532,7 +2528,7 @@ input[type="checkbox"]:checked::after {
 .sidebar-tool-btn.active {
     background: var(--primary-soft);
     color: var(--primary);
-    border: 1px solid rgba(139, 92, 246, 0.25);
+    border: 1px solid rgba(var(--primary-rgb), 0.25);
 }
 
 /* Popup Context Menu */
@@ -2613,7 +2609,7 @@ input[type="checkbox"]:checked::after {
 .pane-tab-btn.active {
     color: var(--primary);
     border-bottom-color: var(--primary);
-    background: rgba(139, 92, 246, 0.04);
+    background: rgba(var(--primary-rgb), 0.04);
 }
 
 .tab-badge {
@@ -2704,7 +2700,7 @@ input[type="checkbox"]:checked::after {
 
 .caption-segment-card.selected {
     border-color: var(--primary);
-    background: rgba(139, 92, 246, 0.08);
+    background: rgba(var(--primary-rgb), 0.08);
 }
 
 .segment-card-header {
@@ -2869,7 +2865,7 @@ input[type="checkbox"]:checked::after {
 }
 
 .caption-drag-handle:hover {
-    border-color: rgba(139, 92, 246, 0.5);
+    border-color: rgba(var(--primary-rgb), 0.5);
 }
 
 .caption-drag-handle.dragging {
@@ -2945,8 +2941,8 @@ input[type="checkbox"]:checked::after {
     position: absolute;
     top: 6px;
     height: 52px;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.4);
+    background: rgba(var(--primary-rgb), 0.15);
+    border: 1px solid rgba(var(--primary-rgb), 0.4);
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -2959,7 +2955,7 @@ input[type="checkbox"]:checked::after {
 }
 
 .timeline-caption-block.selected {
-    background: rgba(139, 92, 246, 0.35);
+    background: rgba(var(--primary-rgb), 0.35);
     border: 2px solid var(--primary);
 }
 
@@ -2994,7 +2990,7 @@ input[type="checkbox"]:checked::after {
     top: 0;
     bottom: 0;
     position: absolute;
-    background: rgba(139, 92, 246, 0.5);
+    background: rgba(var(--primary-rgb), 0.5);
     cursor: ew-resize;
     z-index: 5;
 }
@@ -3185,7 +3181,7 @@ input[type="checkbox"]:checked::after {
 }
 
 .layer-row-item.selected {
-    background: rgba(139, 92, 246, 0.12);
+    background: rgba(var(--primary-rgb), 0.12);
     border-color: var(--primary);
 }
 
@@ -3571,8 +3567,8 @@ input[type="checkbox"]:checked::after {
     font-size: 9px;
     font-weight: 800;
     color: var(--primary);
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.35);
+    background: rgba(var(--primary-rgb), 0.15);
+    border: 1px solid rgba(var(--primary-rgb), 0.35);
     padding: 1px 6px;
     border-radius: var(--radius-xs);
     letter-spacing: 0.5px;
@@ -3700,8 +3696,8 @@ input[type="checkbox"]:checked::after {
 
 /* AI Suggestions / Advisor Cards */
 .ai-suggestion-card {
-    background: rgba(139, 92, 246, 0.08);
-    border: 1px solid rgba(139, 92, 246, 0.35);
+    background: rgba(var(--primary-rgb), 0.08);
+    border: 1px solid rgba(var(--primary-rgb), 0.35);
     border-radius: var(--radius-sm);
     padding: var(--space-3);
     display: flex;
@@ -3713,7 +3709,7 @@ input[type="checkbox"]:checked::after {
     font-size: 9px;
     font-weight: 800;
     color: var(--primary);
-    background: rgba(139, 92, 246, 0.2);
+    background: rgba(var(--primary-rgb), 0.2);
     padding: 1px 5px;
     border-radius: var(--radius-xs);
 }
@@ -3868,9 +3864,9 @@ input[type="checkbox"]:checked::after {
 }
 
 .copilot-chip:hover {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #A78BFA;
+    background: rgba(var(--primary-rgb), 0.15);
+    border-color: rgba(var(--primary-rgb), 0.4);
+    color: var(--primary-2);
 }
 
 /* ==========================================================================
@@ -4045,7 +4041,7 @@ input[type="checkbox"]:checked::after {
 
 .drop-target-active {
     outline: 2px dashed var(--primary) !important;
-    background: rgba(139, 92, 246, 0.12) !important;
+    background: rgba(var(--primary-rgb), 0.12) !important;
 }
 
 /* ==========================================================================
