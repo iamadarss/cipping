@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Blueprint, request, jsonify, render_template
 import json
 from models.project import Project
-from app import db
+from extensions import db
 from core.project_state import project_state
 from core.project_manager import project_manager
 

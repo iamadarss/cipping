@@ -474,21 +474,6 @@ window.UpClipCommands.register({
     action: () => { window.location.href = "/youtube-desk"; }
 });
 
-window.UpClipCommands.register({
-    id: "app_toggle_theme",
-    label: "Toggle Dark / Light Theme",
-    category: "View",
-    keywords: ["appearance", "dark", "light", "colors"],
-    action: () => {
-        const curr = document.documentElement.getAttribute('data-theme') || 'dark';
-        const next = curr === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        window.UpClipToast.info(`Switched to ${next} theme`);
-    }
-});
-
-
 // =========================================================================
 // 5. GLOBAL SETTINGS CLIENT
 // =========================================================================

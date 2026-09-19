@@ -25,23 +25,130 @@ except Exception:  # pragma: no cover
 download_bp = Blueprint("download", __name__, url_prefix="/download")
 
 
-def safe_send(directory, filename):
-    """Send a file from a directory, guarding against path traversal."""
+def safe_send(directory, filename, as_attachment=True):
+    """Send a file from a directory, guarding against path traversal and encoding differences."""
+    import urllib.parse
+    import unicodedata
+
     filename = Path(filename).name
-    file_path = Path(directory) / filename
-    if not file_path.exists():
-        return jsonify({"success": False, "error": "File not found"}), 404
-    return send_from_directory(str(directory), filename, as_attachment=True)
+    dir_path = Path(directory)
+    if not dir_path.exists():
+        return jsonify({"success": False, "error": "Directory not found"}), 404
+
+    # 1. Direct match
+    file_path = dir_path / filename
+    if file_path.exists() and file_path.is_file():
+        return send_from_directory(str(directory), filename, as_attachment=as_attachment)
+
+    # 2. URL-unquoted match
+    unquoted = urllib.parse.unquote(filename)
+    unquoted_path = dir_path / unquoted
+    if unquoted_path.exists() and unquoted_path.is_file():
+        return send_from_directory(str(directory), unquoted, as_attachment=as_attachment)
+
+    # 3. Unicode NFC vs NFD and cp1252 fallback match
+    target_norm = unicodedata.normalize("NFC", unquoted)
+    for f in dir_path.iterdir():
+        if not f.is_file():
+            continue
+        f_norm = unicodedata.normalize("NFC", f.name)
+        if f_norm == target_norm:
+            return send_from_directory(str(directory), f.name, as_attachment=as_attachment)
+        for enc in ("cp1252", "latin-1"):
+            try:
+                if unicodedata.normalize("NFC", f.name.encode(enc).decode("utf-8")) == target_norm:
+                    return send_from_directory(str(directory), f.name, as_attachment=as_attachment)
+            except Exception:
+                pass
+
+    return jsonify({"success": False, "error": "File not found"}), 404
 
 
-@download_bp.route("/input/<filename>")
+@download_bp.route("/input/<path:filename>")
 def input_file(filename):
     return safe_send(config.INPUT_DIR, filename)
 
 
-@download_bp.route("/thumbnail/<filename>")
+@download_bp.route("/thumbnail/<path:filename>")
 def thumbnail(filename):
-    return send_from_directory(str(config.THUMBNAIL_DIR), filename)
+    """Serve generated thumbnail images safely with Unicode, cp1252, and on-demand fallback support."""
+    import unicodedata
+    import urllib.parse
+    from flask import current_app
+
+    # Guard against directory traversal
+    filename = Path(filename).name
+    config.THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
+
+    file_path = config.THUMBNAIL_DIR / filename
+
+    # 1. Direct match on disk
+    if file_path.exists() and file_path.is_file():
+        return send_from_directory(str(config.THUMBNAIL_DIR), filename)
+
+    # 2. URL-unquoted match
+    unquoted = urllib.parse.unquote(filename)
+    unquoted_path = config.THUMBNAIL_DIR / unquoted
+    if unquoted_path.exists() and unquoted_path.is_file():
+        return send_from_directory(str(config.THUMBNAIL_DIR), unquoted)
+
+    # 3. Unicode normalized match (NFC vs NFD)
+    target_norm = unicodedata.normalize("NFC", unquoted)
+    for f in config.THUMBNAIL_DIR.iterdir():
+        if not f.is_file():
+            continue
+        f_norm = unicodedata.normalize("NFC", f.name)
+        if f_norm == target_norm:
+            return send_from_directory(str(config.THUMBNAIL_DIR), f.name)
+        # Check cp1252 / latin-1 decoding match (disk file was saved with mojibake)
+        for enc in ("cp1252", "latin-1"):
+            try:
+                if unicodedata.normalize("NFC", f.name.encode(enc).decode("utf-8")) == target_norm:
+                    return send_from_directory(str(config.THUMBNAIL_DIR), f.name)
+            except Exception:
+                pass
+
+    # 3b. Check if target requested is mojibake of a clean disk file
+    for enc in ("cp1252", "latin-1"):
+        try:
+            cand = target_norm.encode("utf-8").decode(enc)
+            cand_path = config.THUMBNAIL_DIR / cand
+            if cand_path.exists() and cand_path.is_file():
+                return send_from_directory(str(config.THUMBNAIL_DIR), cand)
+        except Exception:
+            pass
+
+    # 4. On-demand generation from source video if thumbnail was missing
+    if filename.endswith("_thumb.jpg") or unquoted.endswith("_thumb.jpg"):
+        stem = unquoted[:-10] if unquoted.endswith("_thumb.jpg") else filename[:-10]
+        stem_norm = unicodedata.normalize("NFC", stem)
+        for search_dir in (config.INPUT_DIR, config.FINAL_DIR, config.CLIPS_DIR):
+            if not search_dir.exists():
+                continue
+            for candidate in search_dir.iterdir():
+                if not candidate.is_file() or candidate.suffix.lower() not in {".mp4", ".mov", ".mkv", ".webm", ".avi"}:
+                    continue
+                cand_stem = unicodedata.normalize("NFC", candidate.stem)
+                matched = (cand_stem == stem_norm)
+                if not matched:
+                    for enc in ("cp1252", "latin-1"):
+                        try:
+                            if unicodedata.normalize("NFC", cand_stem.encode(enc).decode("utf-8")) == stem_norm:
+                                matched = True
+                                break
+                            if unicodedata.normalize("NFC", stem_norm.encode(enc).decode("utf-8")) == cand_stem:
+                                matched = True
+                                break
+                        except Exception:
+                            pass
+                if matched:
+                    from utils.ffmpeg_utils import generate_thumbnail
+                    if generate_thumbnail(candidate, file_path):
+                        return send_from_directory(str(config.THUMBNAIL_DIR), filename)
+                    break
+
+    current_app.logger.warning("Thumbnail not found: %s", filename)
+    return jsonify({"success": False, "error": "Thumbnail not found"}), 404
 
 
 @download_bp.route("/final/<filename>")
@@ -328,6 +435,9 @@ def analyze_youtube_url():
                         "url": entry.get("url") or f"https://www.youtube.com/watch?v={entry.get('id')}",
                     })
 
+        if config.FFMPEG_PATH and Path(config.FFMPEG_PATH).exists():
+            ydl_opts["ffmpeg_location"] = str(config.FFMPEG_PATH)
+
         return jsonify({
             "success": True,
             "is_playlist": is_playlist,
@@ -343,7 +453,14 @@ def analyze_youtube_url():
             "video_count": len(playlist_entries) if is_playlist else 1,
         })
     except Exception as exc:
-        return jsonify({"success": False, "error": f"Failed to analyze URL: {str(exc)}"}), 400
+        err_msg = str(exc)
+        if "bot" in err_msg.lower() or "confirm you're not a bot" in err_msg.lower():
+            err_msg = "YouTube bot detection triggered. Try again later or check network connection."
+        elif "private video" in err_msg.lower():
+            err_msg = "This video is private."
+        elif "unavailable" in err_msg.lower():
+            err_msg = "Video is unavailable or removed."
+        return jsonify({"success": False, "error": f"Failed to analyze URL: {err_msg}"}), 400
 
 
 def _execute_download(task_id, ydl_opts, url, fmt, quality):
@@ -393,10 +510,19 @@ def _execute_download(task_id, ydl_opts, url, fmt, quality):
                 t["path"] = f"/download/input/{match.name}"
                 t["size_str"] = _format_size(match.stat().st_size)
     except Exception as exc:
+        err_msg = str(exc)
+        if "bot" in err_msg.lower() or "confirm you're not a bot" in err_msg.lower():
+            err_msg = "YouTube bot detection triggered. Try again later or use another URL."
+        elif "private video" in err_msg.lower():
+            err_msg = "This video is private."
+        elif "unavailable" in err_msg.lower():
+            err_msg = "Video is unavailable or removed."
+        elif "cancelled by user" in err_msg.lower():
+            err_msg = "Download cancelled by user."
         with _downloads_lock:
             t = _active_downloads[task_id]
             t["status"] = "cancelled" if "cancelled by user" in str(exc).lower() else "error"
-            t["error"] = str(exc)
+            t["error"] = err_msg
 
 
 @download_bp.route("/youtube", methods=["POST"])
@@ -420,7 +546,7 @@ def download_youtube_video():
     config.INPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_template = str(config.INPUT_DIR / "%(title)s.%(ext)s")
 
-    # Build format selection based on user choice
+    # Build format selection based on user choice with DASH stream support
     if fmt == "audio":
         codec_map = {"mp3": "mp3", "m4a": "m4a", "wav": "wav", "flac": "flac"}
         codec = codec_map.get(audio_format, "mp3")
@@ -434,11 +560,11 @@ def download_youtube_video():
         merge_format = None
     else:
         quality_map = {
-            "best": "best[ext=mp4]/best[height<=1080]/best[height<=720]/best[height<=480]/best[height<=360]/best",
-            "1080p": "best[height<=1080]/best[height<=720]/best[height<=480]/best[height<=360]/best",
-            "720p": "best[height<=720]/best[height<=480]/best[height<=360]/best",
-            "480p": "best[height<=480]/best[height<=360]/best",
-            "360p": "best[height<=360]/best",
+            "best": "bestvideo+bestaudio/best",
+            "1080p": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+            "720p": "bestvideo[height<=720]+bestaudio/best[height<=720]/best",
+            "480p": "bestvideo[height<=480]+bestaudio/best[height<=480]/best",
+            "360p": "bestvideo[height<=360]+bestaudio/best[height<=360]/best",
         }
         format_selector = quality_map.get(quality, quality_map["best"])
         postprocessors = []
@@ -453,9 +579,10 @@ def download_youtube_video():
         "merge_output_format": merge_format,
         "restrictfilenames": False,
         "postprocessors": postprocessors,
-        "format_sort": ["res:1080", "res:720", "res:480", "res:360"],
-        "format_sort_force": True,
     }
+
+    if config.FFMPEG_PATH and Path(config.FFMPEG_PATH).exists():
+        ydl_opts["ffmpeg_location"] = str(config.FFMPEG_PATH)
 
     if limit:
         ydl_opts["noplaylist"] = False

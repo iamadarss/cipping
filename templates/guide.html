@@ -3,10 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How to Use | UpClip Studio</title>
+    <title>How to Use & Documentation | UpClip Studio</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        .guide-hero {
+            position: relative;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.6) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: var(--radius-lg);
+            padding: 36px 32px;
+            margin-bottom: var(--space-6);
+            overflow: hidden;
+        }
+        .guide-hero::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .guide-workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: var(--space-6);
+        }
+        .guide-step-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            position: relative;
+            transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+        .guide-step-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+        .guide-step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 14px;
+            font-family: var(--font-mono);
+            margin-bottom: 12px;
+        }
+        .guide-modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+            margin-bottom: var(--space-6);
+        }
+        .guide-module-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all var(--transition-fast);
+        }
+        .guide-module-card:hover {
+            border-color: var(--border-strong);
+            background: var(--surface-2);
+        }
+        .guide-accordion-item {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: border-color var(--transition-fast);
+        }
+        .guide-accordion-item:hover {
+            border-color: var(--border-strong);
+        }
+        .guide-accordion-header {
+            width: 100%;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 700;
+            text-align: left;
+            transition: background var(--transition-fast);
+        }
+        .guide-accordion-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .guide-accordion-header[aria-expanded="true"] .guide-chevron {
+            transform: rotate(180deg);
+        }
+        .guide-chevron {
+            transition: transform var(--transition-fast);
+            color: var(--text-muted);
+        }
+        .guide-accordion-body {
+            display: none;
+            padding: 0 20px 20px 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.7;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 16px;
+        }
+        .guide-accordion-body.active {
+            display: block;
+        }
+        .guide-accordion-body ol, .guide-accordion-body ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        .guide-accordion-body li {
+            margin-bottom: 6px;
+        }
+        .guide-tag {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--radius-xs);
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--primary);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .guide-kbd {
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-primary);
+        }
+    </style>
 </head>
 <body>
     <div class="app-shell">
@@ -20,23 +172,15 @@
                 <div class="topbar-divider"></div>
                 <div class="topbar-workspace-title">
                     <svg data-lucide="book-open" width="16" height="16" style="color:var(--primary);"></svg>
-                    <span>User Guide</span>
+                    <span>User Documentation & Guide</span>
                 </div>
             </div>
 
-            <div class="topbar-center">
-                <button class="command-trigger" id="topbarCommandTrigger" data-tooltip="Quick Command Menu" data-hotkey="Ctrl+K">
-                    <div class="command-trigger-left">
-                        <svg data-lucide="search" width="14" height="14"></svg>
-                        <span>Search commands or switch workspace...</span>
-                    </div>
-                    <span class="kbd-badge">Ctrl + K</span>
-                </button>
-            </div>
-
             <div class="topbar-right">
-                <button class="topbar-btn theme-toggle" id="themeToggle" aria-label="Toggle theme" data-tooltip="Toggle Dark/Light theme">🌙</button>
-                <a href="/dashboard" class="btn btn-primary btn-sm"><svg data-lucide="plus" width="14" height="14"></svg> New Project</a>
+                <a href="/dashboard" class="btn btn-primary btn-sm">
+                    <svg data-lucide="wand-sparkles" width="14" height="14"></svg>
+                    <span>Open AI Clip Studio</span>
+                </a>
             </div>
         </header>
 
@@ -92,213 +236,340 @@
                 </div>
             </aside>
 
-            <!-- Main Workspace Container -->
+            <!-- Main Content Area -->
             <main class="app-workspace">
-                <div class="workspace-content" style="max-width: 900px;">
+                <div class="workspace-content" style="max-width: 1040px; margin: 0 auto; padding: 24px 20px;">
+                    
+                    <!-- Hero Section -->
+                    <div class="guide-hero">
+                        <span class="guide-tag">Complete User Manual</span>
+                        <h1 style="font-family: var(--font-heading); font-size: 28px; font-weight: 800; color: #FFFFFF; margin: 8px 0 12px 0;">
+                            Master UpClip Studio
+                        </h1>
+                        <p style="color: var(--text-secondary); font-size: 14px; max-width: 720px; line-height: 1.6; margin-bottom: 20px;">
+                            Turn long-form videos, podcasts, and interviews into high-retention vertical Shorts, TikToks, and Reels. UpClip Studio runs locally on your machine with FFmpeg acceleration, Whisper AI transcription, and direct YouTube automation.
+                        </p>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <a href="/dashboard" class="btn btn-primary btn-sm" style="display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="play" width="14" height="14"></svg>
+                                <span>Create AI Clips</span>
+                            </a>
+                            <a href="/caption-studio" class="btn btn-secondary btn-sm" style="display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="type" width="14" height="14"></svg>
+                                <span>Caption Studio 2.0</span>
+                            </a>
+                            <a href="/yt-downloader" class="btn btn-secondary btn-sm" style="display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="download" width="14" height="14"></svg>
+                                <span>YouTube Downloader</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 6-Step Core Workflow -->
                     <div style="margin-bottom: var(--space-4);">
-                        <h1 style="font-family: var(--font-heading); font-size: 26px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">How to Use UpClip Studio</h1>
-                        <p style="color: var(--text-secondary); font-size: 13px;">A step-by-step walkthrough of AI clipping, caption styling, and export workflows.</p>
+                        <h2 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <svg data-lucide="git-merge" width="18" height="18" style="color:var(--primary);"></svg>
+                            <span>Standard Production Workflow (6 Steps)</span>
+                        </h2>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Follow this sequential path from raw footage to published viral content.</p>
                     </div>
 
-                    <!-- Progress Indicator -->
-                    <div class="card" style="padding: var(--space-4); margin-bottom: var(--space-4);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Guide Progress</span>
-                            <span style="font-size: 12px; font-family: var(--font-mono); color: var(--primary);" id="guideProgressText">Step 1 of 10</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="guideProgressFill" style="width: 10%;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Step Cards -->
-                    <div id="guideSteps">
-                        <div class="card guide-step active" data-step="1" style="display: flex; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="upload" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">1. Upload Source Video</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Drag and drop or browse to upload any video file (MP4, MOV, MKV, WebM). Files are processed locally on your device with high performance.
+                    <div class="guide-workflow-grid">
+                        <div class="guide-step-card">
+                            <div class="guide-step-num">01</div>
+                            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Import or Download Video</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                                Upload local video files (MP4, MOV, MKV, WebM) or paste a YouTube URL in the Downloader to pull high-res DASH streams merged via FFmpeg.
                             </p>
                         </div>
 
-                        <div class="card guide-step" data-step="2" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="globe" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">2. Language & Subtitles</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Whisper AI transcribes spoken audio into word-level timestamps. You can auto-detect the spoken language or translate subtitles into over 20 languages.
+                        <div class="guide-step-card">
+                            <div class="guide-step-num">02</div>
+                            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Choose Aspect & Framework</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                                Select your target format: 9:16 Shorts/Reels, 1:1 Square, 4:5 Portrait, or 16:9 Landscape. Center-weighted reframing ensures subjects stay in view.
                             </p>
                         </div>
 
-                        <div class="card guide-step" data-step="3" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="maximize" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">3. Aspect Ratio Reframing</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Choose between 9:16 vertical (Shorts / Reels / TikTok), 16:9 landscape, or 1:1 square. Smart center-crop prevents stretching and maintains aspect integrity.
+                        <div class="guide-step-card">
+                            <div class="guide-step-num">03</div>
+                            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">AI Highlight & Scene Detection</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                                PySceneDetect scans frame transitions while Whisper AI isolates high-energy speech moments and transcripts to carve out captivating hooks.
                             </p>
                         </div>
 
-                        <div class="card guide-step" data-step="4" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="scissors" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">4. Scene Detection & Splitting</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                PySceneDetect scans visual boundaries and isolates engaging moments. You can let AI decide or define custom clip durations and targets.
+                        <div class="guide-step-card">
+                            <div class="guide-step-num">04</div>
+                            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Style Animated Captions</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                                Choose from curated presets (Clean, Bold, Creator, Gaming, Podcast) or customize font, color, word-by-word karaoke, outline, and pop animations.
                             </p>
                         </div>
 
-                        <div class="card guide-step" data-step="5" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="message-square" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">5. Animated Karaoke Captions</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Enable short-form animated karaoke subtitles. Active words highlight dynamically in sync with speech using FFmpeg ASS rendering.
+                        <div class="guide-step-card">
+                            <div class="guide-step-num">05</div>
+                            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Review & Multi-Track Edit</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                                Preview generated cuts in the Review Grid or open them in the Editor / Caption Studio for precision trimming, line splitting, and reordering.
                             </p>
                         </div>
 
-                        <div class="card guide-step" data-step="6" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="eye" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">6. Review & Edit</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Preview each generated clip in the review grid. Rename clips, delete unwanted cuts, or transfer any clip directly into Caption Studio.
-                            </p>
-                        </div>
-
-                        <div class="card guide-step" data-step="7" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="captions" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">7. Caption Studio Timeline</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Open Caption Studio for a full timeline editor. Drag caption timestamps, split lines, tweak fonts, active colors, and positioning.
-                            </p>
-                        </div>
-
-                        <div class="card guide-step" data-step="8" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="download" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">8. Export & Quality Selection</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Download all clips in a single ZIP archive, re-encode to 1080p/720p/360p, or download raw SRT/VTT subtitle files and JSON transcripts.
-                            </p>
-                        </div>
-
-                        <div class="card guide-step" data-step="9" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="download-cloud" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">9. YouTube Downloader</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Download long YouTube videos, playlists, or audio tracks directly into your local library for rapid clipping.
-                            </p>
-                        </div>
-
-                        <div class="card guide-step" data-step="10" style="display: none; flex-direction: column; gap: var(--space-3);">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                    <svg data-lucide="tv" width="20" height="20"></svg>
-                                </div>
-                                <h3 style="font-size: 16px; font-weight: 700;">10. YouTube Automation Desk</h3>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                                Connect your YouTube channel, prepare titles/descriptions/tags, schedule uploads, and track publication history directly from the desk.
+                        <div class="guide-step-card">
+                            <div class="guide-step-num">06</div>
+                            <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Export & Distribute</h3>
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                                Export 1080p videos with burned ASS subtitles, download individual clips or a full ZIP archive, or schedule direct uploads via YouTube Desk.
                             </p>
                         </div>
                     </div>
 
-                    <!-- Navigation Actions -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-6);">
-                        <button class="btn btn-secondary" id="guidePrev" hidden>← Previous</button>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn btn-ghost" id="guideSkip">Skip Guide</button>
-                            <button class="btn btn-primary" id="guideNext">Next →</button>
-                            <a href="/dashboard" class="btn btn-primary" id="guideStart" hidden>Start Creating →</a>
+                    <!-- 4 Major Workspaces / Modules -->
+                    <div style="margin-bottom: var(--space-4);">
+                        <h2 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <svg data-lucide="layers" width="18" height="18" style="color:var(--primary);"></svg>
+                            <span>Core Application Workspaces</span>
+                        </h2>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">UpClip Studio organizes video production into four specialized studios.</p>
+                    </div>
+
+                    <div class="guide-modules-grid">
+                        <div class="guide-module-card">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                                    <div style="width:36px; height:36px; border-radius:var(--radius-sm); background:rgba(16,185,129,0.15); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+                                        <svg data-lucide="wand-sparkles" width="20" height="20"></svg>
+                                    </div>
+                                    <h3 style="font-size:16px; font-weight:700; margin:0;">AI Clip Studio</h3>
+                                </div>
+                                <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
+                                    A strict 5-step guided pipeline: upload video, customize clipping duration and subtitle parameters with collapsible settings, run automated scene detection, review generated candidates, and export.
+                                </p>
+                            </div>
+                            <a href="/dashboard" class="btn btn-secondary btn-sm" style="align-self:flex-start;">Open AI Clip Studio →</a>
+                        </div>
+
+                        <div class="guide-module-card">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                                    <div style="width:36px; height:36px; border-radius:var(--radius-sm); background:rgba(56,189,248,0.15); display:flex; align-items:center; justify-content:center; color:#38BDF8;">
+                                        <svg data-lucide="captions" width="20" height="20"></svg>
+                                    </div>
+                                    <h3 style="font-size:16px; font-weight:700; margin:0;">Caption Studio 2.0</h3>
+                                </div>
+                                <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
+                                    Dedicated typography suite featuring word-by-word karaoke synchronization, interactive draggable canvas preview, seek-on-click segment navigation, split/merge editing, and FFmpeg ASS subtitle burning.
+                                </p>
+                            </div>
+                            <a href="/caption-studio" class="btn btn-secondary btn-sm" style="align-self:flex-start;">Open Caption Studio →</a>
+                        </div>
+
+                        <div class="guide-module-card">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                                    <div style="width:36px; height:36px; border-radius:var(--radius-sm); background:rgba(244,63,94,0.15); display:flex; align-items:center; justify-content:center; color:#F43F5E;">
+                                        <svg data-lucide="download" width="20" height="20"></svg>
+                                    </div>
+                                    <h3 style="font-size:16px; font-weight:700; margin:0;">YouTube Downloader</h3>
+                                </div>
+                                <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
+                                    Analyze any YouTube URL to inspect stream formats, download 1080p DASH adaptive video and audio merged with FFmpeg, batch process playlists, extract MP3 audio, and send files straight into AI clipping.
+                                </p>
+                            </div>
+                            <a href="/yt-downloader" class="btn btn-secondary btn-sm" style="align-self:flex-start;">Open Downloader →</a>
+                        </div>
+
+                        <div class="guide-module-card">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                                    <div style="width:36px; height:36px; border-radius:var(--radius-sm); background:rgba(168,85,247,0.15); display:flex; align-items:center; justify-content:center; color:#A855F7;">
+                                        <svg data-lucide="tv" width="20" height="20"></svg>
+                                    </div>
+                                    <h3 style="font-size:16px; font-weight:700; margin:0;">YouTube Automation Desk</h3>
+                                </div>
+                                <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
+                                    Connect your Google account via secure OAuth, configure upload queues with custom titles and tags, schedule release times, inspect upload errors, and monitor published video performance.
+                                </p>
+                            </div>
+                            <a href="/youtube-desk" class="btn btn-secondary btn-sm" style="align-self:flex-start;">Open YouTube Desk →</a>
                         </div>
                     </div>
+
+                    <!-- Step-by-Step Deep-Dive Collapsible Guides -->
+                    <div style="margin-bottom: var(--space-4);">
+                        <h2 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <svg data-lucide="help-circle" width="18" height="18" style="color:var(--primary);"></svg>
+                            <span>Step-by-Step Practical Guides</span>
+                        </h2>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Click any topic below to expand comprehensive instructions and best practices.</p>
+                    </div>
+
+                    <div class="guide-accordions-wrap">
+                        <!-- Accordion 1 -->
+                        <div class="guide-accordion-item">
+                            <button class="guide-accordion-header" aria-expanded="false">
+                                <span>How to auto-generate vertical Shorts from a podcast or long video</span>
+                                <svg data-lucide="chevron-down" width="18" height="18" class="guide-chevron"></svg>
+                            </button>
+                            <div class="guide-accordion-body">
+                                <ol>
+                                    <li>Navigate to <b>AI Clip Studio</b> (<a href="/dashboard" style="color:var(--primary);">/dashboard</a>) or click <b>New Project</b>.</li>
+                                    <li>In <b>Step 01</b>, drop your source video or select one from the input library. Click the <b>9:16 Shorts</b> aspect ratio card.</li>
+                                    <li>Click <b>Next: Settings</b> to proceed to <b>Step 02</b>.</li>
+                                    <li>Expand <b>Clipping Settings</b> to choose desired minimum and maximum duration (e.g. 15s to 60s) and target clip count.</li>
+                                    <li>Expand <b>Subtitles & Captions</b> to select your language and subtitle style preset. Enable <i>Animated Karaoke Captions</i> for active word pop animations.</li>
+                                    <li>Click <b>Start Processing</b>. UpClip Studio will transcribe audio with Whisper AI, run PySceneDetect, center-crop, and generate clips.</li>
+                                    <li>In <b>Step 04</b>, review your generated clips, trim any excess, or transfer directly to Caption Studio for fine-tuning.</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <!-- Accordion 2 -->
+                        <div class="guide-accordion-item">
+                            <button class="guide-accordion-header" aria-expanded="false">
+                                <span>How to design custom animated captions in Caption Studio 2.0</span>
+                                <svg data-lucide="chevron-down" width="18" height="18" class="guide-chevron"></svg>
+                            </button>
+                            <div class="guide-accordion-body">
+                                <ul>
+                                    <li>Open <b>Caption Studio</b> (<a href="/caption-studio" style="color:var(--primary);">/caption-studio</a>) and ensure your media file is loaded.</li>
+                                    <li>If you don't have captions yet, click the <b>Auto Caption</b> button in the top bar to transcribe your speech with AI.</li>
+                                    <li><b>Seek-on-Click:</b> Click any caption card or timing input in the left pane to immediately jump the video playhead to that exact moment.</li>
+                                    <li><b>Split & Merge:</b> Click the <span class="guide-kbd">✂</span> button on a card to split that segment at the current playhead position, or use the context menu to merge adjacent cards.</li>
+                                    <li><b>Live Repositioning:</b> Drag the caption box directly inside the interactive video canvas to position it perfectly within TikTok / Instagram safe title areas.</li>
+                                    <li><b>Inspector Styling:</b> Use the right pane to select modern fonts (Anton, Inter, Poppins, Bebas Neue), configure outline strokes, active highlight colors, and background boxes.</li>
+                                    <li>Click <b>Export Video</b> to burn your styled captions with FFmpeg, or click <b>Export SRT/VTT</b> to download subtitle files including ASS.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Accordion 3 -->
+                        <div class="guide-accordion-item">
+                            <button class="guide-accordion-header" aria-expanded="false">
+                                <span>How to inspect and download high-definition YouTube videos (DASH & 1080p)</span>
+                                <svg data-lucide="chevron-down" width="18" height="18" class="guide-chevron"></svg>
+                            </button>
+                            <div class="guide-accordion-body">
+                                <ol>
+                                    <li>Open the <b>YouTube Downloader</b> (<a href="/yt-downloader" style="color:var(--primary);">/yt-downloader</a>).</li>
+                                    <li>Paste any valid YouTube video, Shorts, or playlist URL into the input field and click <b>Analyze</b>.</li>
+                                    <li>Review metadata: title, duration, view count, channel name, and available format resolutions.</li>
+                                    <li>Choose your format pill (e.g. <b>1080p Full HD</b>, 720p HD, or <b>MP3 Audio</b>). UpClip Studio automatically fetches separate video and audio DASH streams and merges them using your local FFmpeg binary.</li>
+                                    <li>Click <b>Download Video</b>. Real-time progress, speed (MB/s), and ETA are displayed.</li>
+                                    <li>Once complete, switch to the <b>Library</b> tab to preview the file or click <b>Open in AI Clip Studio</b> to start clipping immediately.</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <!-- Accordion 4 -->
+                        <div class="guide-accordion-item">
+                            <button class="guide-accordion-header" aria-expanded="false">
+                                <span>How to connect and automate YouTube Shorts distribution</span>
+                                <svg data-lucide="chevron-down" width="18" height="18" class="guide-chevron"></svg>
+                            </button>
+                            <div class="guide-accordion-body">
+                                <ul>
+                                    <li>Navigate to <b>YouTube Desk</b> (<a href="/youtube-desk" style="color:var(--primary);">/youtube-desk</a>).</li>
+                                    <li>In the Channel Overview header, click <b>Connect Channel</b> to authorize UpClip Studio using your Google account and OAuth credentials.</li>
+                                    <li>In the Upload / Schedule tab, select the video file you exported from AI Clip Studio or Caption Studio.</li>
+                                    <li>Fill in title, description, tags, category, and privacy status (Public, Unlisted, or Private).</li>
+                                    <li>Choose <b>Publish Immediately</b> or pick a future date and time under <b>Schedule for Later</b>.</li>
+                                    <li>Monitor your active uploads in the <b>Upload Queue</b>. Filter tasks by status (All, Uploading, Processing, Scheduled, Failed) and retry any interrupted jobs with a single click.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Accordion 5 -->
+                        <div class="guide-accordion-item">
+                            <button class="guide-accordion-header" aria-expanded="false">
+                                <span>Keyboard shortcuts & performance optimization</span>
+                                <svg data-lucide="chevron-down" width="18" height="18" class="guide-chevron"></svg>
+                            </button>
+                            <div class="guide-accordion-body">
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+                                    <div>
+                                        <h4 style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Playback & Navigation</h4>
+                                        <ul style="padding-left:16px; margin:0;">
+                                            <li><span class="guide-kbd">Space</span> Play / Pause</li>
+                                            <li><span class="guide-kbd">J</span> / <span class="guide-kbd">L</span> Step backward / forward</li>
+                                            <li><span class="guide-kbd">K</span> Pause playhead</li>
+                                            <li><span class="guide-kbd">M</span> Toggle audio mute</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Editing Hotkeys</h4>
+                                        <ul style="padding-left:16px; margin:0;">
+                                            <li><span class="guide-kbd">S</span> Split caption at playhead</li>
+                                            <li><span class="guide-kbd">Delete</span> Delete selected caption</li>
+                                            <li><span class="guide-kbd">Ctrl</span> + <span class="guide-kbd">Z</span> Undo edit</li>
+                                            <li><span class="guide-kbd">Ctrl</span> + <span class="guide-kbd">Shift</span> + <span class="guide-kbd">Z</span> Redo edit</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Global Controls</h4>
+                                        <ul style="padding-left:16px; margin:0;">
+                                            <li><span class="guide-kbd">Ctrl</span> + <span class="guide-kbd">K</span> Quick Command Menu</li>
+                                            <li><span class="guide-kbd">Ctrl</span> + <span class="guide-kbd">S</span> Save project state</li>
+                                            <li><span class="guide-kbd">Esc</span> Close active modal</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Call-To-Action Banner -->
+                    <div class="card" style="padding: 24px; margin-top: var(--space-6); text-align: center; background: var(--surface-1); border: 1px solid var(--border);">
+                        <h3 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">Ready to create your first set of clips?</h3>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Import any video or choose a template to begin producing viral short-form content.</p>
+                        <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                            <a href="/" class="btn btn-secondary btn-sm">Browse Templates</a>
+                            <a href="/dashboard" class="btn btn-primary btn-sm">Launch AI Clip Studio →</a>
+                        </div>
+                    </div>
+
                 </div>
             </main>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        const guideSteps = document.querySelectorAll('.guide-step');
-        const guidePrev = document.getElementById('guidePrev');
-        const guideNext = document.getElementById('guideNext');
-        const guideStart = document.getElementById('guideStart');
-        const guideSkip = document.getElementById('guideSkip');
-        const guideProgressFill = document.getElementById('guideProgressFill');
-        const guideProgressText = document.getElementById('guideProgressText');
-
-        let currentGuideStep = 1;
-        const totalGuideSteps = guideSteps.length;
-
-        function updateGuideProgress() {
-            const percent = Math.round((currentGuideStep / totalGuideSteps) * 100);
-            guideProgressFill.style.width = `${percent}%`;
-            guideProgressText.textContent = `Step ${currentGuideStep} of ${totalGuideSteps}`;
+        // Initialize Lucide Icons
+        if (window.lucide) {
+            window.lucide.createIcons();
         }
 
-        function showGuideStep(step) {
-            currentGuideStep = step;
-            guideSteps.forEach((el, idx) => {
-                el.style.display = (idx + 1 === step) ? 'flex' : 'none';
+        // Accessible Collapsible Accordions
+        document.querySelectorAll('.guide-accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const isExpanded = header.getAttribute('aria-expanded') === 'true';
+                const body = header.nextElementSibling;
+                
+                header.setAttribute('aria-expanded', !isExpanded);
+                if (body) {
+                    body.classList.toggle('active', !isExpanded);
+                }
             });
 
-            guidePrev.hidden = (step === 1);
-            guideNext.hidden = (step === totalGuideSteps);
-            guideStart.hidden = (step !== totalGuideSteps);
+            // Keyboard accessibility (Enter / Space)
+            header.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    header.click();
+                }
+            });
+        });
 
-            updateGuideProgress();
+        // Sidebar Toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('appSidebar');
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
         }
-
-        guideNext.addEventListener('click', () => {
-            if (currentGuideStep < totalGuideSteps) {
-                showGuideStep(currentGuideStep + 1);
-            }
-        });
-
-        guidePrev.addEventListener('click', () => {
-            if (currentGuideStep > 1) {
-                showGuideStep(currentGuideStep - 1);
-            }
-        });
-
-        guideSkip.addEventListener('click', () => {
-            window.location.href = '/';
-        });
-
-        updateGuideProgress();
     </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>lucide.createIcons();</script>
 </body>
 </html>

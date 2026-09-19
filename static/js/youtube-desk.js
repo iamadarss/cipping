@@ -19,6 +19,10 @@
         history: [],
         errors: [],
         pollTimer: null,
+        queueFilter: 'all',
+        queueSearchQuery: '',
+        historyFilter: 'all',
+        historySearchQuery: '',
 
         // Wizard State
         wizard: {
@@ -1135,46 +1139,152 @@
     // 7. Dedicated Pages: Queue, Scheduled, History, Connection
     // =========================================================================
     async function loadQueue() {
-        dom.queueItemsList.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted);">Loading active queue...</div>';
+        dom.queueItemsList.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted);"><span class="spinner"></span> Loading active queue...</div>';
         try {
             const res = await fetch('/youtube/upload-queue');
             const data = await res.json();
             state.queue = data.items || [];
             dom.queueBadgeCount.textContent = state.queue.length;
 
-            if (state.queue.length === 0) {
-                dom.queueItemsList.innerHTML = `
-                    <div class="compact-empty-state">
-                        <svg data-lucide="layers" width="32" height="32"></svg>
-                        <h4>Queue is Empty</h4>
-                        <p>No videos are currently queued or uploading.</p>
-                        <button class="btn btn-primary btn-sm" data-nav="upload">Add Video to Queue</button>
-                    </div>`;
-                return;
+            // Calculate live accurate counts for each filter
+            const counts = {
+                all: state.queue.length,
+                uploading: 0,
+                processing: 0,
+                scheduled: 0,
+                failed: 0
+            };
+
+            state.queue.forEach(q => {
+                const st = (q.status || '').toLowerCase();
+                if (st === 'uploading') counts.uploading++;
+                else if (st === 'processing' || st === 'queued' || st === 'retrying') counts.processing++;
+                else if (st === 'scheduled' || q.scheduled_at) counts.scheduled++;
+                else if (st === 'failed' || st === 'error') counts.failed++;
+            });
+
+            // Update tab button labels with accurate counts
+            if (dom.queueFilterTabs) {
+                dom.queueFilterTabs.querySelectorAll('.filter-tab').forEach(tab => {
+                    const f = tab.dataset.filter;
+                    const baseLabel = f.charAt(0).toUpperCase() + f.slice(1);
+                    tab.textContent = `${baseLabel} (${counts[f] !== undefined ? counts[f] : 0})`;
+                });
             }
 
-            renderQueueList(state.queue);
+            applyQueueFilter();
         } catch (err) {
             dom.queueItemsList.innerHTML = `<div style="color:var(--error); padding:20px;">Failed to load queue: ${err.message}</div>`;
         }
     }
 
+    function applyQueueFilter() {
+        let filtered = state.queue;
+        if (state.queueFilter !== 'all') {
+            filtered = filtered.filter(q => {
+                const st = (q.status || '').toLowerCase();
+                if (state.queueFilter === 'uploading') return st === 'uploading';
+                if (state.queueFilter === 'processing') return st === 'processing' || st === 'queued' || st === 'retrying';
+                if (state.queueFilter === 'scheduled') return st === 'scheduled' || q.scheduled_at;
+                if (state.queueFilter === 'failed') return st === 'failed' || st === 'error';
+                return true;
+            });
+        }
+
+        if (state.queueSearchQuery) {
+            filtered = filtered.filter(q => (q.title || '').toLowerCase().includes(state.queueSearchQuery));
+        }
+
+        if (filtered.length === 0) {
+            dom.queueItemsList.innerHTML = `
+                <div class="compact-empty-state">
+                    <svg data-lucide="layers" width="32" height="32"></svg>
+                    <h4>No Queue Items Found</h4>
+                    <p>${state.queue.length === 0 ? 'No videos are currently queued or uploading.' : 'No items match the active status filter or search query.'}</p>
+                    ${state.queue.length === 0 ? '<button class="btn btn-primary btn-sm" data-nav="upload">Add Video to Queue</button>' : '<button class="btn btn-secondary btn-sm" id="btnResetQueueFilter">Reset Filter</button>'}
+                </div>`;
+            const resetBtn = document.getElementById('btnResetQueueFilter');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    state.queueFilter = 'all';
+                    state.queueSearchQuery = '';
+                    if (dom.queueSearchInput) dom.queueSearchInput.value = '';
+                    if (dom.queueFilterTabs) {
+                        dom.queueFilterTabs.querySelectorAll('.filter-tab').forEach(t => t.classList.toggle('active', t.dataset.filter === 'all'));
+                    }
+                    applyQueueFilter();
+                });
+            }
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+
+        renderQueueList(filtered);
+    }
+
     function renderQueueList(items) {
-        dom.queueItemsList.innerHTML = items.map(q => `
+        dom.queueItemsList.innerHTML = items.map(q => {
+            const st = (q.status || 'queued').toLowerCase();
+            const isFailed = st === 'failed' || st === 'error';
+            const isCompleted = st === 'completed';
+            const isUploading = st === 'uploading';
+            const progress = q.progress || (isCompleted ? 100 : (isUploading ? 45 : 10));
+
+            let statusClass = '';
+            if (isCompleted) statusClass = 'connected';
+            else if (isFailed) statusClass = 'disconnected';
+            else if (isUploading) statusClass = 'pending';
+
+            return `
             <div class="desk-card" style="margin-bottom:12px; padding:16px;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
                     <div style="font-weight:700; font-size:14px; color:var(--text-primary);">${escapeHtml(q.title || 'Untitled Upload')}</div>
-                    <span class="status-pill ${q.status === 'completed' ? 'connected' : q.status === 'failed' ? 'disconnected' : ''}">${q.status}</span>
+                    <span class="status-pill ${statusClass}" style="text-transform:capitalize;">${escapeHtml(q.status || 'queued')}</span>
                 </div>
                 <div style="height:6px; border-radius:3px; background:var(--surface-1); overflow:hidden; margin-bottom:8px;">
-                    <div style="height:100%; width:${q.progress || (q.status === 'completed' ? 100 : 35)}%; background:var(--primary);"></div>
+                    <div style="height:100%; width:${progress}%; background:${isFailed ? 'var(--error)' : 'var(--primary)'};"></div>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted);">
-                    <span>Visibility: ${escapeHtml(q.visibility || 'public')}</span>
-                    <button class="btn btn-outline btn-sm btn-delete-queue" data-id="${q.id}" style="padding:2px 6px; font-size:11px; color:var(--error); border-color:rgba(239,68,68,0.3);">Cancel</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted); flex-wrap:wrap; gap:8px;">
+                    <span>Visibility: ${escapeHtml(q.visibility || 'public')}${q.retry_count ? ` • Retries: ${q.retry_count}` : ''}</span>
+                    <div style="display:flex; gap:6px;">
+                        ${isFailed ? `
+                            <button class="btn btn-secondary btn-sm btn-view-queue-error" data-error="${escapeHtml(q.error_message || 'Upload failed')}" style="padding:3px 8px; font-size:11px;">View Error</button>
+                            <button class="btn btn-primary btn-sm btn-retry-queue" data-id="${q.id}" style="padding:3px 8px; font-size:11px;">Retry</button>
+                        ` : ''}
+                        <button class="btn btn-outline btn-sm btn-delete-queue" data-id="${q.id}" style="padding:3px 8px; font-size:11px; color:var(--error); border-color:rgba(239,68,68,0.3);">Cancel</button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
+
+        dom.queueItemsList.querySelectorAll('.btn-retry-queue').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Retrying...';
+                try {
+                    const res = await fetch(`/youtube/upload-queue/${btn.dataset.id}/retry`, { method: 'POST' });
+                    const resData = await res.json();
+                    if (resData.success) {
+                        showToast('Upload queued for retry', 'success');
+                        loadQueue();
+                    } else {
+                        showToast(resData.error || 'Retry failed', 'error');
+                        btn.disabled = false;
+                        btn.textContent = 'Retry';
+                    }
+                } catch (e) {
+                    showToast('Retry error: ' + e.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Retry';
+                }
+            });
+        });
+
+        dom.queueItemsList.querySelectorAll('.btn-view-queue-error').forEach(btn => {
+            btn.addEventListener('click', () => {
+                alert('Upload Error Details:\n\n' + btn.dataset.error);
+            });
+        });
 
         dom.queueItemsList.querySelectorAll('.btn-delete-queue').forEach(btn => {
             btn.addEventListener('click', async () => {
@@ -1191,7 +1301,7 @@
     }
 
     async function loadScheduled() {
-        dom.scheduledItemsList.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted);">Loading scheduled uploads...</div>';
+        dom.scheduledItemsList.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted);"><span class="spinner"></span> Loading scheduled uploads...</div>';
         try {
             const res = await fetch('/youtube/schedules');
             const data = await res.json();
@@ -1244,52 +1354,133 @@
     }
 
     async function loadHistory() {
-        dom.historyTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--text-muted);">Loading publishing history...</td></tr>';
+        dom.historyTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--text-muted);"><span class="spinner"></span> Loading publishing history...</td></tr>';
         try {
             const res = await fetch('/youtube/history');
             const data = await res.json();
             state.history = data.history || [];
 
-            if (state.history.length === 0) {
-                dom.historyTableBody.innerHTML = `
-                    <tr><td colspan="7">
-                        <div class="compact-empty-state">
-                            <svg data-lucide="file-text" width="32" height="32"></svg>
-                            <h4>No Upload History Found</h4>
-                            <p>Published and scheduled video uploads will be recorded here.</p>
-                        </div>
-                    </td></tr>`;
-                return;
+            // Calculate live accurate counts
+            const counts = {
+                all: state.history.length,
+                published: 0,
+                scheduled: 0,
+                failed: 0
+            };
+
+            state.history.forEach(h => {
+                const st = (h.status || '').toLowerCase();
+                if (st === 'published' || st === 'completed' || h.youtube_video_id) counts.published++;
+                else if (st === 'scheduled') counts.scheduled++;
+                else if (st === 'failed' || st === 'error') counts.failed++;
+            });
+
+            // Update tab button labels with accurate counts
+            if (dom.historyFilterTabs) {
+                dom.historyFilterTabs.querySelectorAll('.filter-tab').forEach(tab => {
+                    const f = tab.dataset.filter;
+                    const baseLabel = f.charAt(0).toUpperCase() + f.slice(1);
+                    tab.textContent = `${baseLabel} (${counts[f] !== undefined ? counts[f] : 0})`;
+                });
             }
 
-            renderHistoryTable(state.history);
+            applyHistoryFilter();
         } catch (err) {
             dom.historyTableBody.innerHTML = `<tr><td colspan="7" style="color:var(--error); padding:20px;">Failed to load history: ${err.message}</td></tr>`;
         }
     }
 
+    function applyHistoryFilter() {
+        let filtered = state.history;
+        if (state.historyFilter !== 'all') {
+            filtered = filtered.filter(h => {
+                const st = (h.status || '').toLowerCase();
+                if (state.historyFilter === 'published') return st === 'published' || st === 'completed' || h.youtube_video_id;
+                if (state.historyFilter === 'scheduled') return st === 'scheduled';
+                if (state.historyFilter === 'failed') return st === 'failed' || st === 'error';
+                return true;
+            });
+        }
+
+        if (state.historySearchQuery) {
+            filtered = filtered.filter(h => 
+                (h.title || '').toLowerCase().includes(state.historySearchQuery) ||
+                (h.video_title || '').toLowerCase().includes(state.historySearchQuery)
+            );
+        }
+
+        if (filtered.length === 0) {
+            dom.historyTableBody.innerHTML = `
+                <tr><td colspan="7">
+                    <div class="compact-empty-state">
+                        <svg data-lucide="file-text" width="32" height="32"></svg>
+                        <h4>No Upload History Found</h4>
+                        <p>${state.history.length === 0 ? 'Published and scheduled video uploads will be recorded here.' : 'No uploads match the selected status filter or search.'}</p>
+                    </div>
+                </td></tr>`;
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+
+        renderHistoryTable(filtered);
+    }
+
     function renderHistoryTable(items) {
-        dom.historyTableBody.innerHTML = items.map(h => `
+        dom.historyTableBody.innerHTML = items.map(h => {
+            const st = (h.status || 'published').toLowerCase();
+            const isFailed = st === 'failed' || st === 'error';
+            const isScheduled = st === 'scheduled';
+
+            let statusClass = 'connected';
+            if (isFailed) statusClass = 'disconnected';
+            else if (isScheduled) statusClass = 'pending';
+
+            return `
             <tr>
                 <td>
                     <div style="width:60px; height:34px; border-radius:4px; overflow:hidden; background:#000;">
                         ${h.thumbnail ? `<img src="${h.thumbnail}" style="width:100%;height:100%;object-fit:cover;">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;"><svg data-lucide="video" width="14" height="14" style="color:var(--text-muted);"></svg></div>'}
                     </div>
                 </td>
-                <td style="font-weight:600; color:var(--text-primary); max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                <td style="font-weight:600; color:var(--text-primary); max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(h.title || 'Untitled Video')}">
                     ${escapeHtml(h.title || 'Untitled Video')}
                 </td>
                 <td>
-                    <span class="status-pill connected" style="padding:2px 8px; font-size:10px;">${escapeHtml(h.status || 'published')}</span>
+                    <span class="status-pill ${statusClass}" style="padding:2px 8px; font-size:10px; text-transform:capitalize;">${escapeHtml(h.status || 'published')}</span>
                 </td>
                 <td style="text-transform:capitalize;">${escapeHtml(h.visibility || 'public')}</td>
                 <td>${formatDate(h.published_at || h.created_at)}</td>
                 <td>${h.view_count || 0}</td>
                 <td style="text-align:right;">
-                    ${h.youtube_video_id ? `<a href="https://youtu.be/${h.youtube_video_id}" target="_blank" class="btn btn-secondary btn-sm" style="padding:4px 8px;" title="Watch on YouTube"><svg data-lucide="external-link" width="12" height="12"></svg></a>` : '-'}
+                    <div style="display:inline-flex; gap:4px; justify-content:flex-end;">
+                        ${h.youtube_video_id ? `
+                            <a href="https://youtu.be/${h.youtube_video_id}" target="_blank" class="btn btn-secondary btn-sm" style="padding:4px 8px;" title="Watch on YouTube">
+                                <svg data-lucide="external-link" width="12" height="12"></svg>
+                            </a>
+                            <button type="button" class="btn btn-secondary btn-sm btn-copy-yt-link" data-ytid="${h.youtube_video_id}" style="padding:4px 8px;" title="Copy Link">
+                                <svg data-lucide="copy" width="12" height="12"></svg>
+                            </button>
+                        ` : (isFailed ? `
+                            <button type="button" class="btn btn-secondary btn-sm btn-view-hist-error" data-error="${escapeHtml(h.description || 'Upload failed')}" style="padding:4px 8px; font-size:11px;">View Error</button>
+                        ` : '-')}
+                    </div>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
+
+        dom.historyTableBody.querySelectorAll('.btn-copy-yt-link').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const url = `https://youtu.be/${btn.dataset.ytid}`;
+                navigator.clipboard.writeText(url);
+                showToast('YouTube link copied to clipboard!', 'success');
+            });
+        });
+
+        dom.historyTableBody.querySelectorAll('.btn-view-hist-error').forEach(btn => {
+            btn.addEventListener('click', () => {
+                alert('Upload Error Details:\n\n' + btn.dataset.error);
+            });
+        });
 
         if (window.lucide) window.lucide.createIcons();
     }
@@ -1394,6 +1585,43 @@
     dom.btnQuickQueue.addEventListener('click', () => switchView('queue'));
     dom.btnQuickHistory.addEventListener('click', () => switchView('history'));
     dom.btnQuickConnect.addEventListener('click', () => switchView('connection'));
+
+    // Filter tab and search input listeners
+    if (dom.queueFilterTabs) {
+        dom.queueFilterTabs.addEventListener('click', (e) => {
+            const tab = e.target.closest('.filter-tab');
+            if (!tab) return;
+            dom.queueFilterTabs.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            state.queueFilter = tab.dataset.filter;
+            applyQueueFilter();
+        });
+    }
+
+    if (dom.queueSearchInput) {
+        dom.queueSearchInput.addEventListener('input', (e) => {
+            state.queueSearchQuery = e.target.value.toLowerCase().trim();
+            applyQueueFilter();
+        });
+    }
+
+    if (dom.historyFilterTabs) {
+        dom.historyFilterTabs.addEventListener('click', (e) => {
+            const tab = e.target.closest('.filter-tab');
+            if (!tab) return;
+            dom.historyFilterTabs.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            state.historyFilter = tab.dataset.filter;
+            applyHistoryFilter();
+        });
+    }
+
+    if (dom.historySearchInput) {
+        dom.historySearchInput.addEventListener('input', (e) => {
+            state.historySearchQuery = e.target.value.toLowerCase().trim();
+            applyHistoryFilter();
+        });
+    }
 
     // =========================================================================
     // 8. Initialization

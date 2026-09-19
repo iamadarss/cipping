@@ -52,13 +52,31 @@ class VideoLoader:
         return f"{size_bytes / (1024 * 1024):.2f} GB"
 
     def thumbnail(self, save_path):
+        """Generate thumbnail image supporting Unicode paths and FFmpeg fallback."""
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
 
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        success = False
+        try:
+            if hasattr(self, "cap") and self.cap and self.cap.isOpened():
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, frame = self.cap.read()
+                if ret and frame is not None and frame.size > 0:
+                    ext = save_path.suffix or ".jpg"
+                    is_encoded, buf = cv2.imencode(ext, frame)
+                    if is_encoded:
+                        with open(save_path, "wb") as f:
+                            f.write(buf)
+                        if save_path.exists() and save_path.stat().st_size > 0:
+                            success = True
+        except Exception:
+            success = False
 
-        success, frame = self.cap.read()
+        if not success or not save_path.exists() or save_path.stat().st_size == 0:
+            from utils.ffmpeg_utils import generate_thumbnail
+            success = generate_thumbnail(self.video_path, save_path)
 
-        if success:
-            cv2.imwrite(str(save_path), frame)
+        return success
 
     def extract_frames(self, output_folder=None, interval=30):
         """Frame extraction is disabled for enhanced processing speed."""

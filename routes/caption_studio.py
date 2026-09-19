@@ -161,8 +161,14 @@ def auto_caption():
 
     try:
         from ai.whisper_engine import WhisperEngine
+        from utils.hinglish_transliterator import devanagari_to_hinglish
+
+        lang_code = (language or "en").lower().strip()
+        is_hinglish = lang_code in ("hinglish", "hi-latn")
+        whisper_lang = "hi" if is_hinglish or lang_code in ("hindi", "hi") else ("en" if lang_code in ("english", "en") else lang_code)
+
         whisper = WhisperEngine(config.WHISPER_MODEL)
-        transcript = whisper.transcribe(video_path, language=language)
+        transcript = whisper.transcribe(video_path, language=whisper_lang)
         
         captions = []
         # Chunk large segments into readable short-form caption segments (1-7 words each)
@@ -170,6 +176,9 @@ def auto_caption():
             raw_text = str(seg.get("text", "") or "").strip()
             if not raw_text:
                 continue
+
+            if is_hinglish:
+                raw_text = devanagari_to_hinglish(raw_text)
 
             words = raw_text.split()
             seg_start = float(seg["start"])
@@ -306,7 +315,7 @@ def save_caption_state():
 
     try:
         from models.project import Project
-        from app import db
+        from extensions import db
         clean_id = project_id.replace("proj_", "")
         project = None
         if clean_id.isdigit():
@@ -324,6 +333,8 @@ def save_caption_state():
                     current_state = {}
             current_state["captions"] = captions
             current_state["caption_style"] = style
+            if "state" in data and isinstance(data["state"], dict):
+                current_state.update(data["state"])
             project.editor_state = json.dumps(current_state)
             db.session.commit()
             return jsonify({"success": True, "message": "Caption state saved successfully"})
@@ -333,84 +344,176 @@ def save_caption_state():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@caption_studio_bp.route("/api/caption-studio/load-state", methods=["GET", "POST"])
+def load_caption_state():
+    """Load caption state (segments & styling) from database project."""
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        project_id = data.get("project_id", "")
+    else:
+        project_id = request.args.get("project_id", "")
+
+    if not project_id:
+        return jsonify({"success": False, "error": "No project_id provided"}), 400
+
+    try:
+        from models.project import Project
+        clean_id = project_id.replace("proj_", "")
+        project = None
+        if clean_id.isdigit():
+            project = Project.query.get(int(clean_id))
+        if not project:
+            project = Project.query.filter_by(name=project_id).first()
+
+        if project and project.editor_state:
+            state = json.loads(project.editor_state)
+            return jsonify({"success": True, "state": state, "project": project.to_dict()})
+        return jsonify({"success": True, "state": {}, "project": project.to_dict() if project else None})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @caption_studio_bp.route("/api/caption-studio/import", methods=["POST"])
 def import_captions():
-    if "file" not in request.files:
-        return jsonify({"success": False, "error": "No file provided"}), 400
-    file = request.files["file"]
-    if not file or not file.filename:
-        return jsonify({"success": False, "error": "Empty filename"}), 400
-    filename = Path(file.filename).name
-    project_id = request.form.get("project_id", "")
-    try:
-        content = file.read().decode("utf-8")
-    except Exception as e:
-        return jsonify({"success": False, "error": f"Failed to read file: {e}"}), 400
+    content = ""
+    filename = ""
+    project_id = ""
+    if "file" in request.files:
+        file = request.files["file"]
+        if not file or not file.filename:
+            return jsonify({"success": False, "error": "Empty filename"}), 400
+        filename = Path(file.filename).name
+        project_id = request.form.get("project_id", "")
+        try:
+            content = file.read().decode("utf-8")
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Failed to read file: {e}"}), 400
+    elif request.is_json or request.get_json(silent=True):
+        data = request.get_json(silent=True) or {}
+        filename = data.get("filename", "captions.json")
+        project_id = data.get("project_id", "")
+        content = data.get("content", "")
+        if not content and "captions" in data:
+            content = json.dumps(data.get("captions", []))
+    else:
+        return jsonify({"success": False, "error": "No file or payload provided"}), 400
 
+    content = content.replace("\ufeff", "").replace("\r\n", "\n").replace("\r", "\n")
     captions = []
     ext = Path(filename).suffix.lower()
     if ext == ".srt":
-        blocks = content.strip().split("\n\n")
+        blocks = re.split(r'\n\s*\n', content.strip())
         for idx, block in enumerate(blocks):
-            lines = block.strip().splitlines()
-            if len(lines) >= 3:
-                time_line = lines[1]
-                if " --> " in time_line:
-                    start_str, end_str = time_line.split(" --> ")
-                    text = " ".join(lines[2:]).strip()
+            lines = [l.strip() for l in block.splitlines() if l.strip()]
+            if not lines:
+                continue
+            time_idx = -1
+            for l_i, l in enumerate(lines):
+                if "-->" in l:
+                    time_idx = l_i
+                    break
+            if time_idx != -1 and time_idx + 1 < len(lines):
+                time_line = lines[time_idx]
+                parts = time_line.split("-->")
+                start_str = parts[0].strip()
+                end_str = parts[1].strip()
+                text = " ".join(lines[time_idx + 1:]).strip()
+                try:
                     start_sec = _parse_srt_time(start_str)
                     end_sec = _parse_srt_time(end_str)
-                    words = text.split()
-                    word_dur = (end_sec - start_sec) / max(1, len(words))
-                    word_objs = [{
-                        "text": w,
-                        "start": round(start_sec + i * word_dur, 2),
-                        "end": round(start_sec + (i + 1) * word_dur, 2),
-                    } for i, w in enumerate(words)]
-                    captions.append({
-                        "id": f"imp_{idx}",
-                        "text": text,
-                        "start": start_sec,
-                        "end": end_sec,
-                        "words": word_objs,
-                    })
-    elif ext == ".vtt":
-        lines = content.splitlines()
-        for i, line in enumerate(lines):
-            if " --> " in line:
-                start_str, end_str = line.split(" --> ")
-                text = ""
-                if i + 1 < len(lines):
-                    text = lines[i + 1].strip()
-                start_sec = _parse_vtt_time(start_str.strip())
-                end_sec = _parse_vtt_time(end_str.strip())
+                except Exception:
+                    continue
                 words = text.split()
-                word_dur = (end_sec - start_sec) / max(1, len(words))
+                word_dur = max(0.05, (end_sec - start_sec)) / max(1, len(words))
                 word_objs = [{
                     "text": w,
-                    "start": round(start_sec + idx * word_dur, 2),
-                    "end": round(start_sec + (idx + 1) * word_dur, 2),
-                } for idx, w in enumerate(words)]
+                    "start": round(start_sec + i * word_dur, 2),
+                    "end": round(start_sec + (i + 1) * word_dur, 2),
+                } for i, w in enumerate(words)]
                 captions.append({
-                    "id": f"imp_{i}",
+                    "id": f"imp_{idx}",
                     "text": text,
                     "start": start_sec,
                     "end": end_sec,
                     "words": word_objs,
                 })
+    elif ext == ".vtt":
+        blocks = re.split(r'\n\s*\n', content.strip())
+        for idx, block in enumerate(blocks):
+            lines = [l.strip() for l in block.splitlines() if l.strip()]
+            if not lines:
+                continue
+            time_idx = -1
+            for l_i, l in enumerate(lines):
+                if "-->" in l:
+                    time_idx = l_i
+                    break
+            if time_idx != -1 and time_idx + 1 < len(lines):
+                time_line = lines[time_idx]
+                parts = time_line.split("-->")
+                start_str = parts[0].strip()
+                end_str = parts[1].strip().split()[0]  # strip cue settings
+                text = " ".join(lines[time_idx + 1:]).strip()
+                try:
+                    start_sec = _parse_vtt_time(start_str)
+                    end_sec = _parse_vtt_time(end_str)
+                except Exception:
+                    continue
+                words = text.split()
+                word_dur = max(0.05, (end_sec - start_sec)) / max(1, len(words))
+                word_objs = [{
+                    "text": w,
+                    "start": round(start_sec + i * word_dur, 2),
+                    "end": round(start_sec + (i + 1) * word_dur, 2),
+                } for i, w in enumerate(words)]
+                captions.append({
+                    "id": f"imp_{idx}",
+                    "text": text,
+                    "start": start_sec,
+                    "end": end_sec,
+                    "words": word_objs,
+                })
+    elif ext == ".json":
+        try:
+            raw_data = json.loads(content)
+            items = raw_data if isinstance(raw_data, list) else raw_data.get("captions", raw_data.get("segments", []))
+            for idx, item in enumerate(items):
+                start_sec = float(item.get("start", item.get("startTime", 0.0)))
+                end_sec = float(item.get("end", item.get("endTime", start_sec + 2.0)))
+                text = str(item.get("text", "")).strip()
+                words = item.get("words", [])
+                if not words and text:
+                    raw_words = text.split()
+                    w_dur = max(0.1, end_sec - start_sec) / max(1, len(raw_words))
+                    words = [{
+                        "text": w,
+                        "start": round(start_sec + w_i * w_dur, 2),
+                        "end": round(start_sec + (w_i + 1) * w_dur, 2),
+                    } for w_i, w in enumerate(raw_words)]
+                captions.append({
+                    "id": str(item.get("id", f"imp_{idx}")),
+                    "text": text,
+                    "start": round(start_sec, 2),
+                    "end": round(end_sec, 2),
+                    "words": words,
+                    "style": item.get("style", {}),
+                    "position": item.get("position", None),
+                })
+        except Exception as err:
+            return jsonify({"success": False, "error": f"Invalid JSON format: {err}"}), 400
     else:
-        return jsonify({"success": False, "error": "Unsupported format. Please upload SRT or VTT."}), 400
+        return jsonify({"success": False, "error": "Unsupported format. Please upload SRT, VTT, or JSON."}), 400
 
     return jsonify({"success": True, "captions": captions})
 
 
 @caption_studio_bp.route("/api/caption-studio/export-captions", methods=["POST"])
 def export_captions_only():
-    """Export captions as raw SRT/VTT files without rendering video."""
+    """Export captions as raw SRT/VTT/JSON files without rendering video."""
     data = request.get_json() or {}
     captions = data.get("captions", [])
     project_id = data.get("project_id", "")
-    output_format = data.get("format", "both")
+    output_format = data.get("format", "both").lower()
 
     if not captions:
         return jsonify({"success": False, "error": "No captions to export"}), 400
@@ -419,19 +522,38 @@ def export_captions_only():
         config.SUBTITLE_DIR.mkdir(parents=True, exist_ok=True)
         results = {}
 
-        if output_format in ("srt", "both"):
+        if output_format in ("srt", "both", "all"):
             srt_content = _build_srt(captions)
             srt_name = "captions_export.srt"
             srt_path = config.SUBTITLE_DIR / srt_name
             srt_path.write_text(srt_content, encoding="utf-8")
             results["srt"] = {"filename": srt_name, "url": f"/download/subtitle/{srt_name}"}
 
-        if output_format in ("vtt", "both"):
+        if output_format in ("vtt", "both", "all"):
             vtt_content = _build_vtt(captions)
             vtt_name = "captions_export.vtt"
             vtt_path = config.SUBTITLE_DIR / vtt_name
             vtt_path.write_text(vtt_content, encoding="utf-8")
             results["vtt"] = {"filename": vtt_name, "url": f"/download/subtitle/{vtt_name}"}
+
+        if output_format in ("json", "all"):
+            json_name = "captions_export.json"
+            json_path = config.SUBTITLE_DIR / json_name
+            json_path.write_text(json.dumps(captions, indent=2, ensure_ascii=False), encoding="utf-8")
+            results["json"] = {"filename": json_name, "url": f"/download/subtitle/{json_name}"}
+
+        if output_format in ("ass", "both"):
+            try:
+                from ai.animated_caption_renderer import AnimatedCaptionRenderer
+                renderer = AnimatedCaptionRenderer()
+                style = data.get("style") or {}
+                ass_content = renderer.build_ass(captions, opts=style)
+                ass_name = "captions_export.ass"
+                ass_path = config.SUBTITLE_DIR / ass_name
+                ass_path.write_text(ass_content, encoding="utf-8")
+                results["ass"] = {"filename": ass_name, "url": f"/download/subtitle/{ass_name}"}
+            except Exception as ass_err:
+                print("ASS export warning:", ass_err)
 
         return jsonify({"success": True, "files": results})
     except Exception as e:
@@ -764,14 +886,26 @@ def split_caption_segment():
 def merge_caption_segments():
     data = request.get_json(silent=True) or {}
     captions = data.get("captions", [])
-    caption_id_a = data.get("caption_id_a", "")
+    caption_id = data.get("caption_id", "")
+    caption_id_a = data.get("caption_id_a", caption_id)
     caption_id_b = data.get("caption_id_b", "")
 
     idx_a = next((i for i, c in enumerate(captions) if c.get("id") == caption_id_a), None)
-    idx_b = next((i for i, c in enumerate(captions) if c.get("id") == caption_id_b), None)
+    if idx_a is None:
+        return jsonify({"success": False, "error": "Caption not found"}), 404
 
-    if idx_a is None or idx_b is None:
-        return jsonify({"success": False, "error": "One or both captions not found"}), 404
+    if not caption_id_b:
+        if idx_a + 1 < len(captions):
+            idx_b = idx_a + 1
+        elif idx_a > 0:
+            idx_b = idx_a - 1
+        else:
+            return jsonify({"success": False, "error": "No adjacent caption to merge with"}), 400
+    else:
+        idx_b = next((i for i, c in enumerate(captions) if c.get("id") == caption_id_b), None)
+        if idx_b is None:
+            return jsonify({"success": False, "error": "Second caption not found"}), 404
+
     if abs(idx_a - idx_b) != 1:
         return jsonify({"success": False, "error": "Captions must be adjacent to merge"}), 400
 

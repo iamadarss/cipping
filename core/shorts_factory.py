@@ -11,7 +11,7 @@ from pathlib import Path
 
 import config
 from models.project import Project
-from app import db
+from extensions import db
 from core.render_queue import render_queue_manager
 from flask import current_app
 

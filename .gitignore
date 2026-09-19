@@ -24,6 +24,8 @@ output/
 input/*.mp4
 input/*.mov
 input/*.mkv
+*.part
+input/*.part
 
 # Downloaded AI model weights
 *.pt
@@ -45,3 +47,11 @@ assets/music/
 Thumbs.db
 oauth_client_secrets.json
 oauth_client_secrets.json
+
+# Google OAuth & sensitive credentials
+.env.*
+client_secrets.json
+credentials.json
+token.json
+youtube_token.json
+*.token

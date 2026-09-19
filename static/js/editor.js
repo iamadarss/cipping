@@ -128,8 +128,23 @@ class UpClipEditor {
         }
         
         if (!this.project) {
-            alert("No project loaded. Redirecting to projects workspace.");
-            window.location.href = "/";
+            const urlParams = new URLSearchParams(window.location.search);
+            const projId = urlParams.get('project_id') || urlParams.get('projectId');
+            if (projId) {
+                try {
+                    const res = await fetch(`/api/projects/${projId}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.project = data;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch project by ID from API:", e);
+                }
+            }
+        }
+
+        if (!this.project) {
+            this.showProjectUnavailable();
             return;
         }
 
@@ -304,6 +319,21 @@ class UpClipEditor {
             }
         }
 
+        // If clips are still empty but project has a source_path, load the source video as timeline clip
+        if (this.clips.length === 0 && this.project && this.project.source_path) {
+            const dur = this.project.duration || 30;
+            this.clips.push({
+                id: 'clip_source_' + Date.now(),
+                filename: this.project.source_path,
+                start: 0,
+                end: dur,
+                duration: dur,
+                timelineStart: 0,
+                track: 'video',
+                transform: { x: 0, y: 0, scale: 100, rotation: 0, opacity: 100 }
+            });
+        }
+
         this.renderLibrary();
         this.renderTimeline();
         this.renderGraphicsCanvas();
@@ -311,6 +341,35 @@ class UpClipEditor {
         this.renderAiStudioLists();
         this.drawRuler();
         this.updatePlayerSource();
+    }
+
+    showProjectUnavailable() {
+        const existing = document.getElementById('projectUnavailableOverlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'projectUnavailableOverlay';
+        overlay.className = 'project-unavailable-overlay';
+        overlay.innerHTML = `
+            <div class="card unavailable-card">
+                <div class="unavailable-icon">⚠️</div>
+                <h2 style="font-family:var(--font-heading); font-size:20px; font-weight:800; color:var(--text-primary); margin:0;">Project unavailable</h2>
+                <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin:4px 0 0 0;">
+                    The project you requested could not be found, failed to load, or has been removed.
+                </p>
+                <div class="unavailable-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.reload()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        Retry
+                    </button>
+                    <a href="/" class="btn btn-primary">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        Return to Home
+                    </a>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
     }
 
     // ---------- AI Studio Assistant Controller ----------
@@ -5474,11 +5533,11 @@ class UpClipEditor {
                 <div id="setTabContent" style="font-size:12px;">
                     <div class="set-pane" id="paneAppearance">
                         <div class="form-group" style="margin-bottom:12px;">
-                            <label style="display:block; margin-bottom:4px; font-weight:600;">Theme Mode</label>
-                            <select id="setThemeSelect" class="form-control" style="width:100%; padding:6px; background:var(--surface); color:var(--text-primary); border:1px solid var(--border); border-radius:4px;">
-                                <option value="dark" ${currentTheme === 'dark' ? 'selected' : ''}>Dark Studio Mode (Default)</option>
-                                <option value="light" ${currentTheme === 'light' ? 'selected' : ''}>Light Theme Mode</option>
-                            </select>
+                            <label style="display:block; margin-bottom:4px; font-weight:600;">Theme</label>
+                            <div style="padding:8px 12px; background:var(--surface-1); color:var(--text-primary); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; gap:8px;">
+                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981;"></span>
+                                <span style="font-weight:600;">Dark Studio Mode (Graphite & Emerald)</span>
+                            </div>
                         </div>
                         <div class="form-group" style="margin-bottom:12px;">
                             <label style="display:block; margin-bottom:4px; font-weight:600;">Accent Color</label>
@@ -5497,13 +5556,9 @@ class UpClipEditor {
                     label: "Apply Changes",
                     variant: "primary",
                     onClick: (modal) => {
-                        const themeSel = document.getElementById('setThemeSelect');
-                        if (themeSel) {
-                            const val = themeSel.value;
-                            document.documentElement.setAttribute('data-theme', val);
-                            localStorage.setItem('upclip_theme', val);
-                            this.showToast(`Applied ${val} theme mode`, 'success');
-                        }
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                        localStorage.setItem('upclip_theme', 'dark');
+                        this.showToast('Settings saved', 'success');
                         modal.close();
                     }
                 },

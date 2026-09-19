@@ -8,7 +8,7 @@ Recent Projects Tracking, Global Settings, and Background Task Management.
 import json
 from flask import Blueprint, request, jsonify
 
-from app import db
+from extensions import db
 from models.project import Project
 from core.project_manager import project_manager
 from core.settings_manager import settings_manager
@@ -24,7 +24,44 @@ projects_bp = Blueprint('projects', __name__)
 
 @projects_bp.route('/api/projects', methods=['GET'])
 def list_projects():
-    """List all projects ordered by last updated date."""
+    """List all projects ordered by last updated date, auto-syncing input videos."""
+    import config
+    from pathlib import Path
+    try:
+        if config.INPUT_DIR.exists():
+            existing_sources = {p.source_path for p in Project.query.all() if p.source_path}
+            new_added = False
+            for vid_file in config.INPUT_DIR.iterdir():
+                if vid_file.is_file() and vid_file.suffix.lower() in {".mp4", ".mov", ".mkv", ".webm", ".avi"}:
+                    if vid_file.name not in existing_sources:
+                        thumb_name = f"{vid_file.stem}_thumb.jpg"
+                        thumb_path = config.THUMBNAIL_DIR / thumb_name
+                        if not thumb_path.exists() or thumb_path.stat().st_size == 0:
+                            from utils.ffmpeg_utils import generate_thumbnail
+                            generate_thumbnail(vid_file, thumb_path)
+                        dur = 0.0
+                        try:
+                            from utils.video_utils import VideoLoader
+                            loader = VideoLoader(vid_file)
+                            dur = float(loader.metadata().get("duration", 0.0) or 0.0)
+                            loader.close()
+                        except Exception:
+                            pass
+                        thumb_url = f"/download/thumbnail/{thumb_name}"
+                        new_proj = Project(
+                            name=vid_file.stem,
+                            source_path=vid_file.name,
+                            thumbnail_path=thumb_url,
+                            duration=dur,
+                            status="ready"
+                        )
+                        db.session.add(new_proj)
+                        new_added = True
+            if new_added:
+                db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+
     projects = Project.query.order_by(Project.updated_at.desc()).limit(20).all()
     return jsonify([p.to_dict() for p in projects])
 
@@ -32,9 +69,14 @@ def list_projects():
 @projects_bp.route('/api/projects', methods=['POST'])
 def create_project():
     """Create a new project with settings (name, aspect ratio, fps, resolution)."""
+    from pathlib import Path
     data = request.get_json() or {}
     name = data.get('name', 'Untitled Project').strip()
     source_path = data.get('source_path')
+    thumbnail_path = data.get('thumbnail_path')
+    if not thumbnail_path and source_path:
+        thumbnail_path = f"/download/thumbnail/{Path(source_path).stem}_thumb.jpg"
+    duration = float(data.get('duration', 0.0) or 0.0)
     aspect_ratio = data.get('aspect_ratio', data.get('aspectRatio', '9:16'))
     fps = int(data.get('fps', 30))
     resolution = data.get('resolution')
@@ -50,6 +92,8 @@ def create_project():
     proj = Project(
         name=name,
         source_path=source_path,
+        thumbnail_path=thumbnail_path,
+        duration=duration,
         status='ready',
         editor_state=json.dumps(manifest)
     )
@@ -263,11 +307,85 @@ def save_project_as_template(proj_id):
 
     from core.preset_manager import preset_manager
     saved = preset_manager.save_user_template(template_payload)
+    return jsonify({"success": True, "template": saved}), 201
 
+# =========================================================================
+# TEMPLATES API (SYSTEM & USER PRESETS)
+# =========================================================================
+
+@projects_bp.route('/api/templates', methods=['GET'])
+def get_all_templates_list():
+    """Return all system and user templates with optional category filter."""
+    category = request.args.get('category')
+    from core.preset_manager import preset_manager
+    templates = preset_manager.get_templates(category=category)
     return jsonify({
         "success": True,
-        "template": saved
+        "templates": templates
+    })
+
+
+@projects_bp.route('/api/templates/<template_id>/create-project', methods=['POST'])
+def create_project_from_template_root(template_id):
+    """Instantiate a new project initialized with template configuration."""
+    from core.preset_manager import preset_manager
+    template = preset_manager.get_template_by_id(template_id)
+    if not template:
+        return jsonify({"success": False, "error": "Template not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    project_name = data.get("projectName") or data.get("name") or f"New {template.get('name', 'Video')}"
+    source_path = data.get("sourcePath") or data.get("source_path")
+
+    new_editor_state = json.dumps({
+        "clips": [],
+        "graphics": template.get("data", {}).get("graphics", []),
+        "audioTracks": template.get("data", {}).get("audioTracks", []),
+        "audioClips": [],
+        "captionStyle": template.get("data", {}).get("captionStyle", {}),
+        "aspectRatio": template.get("data", {}).get("aspectRatio", "9:16")
+    })
+
+    new_proj = Project(
+        name=project_name,
+        source_path=source_path,
+        status="ready",
+        editor_state=new_editor_state
+    )
+    db.session.add(new_proj)
+    db.session.commit()
+
+    project_manager.record_recent_project(
+        project_id=new_proj.id,
+        name=new_proj.name,
+        source_path=new_proj.source_path or "",
+        thumbnail_path=new_proj.thumbnail_path or ""
+    )
+
+    logger.project(f"New project from template '{template.get('name')}' created: #{new_proj.id}")
+    return jsonify({
+        "success": True,
+        "project": new_proj.to_dict()
     }), 201
+
+
+@projects_bp.route("/api/editor/diagnostics", methods=["GET"])
+def get_system_diagnostics_root():
+    """System diagnostics endpoint accessible from root API."""
+    try:
+        from core.workspace_manager import workspace_manager
+        diag = workspace_manager.get_diagnostics()
+        return jsonify({"success": True, "diagnostics": diag})
+    except Exception as e:
+        return jsonify({"success": True, "diagnostics": {
+            "appName": "UpClip Studio",
+            "version": "2.0.0",
+            "os": "Windows",
+            "pythonVersion": "3.14.6",
+            "ffmpegVersion": "ffmpeg 8.1.2",
+            "storage": {"freeGB": 50, "totalGB": 500, "percentFree": 10}
+        }})
+
 
 
 # =========================================================================

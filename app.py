@@ -58,10 +58,7 @@ from ai.subtitle_renderer import SubtitleRenderer
 from ai.ass_builder import ASSBuilder
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-
-# Initialize SQLAlchemy (DB will be created in data directory)
-db = SQLAlchemy()
+from extensions import db
 
 
 # ===================================================

@@ -172,10 +172,29 @@ class AnimatedCaptionRenderer:
 
     def _build_header(self, opts):
         font = opts.get("font_family") or opts.get("font") or config.SUBTITLE_FONT
+
+        play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
+        play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
+
+        # Scale metrics proportionally from web preview reference (360x640) to actual video resolution
+        ref_w = 360.0
+        ref_h = 640.0
+        res_scale = max(1.0, float(play_res_x) / ref_w)
+        h_scale = max(1.0, float(play_res_y) / ref_h)
+
+        # Scale factor from user (either 1.0 or 100)
+        user_scale = float(opts.get("caption_scale") or opts.get("scale") or 1.0)
+        if user_scale > 10.0:
+            user_scale = user_scale / 100.0
+        user_scale = max(0.4, min(3.0, user_scale))
+
         try:
-            size = int(opts.get("font_size") or opts.get("size") or 34)
+            base_size = int(opts.get("font_size") or opts.get("size") or 38)
         except (TypeError, ValueError):
-            size = 34
+            base_size = 38
+
+        # Large, high-impact font size that matches preview proportion
+        size = max(24, int(round(base_size * res_scale * user_scale)))
 
         # Primary text color & active highlight color
         text_color_hex = opts.get("text_color") or opts.get("color") or "#FFFFFF"
@@ -205,9 +224,10 @@ class AnimatedCaptionRenderer:
             outline_ass = self._to_ass_color(outline_hex, alpha=255)
         else:
             try:
-                outline_w = int(opts.get("outline_width", opts.get("outline", 3)))
+                base_outline = float(opts.get("outline_width", opts.get("outline", 3)))
             except (TypeError, ValueError):
-                outline_w = 3
+                base_outline = 3.0
+            outline_w = max(1, int(round(base_outline * res_scale * user_scale)))
             outline_ass = self._to_ass_color(outline_hex, alpha=0)
 
         # Shadow color & blur/offset
@@ -218,9 +238,10 @@ class AnimatedCaptionRenderer:
             shadow_ass = self._to_ass_color(shadow_hex, alpha=255)
         else:
             try:
-                shadow_w = int(opts.get("shadow_blur", opts.get("shadow", 2)))
+                base_shadow = float(opts.get("shadow_blur", opts.get("shadow", 2)))
             except (TypeError, ValueError):
-                shadow_w = 2
+                base_shadow = 2.0
+            shadow_w = max(1, int(round(base_shadow * res_scale * user_scale)))
             shadow_ass = self._to_ass_color(shadow_hex, alpha=0)
 
         # Bold & Italic flags
@@ -228,15 +249,12 @@ class AnimatedCaptionRenderer:
         bold_flag = -1 if font_weight >= 600 else 0
         italic_flag = -1 if bool(opts.get("italic", False)) else 0
 
-        # Scale factor (100 = default)
-        try:
-            scale_factor = round(float(opts.get("scale", 100)))
-        except (TypeError, ValueError):
-            scale_factor = 100
+        # Scale factor (normalized in font size directly)
+        scale_factor = 100
 
         # Letter spacing
         try:
-            spacing = int(opts.get("spacing", 0))
+            spacing = int(round(float(opts.get("spacing", 0)) * res_scale))
         except (TypeError, ValueError):
             spacing = 0
 
@@ -264,25 +282,28 @@ class AnimatedCaptionRenderer:
         alignment = base_row + col_offset
 
         try:
-            margin_v = int(opts.get("margin_v", opts.get("margin_y", 60)))
+            base_margin_v = int(opts.get("margin_v", opts.get("margin_y", 60)))
             if position == "lower_third":
-                margin_v = max(margin_v, 140)
+                base_margin_v = max(base_margin_v, 140)
+            margin_v = int(round(base_margin_v * h_scale))
         except (TypeError, ValueError):
-            margin_v = 60
+            margin_v = int(round(60 * h_scale))
 
         try:
-            margin_l = int(opts.get("margin_l", opts.get("margin_x", 30)))
-            margin_r = int(opts.get("margin_r", 30))
+            base_margin_l = int(opts.get("margin_l", opts.get("margin_x", 30)))
+            base_margin_r = int(opts.get("margin_r", 30))
+            margin_l = int(round(base_margin_l * res_scale))
+            margin_r = int(round(base_margin_r * res_scale))
         except (TypeError, ValueError):
-            margin_l = 30
-            margin_r = 30
+            margin_l = int(round(30 * res_scale))
+            margin_r = int(round(30 * res_scale))
 
         return f"""[Script Info]
 ScriptType: v4.00+
 WrapStyle: 2
 ScaledBorderAndShadow: yes
-PlayResX: {config.OUTPUT_WIDTH}
-PlayResY: {config.OUTPUT_HEIGHT}
+PlayResX: {play_res_x}
+PlayResY: {play_res_y}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
@@ -389,14 +410,35 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         # Merge template + user overrides
         merged_opts = self.resolve_opts(opts, template)
 
+        # Detect video dimensions if not explicitly given to ensure ASS matches aspect ratio
+        if "play_res_x" not in merged_opts or "play_res_y" not in merged_opts:
+            try:
+                ffprobe_bin = getattr(config, "FFPROBE_PATH", None) or "ffprobe"
+                cmd = [
+                    str(ffprobe_bin),
+                    "-v", "error",
+                    "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height",
+                    "-of", "csv=p=0:s=x",
+                    str(input_video),
+                ]
+                res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                if res.returncode == 0 and "x" in res.stdout:
+                    w, h = res.stdout.strip().split("x")[:2]
+                    merged_opts["play_res_x"] = int(w)
+                    merged_opts["play_res_y"] = int(h)
+            except Exception:
+                pass
+
         # Build & save the ASS file
         ass_dir = config.SUBTITLE_DIR
         ass_file = ass_dir / f"{output_video.stem}_captions.ass"
         self.save_ass(transcript, ass_file, merged_opts)
 
         # Windows path escaping for the ASS filter
-        ass_path = ass_file.resolve().as_posix().replace("\\", "\\\\").replace(":", "\\:")
+        ass_path = str(ass_file.resolve()).replace("\\", "/").replace(":", "\\:")
 
+        # Try preserving audio stream (-c:a copy) first
         command = [
             self.ffmpeg,
             "-y",
@@ -405,7 +447,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-c:v", config.VIDEO_CODEC,
             "-preset", "veryfast",
             "-crf", "23",
-            "-c:a", config.AUDIO_CODEC,
+            "-c:a", "copy",
             str(output_video),
         ]
 
@@ -422,6 +464,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             )
             print("[SUCCESS] Animated Captions Rendered Successfully:", output_video)
             return output_video
-        except subprocess.CalledProcessError as e:
-            print("[ERROR] Animated Caption Rendering Failed:", e)
-            return None
+        except subprocess.CalledProcessError:
+            # Fallback with audio re-encode in case copy fails
+            try:
+                command[command.index("copy")] = config.AUDIO_CODEC
+                subprocess.run(
+                    command,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=True,
+                )
+                print("[SUCCESS] Animated Captions Rendered Successfully (audio fallback):", output_video)
+                return output_video
+            except subprocess.CalledProcessError as e:
+                print("[ERROR] Animated Caption Rendering Failed:", e)
+                return None

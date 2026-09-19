@@ -207,6 +207,20 @@ def _find_ffmpeg() -> str:
 
 FFMPEG_PATH = _find_ffmpeg()
 
+def _find_ffprobe() -> str:
+    if shutil.which("ffprobe"):
+        return "ffprobe"
+    win_path = ROOT_DIR / "bin" / "ffprobe.exe"
+    if win_path.exists():
+        return str(win_path)
+    linux_paths = ["/usr/bin/ffprobe", "/usr/local/bin/ffprobe"]
+    for p in linux_paths:
+        if Path(p).exists():
+            return p
+    return "ffprobe"
+
+FFPROBE_PATH = _find_ffprobe()
+
 # ==========================================================
 # SUBTITLE SETTINGS
 # ==========================================================

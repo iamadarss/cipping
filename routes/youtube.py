@@ -8,11 +8,14 @@ import time
 import sqlite3
 import base64
 import threading
+import secrets
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-from flask import Blueprint, request, jsonify, session, current_app, url_for
+from dotenv import load_dotenv
+from flask import Blueprint, request, jsonify, session, current_app, url_for, redirect
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
@@ -20,26 +23,56 @@ from googleapiclient.http import MediaFileUpload
 from flask import current_app as _app
 
 # ---------------------------------------------------------------
-# Configuration
+# Configuration & Environment
 # ---------------------------------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "youtube.db"
 
-# YouTube API scopes
-YOUTUBE_SCOPES = [
-    "https://www.googleapis.com/auth/youtube.upload",
-    "https://www.googleapis.com/auth/youtube.readonly",
-    "https://www.googleapis.com/auth/youtube",
-]
+# Load environment variables (.env as single source of truth)
+load_dotenv(BASE_DIR / ".env")
 
-# OAuth configuration
-OAUTH_CLIENT_SECRETS = BASE_DIR / "oauth_client_secrets.json"
+# Single source of truth for YouTube OAuth scopes (minimum required scopes)
+YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtube.upload",
+]
 
 # YouTube API constants
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
+
+logger = logging.getLogger(__name__)
+
+
+def get_oauth_config() -> Dict[str, str]:
+    """Retrieve and validate YouTube OAuth configuration from environment variables."""
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    redirect_uri = os.getenv(
+        "GOOGLE_REDIRECT_URI",
+        "http://127.0.0.1:5000/youtube/callback"
+    )
+
+    if not client_id or not client_secret:
+        raise ValueError("YouTube OAuth configuration is incomplete.")
+
+    return {
+        "client_id": client_id.strip(),
+        "client_secret": client_secret.strip(),
+        "redirect_uri": redirect_uri.strip(),
+    }
+
+
+def validate_oauth_config() -> bool:
+    """Check if YouTube OAuth configuration exists."""
+    try:
+        get_oauth_config()
+        return True
+    except ValueError:
+        return False
+
 
 # ---------------------------------------------------------------
 # Flask Blueprint
@@ -53,10 +86,11 @@ youtube_bp = Blueprint("youtube", __name__, url_prefix="/youtube")
 
 
 def get_db():
-    """Get a database connection, initializing if needed."""
+    """Get a database connection, initializing and migrating schema if needed."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
+
     # Create tables if not exist
     conn.execute("""
         CREATE TABLE IF NOT EXISTS tokens (
@@ -64,7 +98,10 @@ def get_db():
             user_id TEXT NOT NULL DEFAULT 'default',
             channel_id TEXT,
             channel_name TEXT,
+            channel_handle TEXT,
             channel_avatar TEXT,
+            channel_subscribers TEXT,
+            channel_video_count TEXT,
             access_token TEXT NOT NULL,
             refresh_token TEXT,
             expires_at INTEGER,
@@ -72,6 +109,14 @@ def get_db():
             updated_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER))
         )
     """)
+
+    # Ensure added columns exist if table was previously created with older schema
+    for col in ["channel_handle", "channel_subscribers", "channel_video_count"]:
+        try:
+            conn.execute(f"ALTER TABLE tokens ADD COLUMN {col} TEXT")
+        except Exception:
+            pass
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS videos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,25 +163,15 @@ def get_db():
             description TEXT,
             visibility TEXT,
             published_at INTEGER,
-            view_count INTEGER DEFAULT 0,
-            like_count INTEGER DEFAULT 0,
-            comment_count INTEGER DEFAULT 0,
-            watch_time_seconds INTEGER DEFAULT 0,
-            status TEXT DEFAULT "published",
+            views INTEGER DEFAULT 0,
+            likes INTEGER DEFAULT 0,
+            comments INTEGER DEFAULT 0,
             created_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER)),
             FOREIGN KEY (video_id) REFERENCES videos (id)
         )
     """)
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS playlists (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            thumbnail TEXT,
-            channel_id TEXT
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS templates (
+        CREATE TABLE IF NOT EXISTS presets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             title_pattern TEXT,
@@ -220,27 +255,29 @@ def init_db():
 
 
 def get_flow() -> Flow:
-    """Create an OAuth flow instance."""
-    if not OAUTH_CLIENT_SECRETS.exists():
-        raise FileNotFoundError(
-            f"OAuth client secrets not found at {OAUTH_CLIENT_SECRETS}"
-        )
+    """Create an OAuth flow instance from environment variables without requiring a JSON file."""
+    cfg = get_oauth_config()
 
-    flow = Flow.from_client_secrets_file(
-        str(OAUTH_CLIENT_SECRETS),
+    client_config = {
+        "web": {
+            "client_id": cfg["client_id"],
+            "client_secret": cfg["client_secret"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [cfg["redirect_uri"]],
+        }
+    }
+
+    flow = Flow.from_client_config(
+        client_config,
         scopes=YOUTUBE_SCOPES,
     )
-
-    flow.redirect_uri = _app.config.get(
-        "YOUTUBE_OAUTH_REDIRECT_URI",
-        "http://127.0.0.1:5000/youtube/callback"
-    )
-
+    flow.redirect_uri = cfg["redirect_uri"]
     return flow
 
 
 def credentials_to_dict(credentials: Credentials) -> Dict[str, Any]:
-    """Convert Credentials object to a dictionary for storage."""
+    """Convert Credentials object to a dictionary for safe handling."""
     return {
         "token": credentials.token,
         "refresh_token": credentials.refresh_token,
@@ -252,21 +289,14 @@ def credentials_to_dict(credentials: Credentials) -> Dict[str, Any]:
 
 
 def dict_to_credentials(d: Dict[str, Any]) -> Credentials:
-    """Convert stored database credentials to Google Credentials."""
-    client_config = json.loads(OAUTH_CLIENT_SECRETS.read_text(encoding="utf-8"))
-    installed = client_config.get("installed") or client_config.get("web")
-
-    if not installed:
-        raise RuntimeError(
-            "Invalid OAuth client secrets file: missing 'installed' or 'web' configuration."
-        )
-
+    """Convert stored database credentials to Google Credentials using environment config."""
+    cfg = get_oauth_config()
     return Credentials(
         token=d["access_token"],
         refresh_token=d.get("refresh_token"),
-        token_uri=installed["token_uri"],
-        client_id=installed["client_id"],
-        client_secret=installed.get("client_secret"),
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=cfg["client_id"],
+        client_secret=cfg["client_secret"],
         scopes=YOUTUBE_SCOPES,
     )
 
@@ -284,53 +314,112 @@ def get_credentials() -> Optional[Credentials]:
     ).fetchone()
     conn.close()
     if row and row["access_token"]:
-        return dict_to_credentials(dict(row))
+        try:
+            return dict_to_credentials(dict(row))
+        except Exception as e:
+            logger.error("Failed to construct credentials from database: %s", type(e).__name__)
+            return None
     return None
 
 
-def save_credentials(credentials: Credentials):
-    """Save credentials to the database."""
+def save_credentials(credentials: Credentials, channel_info: Optional[Dict[str, Any]] = None):
+    """Save or update credentials and channel metadata in the database."""
     conn = get_db()
     access_expires = (
         int(credentials.expiry.timestamp())
-        if credentials.expiry
+        if getattr(credentials, "expiry", None)
         else int(time.time()) + 3600
     )
-    conn.execute(
-        """
-        INSERT OR REPLACE INTO tokens (user_id, channel_id, channel_name, channel_avatar,
-                                       access_token, refresh_token, expires_at)
-        VALUES ('default', ?, ?, ?, ?, ?, ?)
-    """,
-        (
-            credentials.id_token.get("sub") if credentials.id_token else None,
-            credentials.id_token.get("name") if credentials.id_token else None,
-            credentials.id_token.get("picture") if credentials.id_token else None,
-            credentials.token,
-            credentials.refresh_token,
-            access_expires,
-        ),
-    )
+
+    row = conn.execute(
+        "SELECT * FROM tokens WHERE user_id = 'default' ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+
+    # Preserve existing refresh token if not returned on refresh
+    refresh_token = credentials.refresh_token or (row["refresh_token"] if row else None)
+
+    row_keys = row.keys() if row else []
+    channel_id = (channel_info.get("id") if channel_info else None) or (row["channel_id"] if row else None)
+    channel_name = (channel_info.get("title") if channel_info else None) or (row["channel_name"] if row else None)
+    channel_handle = (channel_info.get("handle") if channel_info else None) or (row["channel_handle"] if row and "channel_handle" in row_keys else None)
+    channel_avatar = (channel_info.get("avatar") if channel_info else None) or (row["channel_avatar"] if row else None)
+    channel_subscribers = (channel_info.get("subscribers") if channel_info else None) or (row["channel_subscribers"] if row and "channel_subscribers" in row_keys else None)
+    channel_video_count = (channel_info.get("video_count") if channel_info else None) or (row["channel_video_count"] if row and "channel_video_count" in row_keys else None)
+
+    if row:
+        conn.execute(
+            """
+            UPDATE tokens SET
+                channel_id = ?,
+                channel_name = ?,
+                channel_handle = ?,
+                channel_avatar = ?,
+                channel_subscribers = ?,
+                channel_video_count = ?,
+                access_token = ?,
+                refresh_token = ?,
+                expires_at = ?,
+                updated_at = CAST(strftime('%s', 'now') AS INTEGER)
+            WHERE id = ?
+            """,
+            (
+                channel_id,
+                channel_name,
+                channel_handle,
+                channel_avatar,
+                channel_subscribers,
+                channel_video_count,
+                credentials.token,
+                refresh_token,
+                access_expires,
+                row["id"],
+            ),
+        )
+    else:
+        conn.execute(
+            """
+            INSERT INTO tokens (
+                user_id, channel_id, channel_name, channel_handle, channel_avatar,
+                channel_subscribers, channel_video_count, access_token, refresh_token,
+                expires_at, created_at, updated_at
+            ) VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(strftime('%s', 'now') AS INTEGER), CAST(strftime('%s', 'now') AS INTEGER))
+            """,
+            (
+                channel_id,
+                channel_name,
+                channel_handle,
+                channel_avatar,
+                channel_subscribers,
+                channel_video_count,
+                credentials.token,
+                refresh_token,
+                access_expires,
+            ),
+        )
     conn.commit()
     conn.close()
 
 
 # ---------------------------------------------------------------
-# YouTube API helper
+# YouTube API helper (centralized credential service)
 # ---------------------------------------------------------------
 
 
 def get_youtube_service():
-    """Build and return a YouTube API service object."""
+    """Build and return an authenticated YouTube API service object."""
     credentials = get_credentials()
     if not credentials:
         raise RuntimeError("No YouTube credentials found. Connect your channel first.")
 
-    # Refresh if needed
+    # Automatically refresh if expired
     if credentials.expired and credentials.refresh_token:
         from google.auth.transport.requests import Request
-        credentials.refresh(Request())
-        save_credentials(credentials)
+        try:
+            credentials.refresh(Request())
+            save_credentials(credentials)
+        except Exception as e:
+            logger.warning("YouTube OAuth token refresh failed: %s", type(e).__name__)
+            raise RuntimeError("Your YouTube connection needs to be reauthorized. Please reconnect.")
 
     return build(
         YOUTUBE_API_SERVICE_NAME,
@@ -341,55 +430,99 @@ def get_youtube_service():
 
 
 # ---------------------------------------------------------------
-# API Routes
+# OAuth API Routes
 # ---------------------------------------------------------------
 
 
 @youtube_bp.route("/connect", methods=["GET"])
 def connect():
     """Initiate OAuth 2.0 flow."""
+    is_json_req = (
+        request.is_json
+        or request.headers.get("Accept") == "application/json"
+        or request.args.get("format") == "json"
+    )
     try:
+        if not validate_oauth_config():
+            error_msg = "YouTube OAuth configuration is incomplete."
+            if is_json_req:
+                return jsonify({"success": False, "error": error_msg}), 500
+            return redirect("/youtube-desk?error=config_incomplete")
+
         flow = get_flow()
 
-        authorization_url, state = flow.authorization_url(
+        state = secrets.token_urlsafe(32)
+        authorization_url, _ = flow.authorization_url(
             access_type="offline",
             prompt="consent",
+            state=state,
             code_challenge_method="S256",
         )
 
         session["oauth_state"] = state
         session["oauth_code_verifier"] = flow.code_verifier
 
-        return jsonify({
-            "success": True,
-            "authorization_url": authorization_url,
-        })
+        if is_json_req:
+            return jsonify({
+                "success": True,
+                "authorization_url": authorization_url,
+            })
+
+        return redirect(authorization_url)
 
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        logger.error("OAuth connect initiation failed: %s", type(e).__name__)
+        error_msg = "YouTube OAuth configuration is incomplete." if "OAuth" in str(e) else "Unable to connect YouTube."
+        if is_json_req:
+            return jsonify({"success": False, "error": error_msg}), 500
+        return redirect("/youtube-desk?error=connect_failed")
 
 
 @youtube_bp.route("/callback", methods=["GET"])
 def callback():
-    """Handle OAuth 2.0 callback."""
+    """Handle OAuth 2.0 callback from Google."""
+    is_json_req = (
+        request.is_json
+        or request.headers.get("Accept") == "application/json"
+        or request.args.get("format") == "json"
+    )
     try:
+        # Check for OAuth error query params from Google
+        error = request.args.get("error")
+        if error:
+            session.pop("oauth_state", None)
+            session.pop("oauth_code_verifier", None)
+            err_map = {
+                "access_denied": "Authorization was cancelled or denied.",
+                "redirect_uri_mismatch": "Redirect URI mismatch in Google Cloud configuration.",
+                "invalid_client": "Invalid Google OAuth client configuration.",
+                "invalid_grant": "Authorization code expired or invalid.",
+            }
+            user_msg = err_map.get(error, f"YouTube authorization failed ({error}).")
+            if is_json_req:
+                return jsonify({"success": False, "error": user_msg}), 400
+            return redirect(f"/youtube-desk?error={error}")
+
         state = session.get("oauth_state")
         code_verifier = session.get("oauth_code_verifier")
+        returned_state = request.args.get("state")
 
-        if not state:
-            return jsonify({
-                "success": False,
-                "error": "OAuth state missing or expired. Please reconnect YouTube."
-            }), 400
+        if not state or not returned_state or state != returned_state:
+            session.pop("oauth_state", None)
+            session.pop("oauth_code_verifier", None)
+            error_msg = "OAuth state validation failed. CSRF detected or session expired. Please reconnect YouTube."
+            if is_json_req:
+                return jsonify({"success": False, "error": error_msg}), 400
+            return redirect("/youtube-desk?error=state_mismatch")
 
-        if not code_verifier:
-            return jsonify({
-                "success": False,
-                "error": "OAuth code verifier missing. Please restart YouTube connection."
-            }), 400
+        code = request.args.get("code")
+        if not code:
+            session.pop("oauth_state", None)
+            session.pop("oauth_code_verifier", None)
+            error_msg = "Authorization code missing from Google callback."
+            if is_json_req:
+                return jsonify({"success": False, "error": error_msg}), 400
+            return redirect("/youtube-desk?error=missing_code")
 
         flow = get_flow()
 
@@ -404,45 +537,56 @@ def callback():
         credentials = flow.credentials
         save_credentials(credentials)
 
-        # बाकी तुम्हारा existing code...
+        # Retrieve authenticated YouTube channel info via channels.list(mine=True)
+        channel_info = {}
+        try:
+            youtube = get_youtube_service()
+            channels_response = youtube.channels().list(
+                part="snippet,contentDetails,statistics",
+                mine=True,
+            ).execute()
 
-        # Get channel info
-        youtube = get_youtube_service()
-        channels_response = youtube.channels().list(
-            part="snippet,contentDetails,statistics",
-            mine=True,
-        ).execute()
+            if channels_response.get("items"):
+                channel = channels_response["items"][0]
+                snippet = channel.get("snippet", {})
+                statistics = channel.get("statistics", {})
+                thumbnails = snippet.get("thumbnails", {})
 
-        if not channels_response.get("items"):
-            return jsonify({"success": False, "error": "No channel found"}), 404
+                avatar = ""
+                for size in ["high", "medium", "default"]:
+                    if size in thumbnails and "url" in thumbnails[size]:
+                        avatar = thumbnails[size]["url"]
+                        break
 
-        channel = channels_response["items"][0]
-        channel_id = channel["id"]
-        channel_title = channel["snippet"]["title"]
-        channel_avatar = channel["snippet"]["thumbnails"]["high"]["url"]
+                channel_info = {
+                    "id": channel.get("id", ""),
+                    "title": snippet.get("title", ""),
+                    "handle": snippet.get("customUrl", ""),
+                    "avatar": avatar,
+                    "subscribers": str(statistics.get("subscriberCount", "0")),
+                    "video_count": str(statistics.get("videoCount", "0")),
+                }
+                save_credentials(credentials, channel_info=channel_info)
+        except Exception as api_err:
+            logger.warning("Channel info fetch error: %s", type(api_err).__name__)
 
-        # Update tokens with channel info
-        conn = get_db()
-        conn.execute(
-            """
-            UPDATE tokens SET channel_id = ?, channel_name = ?, channel_avatar = ?,
-                               updated_at = CAST(strftime('%s', 'now') AS INTEGER)
-            WHERE user_id = 'default'
-        """,
-            (channel_id, channel_title, channel_avatar),
-        )
-        conn.commit()
-        conn.close()
+        if is_json_req:
+            return jsonify({
+                "success": True,
+                "connected": True,
+                "channel": channel_info,
+            })
 
-        return jsonify({
-            "success": True,
-            "connected": True,
-            "channel_id": channel_id,
-            "channel_name": channel_title,
-            "channel_avatar": channel_avatar,
-        })
+        return redirect("/youtube-desk?connected=1")
+
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        session.pop("oauth_state", None)
+        session.pop("oauth_code_verifier", None)
+        logger.error("OAuth callback processing failed: %s", type(e).__name__)
+        safe_error = "YouTube authorization failed. Please try connecting again."
+        if is_json_req:
+            return jsonify({"success": False, "error": safe_error}), 500
+        return redirect("/youtube-desk?error=oauth_failed")
 
 
 @youtube_bp.route("/status", methods=["GET"])
@@ -455,25 +599,48 @@ def status():
     conn.close()
 
     if not row or not row["access_token"]:
-        return jsonify({"connected": False})
+        return jsonify({
+            "connected": False,
+            "channel": None
+        })
+
+    row_dict = dict(row)
+    avatar = row_dict.get("channel_avatar") or ""
+    handle = row_dict.get("channel_handle") or ""
+    title = row_dict.get("channel_name") or "Connected YouTube Channel"
+    subscribers = str(row_dict.get("channel_subscribers") or "0")
+    video_count = str(row_dict.get("channel_video_count") or "0")
 
     return jsonify({
         "connected": True,
-        "channel_id": row["channel_id"],
-        "channel_name": row["channel_name"],
-        "channel_avatar": row["channel_avatar"],
+        "channel": {
+            "id": row_dict.get("channel_id") or "",
+            "title": title,
+            "handle": handle,
+            "avatar": avatar,
+            "thumbnail": avatar,
+            "subscribers": subscribers,
+            "video_count": video_count,
+        }
     })
 
 
 @youtube_bp.route("/disconnect", methods=["POST"])
 def disconnect():
     """Disconnect YouTube channel."""
-    conn = get_db()
-    conn.execute("DELETE FROM tokens WHERE user_id = 'default'")
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db()
+        conn.execute("DELETE FROM tokens WHERE user_id = 'default'")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error("Disconnect error: %s", type(e).__name__)
 
-    return jsonify({"success": True, "connected": False})
+    return jsonify({
+        "success": True,
+        "connected": False,
+        "message": "YouTube disconnected."
+    })
 
 
 # ---------------------------------------------------------------
