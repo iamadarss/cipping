@@ -23,6 +23,7 @@ def test_caption_studio_page_renders_with_full_workspace():
     assert "exportVideoTopBtn" in html
     assert "undoBtn" in html
     assert "redoBtn" in html
+    assert "translateCaptionsTopBtn" not in html
 
     # 2. Left Sidebar Navigation
     assert "appSidebar" in html
@@ -34,50 +35,42 @@ def test_caption_studio_page_renders_with_full_workspace():
     assert "Help & Guide" in html
     assert "sidebarToggle" in html
 
-    # 3. Center Video Canvas & Controls
-    assert "captionCanvasArea" in html
+    # 3. 9:16 Mobile Reel Frame & Transport Controls
+    assert "reelFrameSection" in html
+    assert "mobilePhoneFrame" in html
     assert "previewCanvasBox" in html
     assert "captionVideo" in html
+    assert "captionOverlayContainer" in html
     assert "captionDragBox" in html
-    assert "canvasAspectSelect" in html
-    assert "canvasSafeGuides" in html
-    assert "captionEmptyState" in html
-    assert "modeCaptionBtn" in html
-    assert "modeVideoBtn" in html
-    assert "videoZoomSelect" in html
+    assert "videoBottomTransport" in html
+    assert "btnPlayPause" in html
+    assert "btnSeekLeft" in html
+    assert "btnSeekRight" in html
 
-    # 4. Bottom Caption Timeline
-    assert "captionBottomTimeline" in html
-    assert "timelineRulerCanvas" in html
-    assert "captionTrackLane" in html
-    assert "timelinePlayheadLine" in html
-    assert "addCaptionBtn" in html
-    assert "splitCaptionBtn" in html
-    assert "mergeCaptionBtn" in html
-    assert "duplicateCaptionBtn" in html
-    assert "deleteCaptionBtn" in html
-    assert "autoSplitCaptionsBtn" in html
-
-    # 5. Right Inspector Three-Column Panels & Accordions
-    assert "captionInspectorContainer" in html
+    # 4. Two-Column Stage & Custom Preset Buttons
     assert "colPresets" in html
     assert "colSettings" in html
-    assert "colInspector" in html
-    assert "accordionPresetsSetting" in html
-    assert "accordionText" in html
+    assert "presetsGrid" in html
+    assert "settingsAccordions" in html
+    assert "savePresetBtn" in html
+    assert "myPresetsBtn" in html
+
+    # 5. Settings Accordions
     assert "accordionFont" in html
+    assert "accordionPosition" in html
+    assert "accordionText" in html
     assert "accordionStroke" in html
     assert "accordionShadow" in html
-    assert "accordionGlow" in html
     assert "accordionBackground" in html
-    assert "accordionPosition" in html
     assert "accordionAnimation" in html
-    assert "accordionKaraoke" in html
-    assert "accordionSettingsType" in html
-    assert "accordionTools" in html
-    assert "expandAllAccordionsBtn" in html
-    assert "collapseAllAccordionsBtn" in html
+
+    # 6. Modals & Flow Controls
     assert "generateCaptionsModal" in html
+    assert "genApplyBtn" in html
+    assert "genReadyPanel" in html
+    assert "savePresetModal" in html
+    assert "myPresetsModal" in html
+    assert "exportVideoModal" in html
 
 
 
@@ -376,5 +369,93 @@ def test_caption_studio_export_validation_missing_video():
     assert data["success"] is False
 
 
+def test_caption_studio_translate_urdu_to_hinglish_and_hindi():
+    app = create_app()
+    client = app.test_client()
 
+    urdu_captions = [
+        {
+            "id": 1,
+            "text": "اب سوال کی دولر کماتا کیسے ہیں",
+            "start": 0.0,
+            "end": 2.5,
+            "words": [
+                {"text": "اب", "start": 0.0, "end": 0.5},
+                {"text": "سوال", "start": 0.5, "end": 1.0},
+                {"text": "کی", "start": 1.0, "end": 1.5},
+                {"text": "دولر", "start": 1.5, "end": 2.0},
+                {"text": "کماتا", "start": 2.0, "end": 2.5}
+            ]
+        }
+    ]
+
+    # Test translating to Hinglish (Roman English letters)
+    res_hinglish = client.post(
+        "/api/caption-studio/translate",
+        json={"captions": urdu_captions, "target_language": "hinglish"}
+    )
+    assert res_hinglish.status_code == 200
+    data_hinglish = res_hinglish.get_json()
+    assert data_hinglish["success"] is True
+    hinglish_text = data_hinglish["captions"][0]["text"]
+    # Verify no Urdu/Arabic characters remain
+    from utils.hinglish_transliterator import is_urdu_or_arabic
+    assert not is_urdu_or_arabic(hinglish_text)
+    assert "saval" in hinglish_text.lower() or "ab" in hinglish_text.lower()
+
+    # Test translating to Hindi (Devanagari script)
+    res_hindi = client.post(
+        "/api/caption-studio/translate",
+        json={"captions": urdu_captions, "target_language": "hi"}
+    )
+    assert res_hindi.status_code == 200
+    data_hindi = res_hindi.get_json()
+    assert data_hindi["success"] is True
+    hindi_text = data_hindi["captions"][0]["text"]
+    assert not is_urdu_or_arabic(hindi_text)
+    assert any(0x0900 <= ord(c) <= 0x097F for c in hindi_text)
+
+
+def test_caption_studio_custom_presets_crud():
+    app = create_app()
+    client = app.test_client()
+
+    test_style = {
+        "fontFamily": "Inter",
+        "fontSize": 40,
+        "textColor": "#FFFFFF",
+        "activeWordColor": "#22C55E",
+        "bgMode": "solid",
+        "bgColor": "#000000"
+    }
+
+    # 1. Save custom preset
+    res_save = client.post(
+        "/api/caption-studio/presets/save",
+        json={"name": "Test Viral Preset", "style": test_style}
+    )
+    assert res_save.status_code == 200
+    save_data = res_save.get_json()
+    assert save_data["success"] is True
+    saved_preset = save_data["preset"]
+    preset_id = saved_preset["id"]
+    assert saved_preset["name"] == "Test Viral Preset"
+    assert saved_preset["style"]["fontFamily"] == "Inter"
+
+    # 2. List custom presets
+    res_list = client.get("/api/caption-studio/presets/list")
+    assert res_list.status_code == 200
+    list_data = res_list.get_json()
+    assert list_data["success"] is True
+    assert any(p["id"] == preset_id for p in list_data["presets"])
+
+    # 3. Delete custom preset
+    res_del = client.post(
+        "/api/caption-studio/presets/delete",
+        json={"id": preset_id}
+    )
+    assert res_del.status_code == 200
+    del_data = res_del.get_json()
+    assert del_data["success"] is True
+    assert not any(p["id"] == preset_id for p in del_data["presets"])
 

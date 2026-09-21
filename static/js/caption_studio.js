@@ -1158,7 +1158,6 @@
         // ======================================================================
         // 20 Preset Cards Rendering
         // ======================================================================
-        // ======================================================================
         setupPresetsCards() {
             if (!this.dom.presetsCardsGrid) return;
 
@@ -1166,44 +1165,28 @@
 
             PRESETS_REGISTRY.forEach(preset => {
                 const card = document.createElement("div");
-                const isDefaultActive = (preset.id === "action_pop_hormozi" || preset.id === "minimal_word_by_word");
-                card.className = `preset-selector-card preset-visual-card ${isDefaultActive ? "active selected" : ""}`;
+                card.className = `preset-selector-card ${preset.id === "minimal_word_by_word" || preset.id === "classic" ? "active" : ""}`;
                 card.setAttribute("data-preset-id", preset.id);
 
                 const s = preset.style;
                 const textStyle = `
                     font-family: '${s.font_family}', sans-serif;
-                    font-weight: ${s.font_weight || 800};
+                    font-weight: ${s.font_weight || 700};
                     color: ${s.text_color || '#FFFFFF'};
                     text-transform: ${s.text_case || 'normal'};
                     letter-spacing: ${s.letter_spacing || 0}px;
-                    ${s.stroke_enabled ? `-webkit-text-stroke: 1.2px ${s.stroke_color || '#000'};` : ''}
+                    ${s.stroke_enabled ? `-webkit-text-stroke: 1px ${s.stroke_color || '#000'};` : ''}
                     ${s.shadow_enabled ? `text-shadow: 0 2px ${s.shadow_blur || 4}px ${s.shadow_color || '#000'};` : ''}
                 `;
 
-                let badgeClass = "badge-creator";
-                const catLower = (preset.category || "").toLowerCase();
-                if (catLower.includes("high") || catLower.includes("energy") || catLower.includes("viral")) {
-                    badgeClass = "badge-viral";
-                } else if (catLower.includes("clean") || catLower.includes("vlog")) {
-                    badgeClass = "badge-clean";
-                } else if (catLower.includes("cyber") || catLower.includes("neon")) {
-                    badgeClass = "badge-cyber";
-                } else if (catLower.includes("vibrant") || catLower.includes("pop")) {
-                    badgeClass = "badge-pop";
-                }
-
                 card.innerHTML = `
-                    <div class="preset-card-top-row">
-                        <span class="preset-card-label">${preset.name}</span>
-                        <span class="preset-card-badge ${badgeClass}">${preset.category || 'Preset'}</span>
+                    <div class="preset-preview-mini">
+                        <span style="${textStyle}">
+                            <span>Up</span> <span style="color:${s.active_word_color || '#20E890'};">Clip</span>
+                        </span>
                     </div>
-                    <div class="preset-card-preview">
-                        <div style="${textStyle}">
-                            <span>UP</span> <span style="color:${s.active_word_color || '#10B981'}; font-weight:900;">CLIP</span>
-                        </div>
-                    </div>
-                    <div class="preset-card-desc">${s.font_family || 'Inter'} • ${s.animation || 'Pop'}</div>
+                    <div class="preset-card-title">${preset.name}</div>
+                    <div class="preset-card-sub">Dynamic Captio...</div>
                 `;
 
                 card.addEventListener("click", () => {
@@ -1215,15 +1198,9 @@
         }
 
         applyPreset(preset) {
-            document.querySelectorAll(".preset-selector-card, .preset-visual-card").forEach(c => {
-                c.classList.remove("active");
-                c.classList.remove("selected");
-            });
-            const card = document.querySelector(`[data-preset-id="${preset.id}"]`);
-            if (card) {
-                card.classList.add("active");
-                card.classList.add("selected");
-            }
+            document.querySelectorAll(".preset-selector-card").forEach(c => c.classList.remove("active"));
+            const card = document.querySelector(`.preset-selector-card[data-preset-id="${preset.id}"]`);
+            if (card) card.classList.add("active");
 
             Object.assign(this.activeStyle, preset.style);
             this.syncInspectorInputs();
@@ -1258,17 +1235,14 @@
 
                 this.dom.videoPlayer.addEventListener("play", () => {
                     this.isPlaying = true;
-                    this.updatePlayPauseBtn(true);
+                    this.dom.playIcon.style.display = "none";
+                    this.dom.pauseIcon.style.display = "block";
                 });
 
                 this.dom.videoPlayer.addEventListener("pause", () => {
                     this.isPlaying = false;
-                    this.updatePlayPauseBtn(false);
-                });
-
-                this.dom.videoPlayer.addEventListener("ended", () => {
-                    this.isPlaying = false;
-                    this.updatePlayPauseBtn(false);
+                    this.dom.playIcon.style.display = "block";
+                    this.dom.pauseIcon.style.display = "none";
                 });
             }
 
@@ -1283,14 +1257,21 @@
                 this.dom.nextFrameBtn.addEventListener("click", () => this.seekBy(5.0));
             }
 
-            // Close Column 3 Button (Cut Button)
-            const closeCol3Btn = document.getElementById("closeCol3Btn");
-            if (closeCol3Btn) {
-                closeCol3Btn.addEventListener("click", () => this.closeColumn3());
+            // Column 3 Expand / Collapse Toggle (Section 6 - Column 3)
+            const toggleCol3ExpandBtn = document.getElementById("toggleCol3ExpandBtn");
+            if (toggleCol3ExpandBtn) {
+                toggleCol3ExpandBtn.addEventListener("click", () => {
+                    const upperCols = document.getElementById("captionUpperThreeCols");
+                    if (upperCols) {
+                        upperCols.classList.toggle("col3-collapsed");
+                        const isCollapsed = upperCols.classList.contains("col3-collapsed");
+                        const label = document.getElementById("col3ExpandBtnText");
+                        if (label) {
+                            label.textContent = isCollapsed ? "⇆ Restore 3" : "⇄ Expand 1 & 2";
+                        }
+                    }
+                });
             }
-
-            // Setup real-time Manual Cue Editor listeners
-            this.setupManualCueEditorListeners();
             if (this.dom.muteBtn) {
                 this.dom.muteBtn.addEventListener("click", () => this.toggleMute());
             }
@@ -1425,12 +1406,15 @@
             // AI Caption Generation Trigger
             if (this.dom.generateCaptionsTopBtn) {
                 this.dom.generateCaptionsTopBtn.addEventListener("click", () => {
-                    this.openColumn3("ai");
-                    const panelCol3 = document.getElementById("panelAiSettings") || this.dom.panelAiSettings;
-                    if (panelCol3) {
-                        panelCol3.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                        panelCol3.classList.add("highlight-panel");
-                        setTimeout(() => panelCol3.classList.remove("highlight-panel"), 1200);
+                    if (this.dom.panelAiSettings) {
+                        this.dom.panelAiSettings.scrollIntoView({ behavior: "smooth", block: "center" });
+                        this.dom.panelAiSettings.classList.add("highlight-panel");
+                        setTimeout(() => this.dom.panelAiSettings.classList.remove("highlight-panel"), 1200);
+                    }
+                    if (this.dom.generateCaptionsModal) {
+                        this.dom.generateCaptionsModal.style.display = "flex";
+                        if (this.dom.genLoadingStatus) this.dom.genLoadingStatus.style.display = "none";
+                        if (this.dom.genExecuteBtn) this.dom.genExecuteBtn.disabled = false;
                     }
                 });
             }
@@ -3166,12 +3150,6 @@
             });
             this.syncInspectorInputs();
             this.renderCanvas();
-
-            const cap = this.getSelectedCaption();
-            if (cap) {
-                this.openColumn3("edit");
-                this.populateManualCueEditor(cap);
-            }
         }
 
         getSelectedCaption() {
@@ -3549,9 +3527,7 @@
                 videoFileName: this.videoFileName,
                 project_id: this.projectId,
                 captions: this.captions,
-                style: Object.assign({}, this.activeStyle, {
-                    caption_scale: this.captionScale || this.activeStyle.caption_scale || 1.0
-                }),
+                style: this.activeStyle,
                 resolution: this.dom.exportResolutionSelect ? this.dom.exportResolutionSelect.value : "9:16_1080p",
                 fps: this.dom.exportFpsSelect ? parseInt(this.dom.exportFpsSelect.value, 10) : 30,
                 format: this.dom.exportFormatSelect ? this.dom.exportFormatSelect.value : "mp4"
@@ -3852,204 +3828,10 @@
         togglePlayPause() {
             if (!this.dom.videoPlayer) return;
             if (this.dom.videoPlayer.paused) {
-                this.dom.videoPlayer.play().catch(e => console.warn("Playback interrupted", e));
-                this.updatePlayPauseBtn(true);
+                this.dom.videoPlayer.play();
             } else {
                 this.dom.videoPlayer.pause();
-                this.updatePlayPauseBtn(false);
             }
-        }
-
-        updatePlayPauseBtn(isPlaying) {
-            this.isPlaying = isPlaying;
-            const playIcon = document.getElementById("playIcon") || this.dom.playIcon;
-            const pauseIcon = document.getElementById("pauseIcon") || this.dom.pauseIcon;
-            if (playIcon) playIcon.style.display = isPlaying ? "none" : "block";
-            if (pauseIcon) pauseIcon.style.display = isPlaying ? "block" : "none";
-            if (this.dom.playPauseBtn) {
-                this.dom.playPauseBtn.setAttribute("title", isPlaying ? "Pause (Space)" : "Play (Space)");
-            }
-        }
-
-        // ======================================================================
-        // Dynamic Column 3 (Offline AI & Manual Cue Text Editor)
-        // ======================================================================
-        openColumn3(mode = "ai") {
-            const upperRow = document.getElementById("captionUpperThreeCols") || this.dom.captionUpperThreeCols;
-            if (upperRow) {
-                upperRow.classList.remove("cols-two");
-                upperRow.classList.add("cols-three");
-            }
-            const panelCol3 = document.getElementById("panelAiSettings") || this.dom.panelAiSettings;
-            if (panelCol3) {
-                panelCol3.style.display = "flex";
-            }
-            const viewAi = document.getElementById("viewOfflineAi");
-            const viewEdit = document.getElementById("viewManualEdit");
-            const col3Title = document.getElementById("col3Title");
-            const col3Tag = document.getElementById("col3Tag");
-
-            if (mode === "ai") {
-                if (viewAi) viewAi.style.display = "flex";
-                if (viewEdit) viewEdit.style.display = "none";
-                if (col3Title) col3Title.textContent = "Offline AI Settings";
-                if (col3Tag) col3Tag.textContent = "Whisper AI";
-            } else if (mode === "edit") {
-                if (viewAi) viewAi.style.display = "none";
-                if (viewEdit) viewEdit.style.display = "flex";
-                if (col3Title) col3Title.textContent = "Edit Caption Text";
-                if (col3Tag) col3Tag.textContent = "Spelling & Words";
-            }
-        }
-
-        closeColumn3() {
-            const upperRow = document.getElementById("captionUpperThreeCols") || this.dom.captionUpperThreeCols;
-            if (upperRow) {
-                upperRow.classList.remove("cols-three");
-                upperRow.classList.add("cols-two");
-            }
-            const panelCol3 = document.getElementById("panelAiSettings") || this.dom.panelAiSettings;
-            if (panelCol3) {
-                panelCol3.style.display = "none";
-            }
-        }
-
-        populateManualCueEditor(cap) {
-            if (!cap) return;
-            const textarea = document.getElementById("captionTextareaInput");
-            if (textarea) {
-                textarea.value = cap.text || "";
-            }
-            const badge = document.getElementById("manualCueBadge");
-            if (badge) {
-                badge.textContent = `Cue ${cap.id ? cap.id.replace("cap_", "") : ""}`;
-            }
-            const startInput = document.getElementById("captionStartInput");
-            if (startInput) {
-                startInput.value = this.formatTimecode(cap.start);
-            }
-            const endInput = document.getElementById("captionEndInput");
-            if (endInput) {
-                endInput.value = this.formatTimecode(cap.end);
-            }
-
-            this.renderWordChips(cap);
-        }
-
-        renderWordChips(cap) {
-            const chipsContainer = document.getElementById("manualWordChipsContainer");
-            if (!chipsContainer) return;
-            chipsContainer.innerHTML = "";
-
-            const words = (cap.words && cap.words.length > 0)
-                ? cap.words
-                : (cap.text || "").trim().split(/\s+/).filter(Boolean).map(w => ({ text: w, start: cap.start, end: cap.end }));
-
-            words.forEach((wObj) => {
-                const wordText = typeof wObj === "string" ? wObj : (wObj.text || "");
-                if (!wordText) return;
-                const chip = document.createElement("button");
-                chip.type = "button";
-                chip.className = "word-chip-pill";
-                chip.textContent = wordText;
-                chip.title = "Click to focus & edit this word in text area";
-                chip.addEventListener("click", () => {
-                    const textarea = document.getElementById("captionTextareaInput");
-                    if (textarea) {
-                        textarea.focus();
-                        const pos = textarea.value.indexOf(wordText);
-                        if (pos !== -1) {
-                            textarea.setSelectionRange(pos, pos + wordText.length);
-                        }
-                    }
-                });
-                chipsContainer.appendChild(chip);
-            });
-        }
-
-        setupManualCueEditorListeners() {
-            const textarea = document.getElementById("captionTextareaInput");
-            if (textarea) {
-                textarea.addEventListener("input", (e) => {
-                    const cap = this.getSelectedCaption();
-                    if (!cap) return;
-                    const newText = e.target.value;
-                    cap.text = newText;
-
-                    const rawWords = newText.trim().split(/\s+/).filter(Boolean);
-                    if (rawWords.length > 0) {
-                        const totalDur = Math.max(0.1, (cap.end || 1) - (cap.start || 0));
-                        const wordDur = totalDur / rawWords.length;
-                        cap.words = rawWords.map((w, idx) => ({
-                            text: w,
-                            word: w,
-                            start: parseFloat((cap.start + idx * wordDur).toFixed(3)),
-                            end: parseFloat((cap.start + (idx + 1) * wordDur).toFixed(3))
-                        }));
-                    } else {
-                        cap.words = [];
-                    }
-
-                    const overlayText = document.getElementById("captionOverlayText");
-                    if (overlayText) overlayText.textContent = newText;
-
-                    const card = document.querySelector(`.timeline-caption-card[data-caption-id="${cap.id}"] .caption-block-text`);
-                    if (card) card.textContent = newText;
-
-                    this.renderWordChips(cap);
-                    this.renderActiveCaption();
-                    this.isDirty = true;
-                });
-            }
-
-            const startInput = document.getElementById("captionStartInput");
-            if (startInput) {
-                startInput.addEventListener("change", (e) => {
-                    const cap = this.getSelectedCaption();
-                    if (!cap) return;
-                    const parsed = this.parseTimecode(e.target.value);
-                    if (parsed !== null && parsed < cap.end) {
-                        cap.start = parsed;
-                        this.rebuildCaptionWords(cap);
-                        this.renderTimeline();
-                        this.renderActiveCaption();
-                    }
-                });
-            }
-
-            const endInput = document.getElementById("captionEndInput");
-            if (endInput) {
-                endInput.addEventListener("change", (e) => {
-                    const cap = this.getSelectedCaption();
-                    if (!cap) return;
-                    const parsed = this.parseTimecode(e.target.value);
-                    if (parsed !== null && parsed > cap.start) {
-                        cap.end = parsed;
-                        this.rebuildCaptionWords(cap);
-                        this.renderTimeline();
-                        this.renderActiveCaption();
-                    }
-                });
-            }
-        }
-
-        parseTimecode(str) {
-            if (!str) return null;
-            const parts = str.trim().split(":");
-            if (parts.length === 1) {
-                const s = parseFloat(parts[0]);
-                return isNaN(s) ? null : s;
-            } else if (parts.length === 2) {
-                const m = parseFloat(parts[0]);
-                const s = parseFloat(parts[1]);
-                return (isNaN(m) || isNaN(s)) ? null : (m * 60 + s);
-            } else if (parts.length === 3) {
-                const h = parseFloat(parts[0]);
-                const m = parseFloat(parts[1]);
-                const s = parseFloat(parts[2]);
-                return (isNaN(h) || isNaN(m) || isNaN(s)) ? null : (h * 3600 + m * 60 + s);
-            }
-            return null;
         }
 
         seekTo(seconds) {

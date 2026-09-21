@@ -24,46 +24,16 @@ projects_bp = Blueprint('projects', __name__)
 
 @projects_bp.route('/api/projects', methods=['GET'])
 def list_projects():
-    """List all projects ordered by last updated date, auto-syncing input videos."""
-    import config
-    from pathlib import Path
-    try:
-        if config.INPUT_DIR.exists():
-            existing_sources = {p.source_path for p in Project.query.all() if p.source_path}
-            new_added = False
-            for vid_file in config.INPUT_DIR.iterdir():
-                if vid_file.is_file() and vid_file.suffix.lower() in {".mp4", ".mov", ".mkv", ".webm", ".avi"}:
-                    if vid_file.name not in existing_sources:
-                        thumb_name = f"{vid_file.stem}_thumb.jpg"
-                        thumb_path = config.THUMBNAIL_DIR / thumb_name
-                        if not thumb_path.exists() or thumb_path.stat().st_size == 0:
-                            from utils.ffmpeg_utils import generate_thumbnail
-                            generate_thumbnail(vid_file, thumb_path)
-                        dur = 0.0
-                        try:
-                            from utils.video_utils import VideoLoader
-                            loader = VideoLoader(vid_file)
-                            dur = float(loader.metadata().get("duration", 0.0) or 0.0)
-                            loader.close()
-                        except Exception:
-                            pass
-                        thumb_url = f"/download/thumbnail/{thumb_name}"
-                        new_proj = Project(
-                            name=vid_file.stem,
-                            source_path=vid_file.name,
-                            thumbnail_path=thumb_url,
-                            duration=dur,
-                            status="ready"
-                        )
-                        db.session.add(new_proj)
-                        new_added = True
-            if new_added:
-                db.session.commit()
-    except Exception as e:
-        db.session.rollback()
+    """List projects, filtering by default to only projects with generated clips."""
+    show_all = request.args.get("all", "false").lower() in ("true", "1")
+    projects = Project.query.order_by(Project.updated_at.desc()).all()
+    project_dicts = [p.to_dict() for p in projects]
 
-    projects = Project.query.order_by(Project.updated_at.desc()).limit(20).all()
-    return jsonify([p.to_dict() for p in projects])
+    if not show_all:
+        # Keep only projects that have generated clips from AI Clipping Studio
+        project_dicts = [p for p in project_dicts if len(p.get("clips", [])) > 0]
+
+    return jsonify(project_dicts[:20])
 
 
 @projects_bp.route('/api/projects', methods=['POST'])

@@ -89,6 +89,10 @@ def test_api_projects_endpoints():
     res = client.delete(f'/api/projects/{dup_id}')
     assert res.status_code == 200
 
+    from core.preset_manager import preset_manager
+    if tpl_data and "template" in tpl_data and "id" in tpl_data["template"]:
+        preset_manager.delete_user_template(tpl_data["template"]["id"])
+
 
 def test_project_thumbnail_and_recent_sync():
     app = create_app()

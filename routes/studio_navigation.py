@@ -237,6 +237,39 @@ def get_project_state(project_id):
     """Get the current state of a project including all media references."""
     project = project_state.get_project(project_id)
     if not project:
+        # Fallback to database lookup
+        try:
+            import json
+            from models.project import Project
+            from core.project_state import MediaItem
+            clean_id = int(str(project_id).replace("proj_", ""))
+            db_proj = Project.query.get(clean_id)
+            if db_proj:
+                in_mem = project_state.create_project(
+                    db_proj.source_path or "",
+                    f"/download/input/{db_proj.source_path}" if db_proj.source_path else ""
+                )
+                in_mem.project_id = project_id
+                if db_proj.editor_state:
+                    try:
+                        ed = json.loads(db_proj.editor_state)
+                        for c in ed.get("clips", []):
+                            cfn = c.get("filename") or c.get("name")
+                            if cfn:
+                                in_mem.clips.append(MediaItem(
+                                    filename=cfn,
+                                    media_type="clip",
+                                    label=c.get("label", cfn),
+                                    url=c.get("url", f"/download/clip/{cfn}")
+                                ))
+                    except Exception:
+                        pass
+                project_state._projects[project_id] = in_mem
+                project = in_mem
+        except Exception:
+            pass
+
+    if not project:
         return jsonify({"success": False, "error": "Project not found"}), 404
 
     return jsonify({

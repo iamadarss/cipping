@@ -150,43 +150,76 @@ def auto_caption():
     if not video_filename:
         return jsonify({"success": False, "error": "No video filename provided"}), 400
 
-    # Locate source video
-    video_path = config.INPUT_DIR / video_filename
-    if not video_path.exists():
-        video_path = config.CLIPS_DIR / video_filename
-    if not video_path.exists():
-        video_path = config.FINAL_DIR / video_filename
-    if not video_path.exists():
+    # Locate source video resiliently
+    clean_name = Path(video_filename).name
+    video_path = None
+    candidate_paths = [
+        config.INPUT_DIR / clean_name,
+        config.CLIPS_DIR / clean_name,
+        config.FINAL_DIR / clean_name,
+        config.ROOT_DIR / clean_name,
+        Path(video_filename),
+    ]
+    for cp in candidate_paths:
+        if cp.exists() and cp.is_file():
+            video_path = cp
+            break
+
+    # If still not found, search by name stem
+    if not video_path:
+        fname_stem = Path(clean_name).stem
+        for search_dir in [config.INPUT_DIR, config.CLIPS_DIR, config.FINAL_DIR]:
+            if search_dir.exists():
+                matches = list(search_dir.glob(f"*{fname_stem}*"))
+                if matches:
+                    video_path = matches[0]
+                    break
+
+    if not video_path or not video_path.exists():
         return jsonify({"success": False, "error": f"Video file not found: {video_filename}"}), 404
 
     try:
         from ai.whisper_engine import WhisperEngine
-        from utils.hinglish_transliterator import devanagari_to_hinglish
+        from utils.hinglish_transliterator import convert_text_to_target_language, is_urdu_or_arabic
 
-        lang_code = (language or "en").lower().strip()
+        lang_code = (language or "hinglish").lower().strip()
         is_hinglish = lang_code in ("hinglish", "hi-latn")
-        whisper_lang = "hi" if is_hinglish or lang_code in ("hindi", "hi") else ("en" if lang_code in ("english", "en") else lang_code)
+        whisper_lang = "hi" if (is_hinglish or lang_code in ("hindi", "hi")) else (
+            "en" if lang_code in ("english", "en") else (None if lang_code in ("auto", "") else lang_code)
+        )
 
-        whisper = WhisperEngine(config.WHISPER_MODEL)
+        model_name = data.get("model", getattr(config, "WHISPER_MODEL", "base") or "base")
+        whisper = WhisperEngine(model_name)
         transcript = whisper.transcribe(video_path, language=whisper_lang)
         
+        # Segment density / pace
+        pace_style = data.get("style", "viral").lower()
+        if pace_style == "punchy":
+            target_chunk = 2
+        elif pace_style == "standard":
+            target_chunk = 7
+        else:  # viral
+            target_chunk = 4
+
         captions = []
-        # Chunk large segments into readable short-form caption segments (1-7 words each)
+        # Chunk transcript segments into readable short-form caption segments
         for seg_idx, seg in enumerate(transcript):
             raw_text = str(seg.get("text", "") or "").strip()
             if not raw_text:
                 continue
 
-            if is_hinglish:
-                raw_text = devanagari_to_hinglish(raw_text)
+            # Convert text to target language: guarantees NO Urdu/Arabic script
+            target_for_conversion = "hi" if lang_code in ("hi", "hindi") else (
+                "en" if lang_code in ("en", "english") else "hinglish"
+            )
+            raw_text = convert_text_to_target_language(raw_text, target_for_conversion)
 
             words = raw_text.split()
             seg_start = float(seg["start"])
             seg_end = float(seg["end"])
             total_dur = max(0.2, seg_end - seg_start)
 
-            # Target chunk size: 3 to 6 words per segment for readable short-form video
-            chunk_size = 5 if len(words) > 6 else len(words)
+            chunk_size = target_chunk if len(words) > target_chunk else len(words)
             if chunk_size == 0:
                 continue
 
@@ -587,6 +620,50 @@ def search_replace_captions():
             updated.append({**cap, "text": new_text})
 
         return jsonify({"success": True, "captions": updated, "replaceCount": count})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@caption_studio_bp.route("/api/caption-studio/translate", methods=["POST"])
+def translate_captions():
+    """Translate or convert existing captions to Hinglish, Hindi, or English."""
+    data = request.get_json() or {}
+    captions = data.get("captions", [])
+    target = (data.get("target_language") or data.get("language") or "hinglish").lower().strip()
+
+    if not captions:
+        return jsonify({"success": False, "error": "No captions provided"}), 400
+
+    try:
+        from utils.hinglish_transliterator import convert_text_to_target_language
+
+        updated_captions = []
+        for cap in captions:
+            item = dict(cap)
+            orig_text = str(item.get("text", "")).strip()
+            if not orig_text:
+                updated_captions.append(item)
+                continue
+
+            new_text = convert_text_to_target_language(orig_text, target)
+            item["text"] = new_text
+
+            # Recalculate word objects with timing proportionally
+            cap_start = float(item.get("start", 0))
+            cap_end = float(item.get("end", cap_start + 2.0))
+            words = new_text.split()
+            dur = max(0.2, cap_end - cap_start)
+            w_dur = dur / max(1, len(words))
+
+            item["words"] = [{
+                "text": w,
+                "start": round(cap_start + w_i * w_dur, 2),
+                "end": round(cap_start + (w_i + 1) * w_dur, 2),
+            } for w_i, w in enumerate(words)]
+
+            updated_captions.append(item)
+
+        return jsonify({"success": True, "captions": updated_captions, "target_language": target})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -1046,3 +1123,78 @@ def list_caption_styles():
         pass
 
     return jsonify({"success": True, "styles": builtin_presets + user_styles})
+
+
+# =========================================================================
+# CUSTOM CAPTION PRESETS (SAVE / LIST / DELETE)
+# =========================================================================
+_PRESETS_FILE = config.DATA_DIR / "custom_caption_presets.json"
+
+def _load_custom_presets():
+    if not _PRESETS_FILE.exists():
+        return []
+    try:
+        import json
+        return json.loads(_PRESETS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+def _save_custom_presets(presets):
+    try:
+        import json
+        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        _PRESETS_FILE.write_text(json.dumps(presets, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+@caption_studio_bp.route("/api/caption-studio/presets/save", methods=["POST"])
+def save_custom_preset():
+    """Save a user-designed caption preset."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip() or "My Custom Style"
+    style = data.get("style") or data.get("styling") or {}
+
+    if not style:
+        return jsonify({"success": False, "error": "Style payload required"}), 400
+
+    presets = _load_custom_presets()
+    preset_id = f"custom_{int(time.time() * 1000)}"
+    new_preset = {
+        "id": preset_id,
+        "name": name,
+        "category": "custom",
+        "platform": "Custom Preset",
+        "tagClass": "tag-custom",
+        "created_at": int(time.time()),
+        "style": style,
+    }
+    # Prepend newest
+    presets.insert(0, new_preset)
+    _save_custom_presets(presets)
+
+    return jsonify({"success": True, "preset": new_preset, "presets": presets})
+
+
+@caption_studio_bp.route("/api/caption-studio/presets/list", methods=["GET"])
+def list_custom_presets():
+    """List all saved custom presets."""
+    presets = _load_custom_presets()
+    return jsonify({"success": True, "presets": presets})
+
+
+@caption_studio_bp.route("/api/caption-studio/presets/delete", methods=["POST"])
+def delete_custom_preset():
+    """Delete a user-saved custom preset by id."""
+    data = request.get_json(silent=True) or {}
+    preset_id = data.get("id")
+
+    if not preset_id:
+        return jsonify({"success": False, "error": "Preset id required"}), 400
+
+    presets = _load_custom_presets()
+    filtered = [p for p in presets if p.get("id") != preset_id]
+    _save_custom_presets(filtered)
+
+    return jsonify({"success": True, "deleted_id": preset_id, "presets": filtered})
+

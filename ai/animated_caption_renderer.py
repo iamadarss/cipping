@@ -172,29 +172,10 @@ class AnimatedCaptionRenderer:
 
     def _build_header(self, opts):
         font = opts.get("font_family") or opts.get("font") or config.SUBTITLE_FONT
-
-        play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
-        play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
-
-        # Scale metrics proportionally from web preview reference (360x640) to actual video resolution
-        ref_w = 360.0
-        ref_h = 640.0
-        res_scale = max(1.0, float(play_res_x) / ref_w)
-        h_scale = max(1.0, float(play_res_y) / ref_h)
-
-        # Scale factor from user (either 1.0 or 100)
-        user_scale = float(opts.get("caption_scale") or opts.get("scale") or 1.0)
-        if user_scale > 10.0:
-            user_scale = user_scale / 100.0
-        user_scale = max(0.4, min(3.0, user_scale))
-
         try:
-            base_size = int(opts.get("font_size") or opts.get("size") or 38)
+            size = int(opts.get("font_size") or opts.get("size") or 34)
         except (TypeError, ValueError):
-            base_size = 38
-
-        # Large, high-impact font size that matches preview proportion
-        size = max(24, int(round(base_size * res_scale * user_scale)))
+            size = 34
 
         # Primary text color & active highlight color
         text_color_hex = opts.get("text_color") or opts.get("color") or "#FFFFFF"
@@ -224,10 +205,9 @@ class AnimatedCaptionRenderer:
             outline_ass = self._to_ass_color(outline_hex, alpha=255)
         else:
             try:
-                base_outline = float(opts.get("outline_width", opts.get("outline", 3)))
+                outline_w = int(opts.get("outline_width", opts.get("outline", 3)))
             except (TypeError, ValueError):
-                base_outline = 3.0
-            outline_w = max(1, int(round(base_outline * res_scale * user_scale)))
+                outline_w = 3
             outline_ass = self._to_ass_color(outline_hex, alpha=0)
 
         # Shadow color & blur/offset
@@ -238,10 +218,9 @@ class AnimatedCaptionRenderer:
             shadow_ass = self._to_ass_color(shadow_hex, alpha=255)
         else:
             try:
-                base_shadow = float(opts.get("shadow_blur", opts.get("shadow", 2)))
+                shadow_w = int(opts.get("shadow_blur", opts.get("shadow", 2)))
             except (TypeError, ValueError):
-                base_shadow = 2.0
-            shadow_w = max(1, int(round(base_shadow * res_scale * user_scale)))
+                shadow_w = 2
             shadow_ass = self._to_ass_color(shadow_hex, alpha=0)
 
         # Bold & Italic flags
@@ -249,12 +228,15 @@ class AnimatedCaptionRenderer:
         bold_flag = -1 if font_weight >= 600 else 0
         italic_flag = -1 if bool(opts.get("italic", False)) else 0
 
-        # Scale factor (normalized in font size directly)
-        scale_factor = 100
+        # Scale factor (100 = default)
+        try:
+            scale_factor = round(float(opts.get("scale", 100)))
+        except (TypeError, ValueError):
+            scale_factor = 100
 
         # Letter spacing
         try:
-            spacing = int(round(float(opts.get("spacing", 0)) * res_scale))
+            spacing = int(opts.get("spacing", 0))
         except (TypeError, ValueError):
             spacing = 0
 
@@ -282,21 +264,21 @@ class AnimatedCaptionRenderer:
         alignment = base_row + col_offset
 
         try:
-            base_margin_v = int(opts.get("margin_v", opts.get("margin_y", 60)))
+            margin_v = int(opts.get("margin_v", opts.get("margin_y", 60)))
             if position == "lower_third":
-                base_margin_v = max(base_margin_v, 140)
-            margin_v = int(round(base_margin_v * h_scale))
+                margin_v = max(margin_v, 140)
         except (TypeError, ValueError):
-            margin_v = int(round(60 * h_scale))
+            margin_v = 60
 
         try:
-            base_margin_l = int(opts.get("margin_l", opts.get("margin_x", 30)))
-            base_margin_r = int(opts.get("margin_r", 30))
-            margin_l = int(round(base_margin_l * res_scale))
-            margin_r = int(round(base_margin_r * res_scale))
+            margin_l = int(opts.get("margin_l", opts.get("margin_x", 30)))
+            margin_r = int(opts.get("margin_r", 30))
         except (TypeError, ValueError):
-            margin_l = int(round(30 * res_scale))
-            margin_r = int(round(30 * res_scale))
+            margin_l = 30
+            margin_r = 30
+
+        play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
+        play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
 
         return f"""[Script Info]
 ScriptType: v4.00+

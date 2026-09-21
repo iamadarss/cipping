@@ -145,6 +145,11 @@
                             <svg data-lucide="history" width="15" height="15"></svg>
                             <span>Upload History</span>
                         </button>
+                        <button class="desk-nav-tab" data-view="presets">
+                            <svg data-lucide="sparkles" width="15" height="15"></svg>
+                            <span>Publishing Presets</span>
+                            <span class="tab-badge" id="presetsBadgeCount">0</span>
+                        </button>
                         <button class="desk-nav-tab" data-view="connection">
                             <svg data-lucide="link" width="15" height="15"></svg>
                             <span>YouTube Connection</span>
@@ -387,6 +392,31 @@
 
                                 <!-- STEP 2: VIDEO DETAILS -->
                                 <div class="wizard-step-pane" id="wizard-step-2">
+                                    <!-- 1-Click Preset Quick Apply Bar -->
+                                    <div class="preset-quick-banner" style="background:var(--surface-1); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                                        <div style="display:flex; align-items:center; gap:10px;">
+                                            <div style="width:34px; height:34px; border-radius:8px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center;">
+                                                <svg data-lucide="sparkles" width="18" height="18"></svg>
+                                            </div>
+                                            <div>
+                                                <div style="font-size:13px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                                                    <span>1-Click Publishing Preset</span>
+                                                    <span class="status-pill connected" style="font-size:10px; padding:1px 7px;">Auto Fill</span>
+                                                </div>
+                                                <div style="font-size:11px; color:var(--text-secondary);">Instantly configure all tags, playlist, category & description</div>
+                                            </div>
+                                        </div>
+                                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                            <select id="wizardPresetDropdown" style="padding:7px 12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary); font-size:12px; min-width:180px;">
+                                                <option value="">-- Choose Preset Profile --</option>
+                                            </select>
+                                            <button type="button" class="btn btn-primary btn-sm" id="btnApplyWizardPreset" style="font-size:12px; padding:7px 14px;">
+                                                <svg data-lucide="zap" width="13" height="13"></svg>
+                                                <span>Apply Preset</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <div style="margin-bottom: var(--space-4);">
                                         <label for="inputVideoTitle" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Title *</label>
                                         <input type="text" id="inputVideoTitle" maxlength="100" class="form-input" placeholder="Catchy title that describes your video..." style="width:100%; padding:10px 14px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
@@ -775,7 +805,33 @@
                     </div>
 
                     <!-- ========================================================
-                         VIEW 7: AUTOMATION SETTINGS
+                         VIEW 7: PUBLISHING PRESETS (Section 15)
+                         ======================================================== -->
+                    <div class="desk-view-pane" id="view-presets" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5); flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h3 style="font-size:18px; font-weight:800; color:var(--text-primary); margin:0 0 4px; display:flex; align-items:center; gap:8px;">
+                                    <svg data-lucide="sparkles" width="20" height="20" style="color:var(--primary);"></svg>
+                                    <span>Publishing Presets & Profiles</span>
+                                </h3>
+                                <p style="font-size:13px; color:var(--text-secondary); margin:0;">
+                                    Configure 1-click profiles with predefined tags, playlists, categories, and descriptions to automate your release workflow.
+                                </p>
+                            </div>
+                            <button class="btn btn-primary btn-sm" id="btnNewPreset">
+                                <svg data-lucide="plus" width="14" height="14"></svg>
+                                <span>Create New Preset</span>
+                            </button>
+                        </div>
+
+                        <!-- Presets Grid Container -->
+                        <div id="presetsCardsGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:16px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- ========================================================
+                         VIEW 8: AUTOMATION SETTINGS
                          ======================================================== -->
                     <div class="desk-view-pane" id="view-settings" style="display:none;">
                         <div class="desk-card" style="max-width:680px; margin:0 auto;">
@@ -817,6 +873,86 @@
 
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Preset Creator / Editor Modal -->
+    <div class="modal-overlay" id="modalPresetEditor">
+        <div class="modal-content" style="max-width:620px;">
+            <div class="modal-header">
+                <h3 id="modalPresetTitle" style="display:flex; align-items:center; gap:8px;">
+                    <svg data-lucide="sparkles" width="18" height="18" style="color:var(--primary);"></svg>
+                    <span>Create Publishing Preset</span>
+                </h3>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnPresetModalClose" style="padding:4px 8px;">✕</button>
+            </div>
+            <form id="formPresetEditor" style="display:flex; flex-direction:column; gap:14px; margin-top:8px;">
+                <input type="hidden" id="inputPresetId" value="">
+                <div>
+                    <label for="inputPresetName" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Preset Name *</label>
+                    <input type="text" id="inputPresetName" required placeholder="e.g. 🎙️ Podcast Clips, 🔥 Viral Shorts" class="form-input" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                </div>
+                <div>
+                    <label for="inputPresetTitlePattern" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Title Pattern (Optional)</label>
+                    <input type="text" id="inputPresetTitlePattern" placeholder="e.g. {title} | Podcast Clip" class="form-input" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                    <span style="font-size:11px; color:var(--text-muted);">Use {title} to retain original video title.</span>
+                </div>
+                <div>
+                    <label for="inputPresetDescription" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Description Template</label>
+                    <textarea id="inputPresetDescription" rows="4" placeholder="Enter default description template, hashtags, and social links..." style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary); resize:vertical;"></textarea>
+                </div>
+                <div>
+                    <label for="inputPresetTags" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Default Tags (comma separated)</label>
+                    <input type="text" id="inputPresetTags" placeholder="podcast, interview, clips, highlights, talkshow" class="form-input" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div>
+                        <label for="selectPresetCategory" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Target Category</label>
+                        <select id="selectPresetCategory" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                            <option value="22">People & Blogs</option>
+                            <option value="24">Entertainment</option>
+                            <option value="10">Music</option>
+                            <option value="20">Gaming</option>
+                            <option value="27">Education</option>
+                            <option value="28">Science & Technology</option>
+                            <option value="26">Howto & Style</option>
+                            <option value="1">Film & Animation</option>
+                            <option value="17">Sports</option>
+                            <option value="25">News & Politics</option>
+                            <option value="23">Comedy</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="selectPresetPlaylist" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Target Playlist</label>
+                        <select id="selectPresetPlaylist" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                            <option value="">None (Don't add to playlist)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div>
+                        <label for="selectPresetVisibility" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Default Visibility</label>
+                        <select id="selectPresetVisibility" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                            <option value="public" selected>Public</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="private">Private</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="selectPresetLanguage" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Language</label>
+                        <select id="selectPresetLanguage" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
+                            <option value="en" selected>English</option>
+                            <option value="hi">Hindi</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding-top:14px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnPresetModalCancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="btnSavePreset">Save Preset</button>
+                </div>
+            </form>
         </div>
     </div>
 

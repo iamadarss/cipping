@@ -14,6 +14,7 @@
         connected: false,
         channel: null,
         playlists: [],
+        presets: [],
         queue: [],
         schedules: [],
         history: [],
@@ -190,6 +191,27 @@
         settingDefaultCategory: document.getElementById('settingDefaultCategory'),
         settingDefaultTags: document.getElementById('settingDefaultTags'),
 
+        // Presets & Templates
+        presetsBadgeCount: document.getElementById('presetsBadgeCount'),
+        wizardPresetDropdown: document.getElementById('wizardPresetDropdown'),
+        btnApplyWizardPreset: document.getElementById('btnApplyWizardPreset'),
+        btnNewPreset: document.getElementById('btnNewPreset'),
+        presetsCardsGrid: document.getElementById('presetsCardsGrid'),
+        modalPresetEditor: document.getElementById('modalPresetEditor'),
+        modalPresetTitle: document.getElementById('modalPresetTitle'),
+        btnPresetModalClose: document.getElementById('btnPresetModalClose'),
+        btnPresetModalCancel: document.getElementById('btnPresetModalCancel'),
+        formPresetEditor: document.getElementById('formPresetEditor'),
+        inputPresetId: document.getElementById('inputPresetId'),
+        inputPresetName: document.getElementById('inputPresetName'),
+        inputPresetTitlePattern: document.getElementById('inputPresetTitlePattern'),
+        inputPresetDescription: document.getElementById('inputPresetDescription'),
+        inputPresetTags: document.getElementById('inputPresetTags'),
+        selectPresetCategory: document.getElementById('selectPresetCategory'),
+        selectPresetPlaylist: document.getElementById('selectPresetPlaylist'),
+        selectPresetVisibility: document.getElementById('selectPresetVisibility'),
+        selectPresetLanguage: document.getElementById('selectPresetLanguage'),
+
         // Modals & Toasts
         deskConfirmModal: document.getElementById('deskConfirmModal'),
         modalConfirmTitle: document.getElementById('modalConfirmTitle'),
@@ -306,9 +328,11 @@
             case 'scheduled': loadScheduled(); break;
             case 'history': loadHistory(); break;
             case 'connection': loadConnection(); break;
+            case 'presets': loadPresets(); break;
             case 'settings': loadSettings(); break;
             case 'upload':
                 if (state.wizard.step === 1) resetWizard();
+                loadPresets();
                 break;
         }
 
@@ -889,8 +913,10 @@
             const res = await fetch('/youtube/playlists');
             const data = await res.json();
             state.playlists = data.playlists || [];
-            dom.selectPlaylist.innerHTML = '<option value="">None (Don\'t add to playlist)</option>' +
+            const opts = '<option value="">None (Don\'t add to playlist)</option>' +
                 state.playlists.map(p => `<option value="${p.id}">${escapeHtml(p.title)}</option>`).join('');
+            if (dom.selectPlaylist) dom.selectPlaylist.innerHTML = opts;
+            if (dom.selectPresetPlaylist) dom.selectPresetPlaylist.innerHTML = opts;
         } catch (err) {
             console.warn('Could not load playlists:', err);
         }
@@ -1031,6 +1057,114 @@
         }
     });
 
+    async function pollUploadProgress(videoId, queueId, videoTitle = 'Video') {
+        return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 300; // ~6 minutes at 1.2s intervals
+
+            const interval = setInterval(async () => {
+                attempts++;
+                try {
+                    const res = await fetch(`/youtube/upload/progress/${videoId}`);
+                    const data = await res.json();
+
+                    if (!res.ok || !data.success) {
+                        if (attempts >= 10) {
+                            clearInterval(interval);
+                            reject(new Error(data.error || 'Failed to query upload progress.'));
+                        }
+                        return;
+                    }
+
+                    const status = (data.status || '').toLowerCase();
+                    const progress = data.progress || 0;
+                    const isCurrentWizardVideo = (state.wizard.videoId === videoId);
+
+                    if (status === 'completed' || status === 'uploaded') {
+                        clearInterval(interval);
+                        if (isCurrentWizardVideo) {
+                            dom.uploadProgressBarFill.style.width = '100%';
+                            dom.uploadProgressBarFill.style.background = 'linear-gradient(90deg, var(--primary), #34D399)';
+                            dom.uploadPercentText.textContent = '100%';
+                            dom.uploadSpeedText.textContent = 'Upload complete!';
+                            dom.uploadStatusIcon.innerHTML = '<svg data-lucide="check-circle" width="32" height="32" style="color:var(--primary);"></svg>';
+                            dom.uploadStatusTitle.textContent = 'Video Published Successfully!';
+
+                            let msgHtml = 'Your video is now live on your YouTube channel.';
+                            if (data.youtube_url) {
+                                msgHtml = `Your video is published! <a href="${data.youtube_url}" target="_blank" style="color:var(--primary); text-decoration:underline; font-weight:700; margin-left:6px;">Watch on YouTube ↗</a>`;
+                            }
+                            dom.uploadStatusMessage.innerHTML = msgHtml;
+
+                            dom.uploadActionButtons.style.display = 'flex';
+                            dom.uploadActionButtons.innerHTML = `
+                                <button class="btn btn-secondary btn-sm" id="btnUploadAnother">Upload Another Video</button>
+                                <button class="btn btn-primary btn-sm" data-nav="history" id="btnGoToHistory">View in History</button>
+                                ${data.youtube_url ? `<a href="${data.youtube_url}" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none;">Open YouTube ↗</a>` : ''}
+                            `;
+                            const anotherBtn = document.getElementById('btnUploadAnother');
+                            if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard());
+
+                            if (window.lucide) window.lucide.createIcons();
+                        }
+
+                        showToast(`Video "${videoTitle}" published successfully to YouTube!`, 'success');
+                        loadOverview();
+                        loadQueue();
+                        loadHistory();
+                        resolve(data);
+                        return;
+                    }
+
+                    if (status === 'failed') {
+                        clearInterval(interval);
+                        const errReason = data.error_message || 'YouTube rejected or aborted the upload.';
+                        if (isCurrentWizardVideo) {
+                            dom.uploadProgressBarFill.style.background = 'var(--error)';
+                            dom.uploadStatusIcon.innerHTML = '<svg data-lucide="alert-circle" width="32" height="32" style="color:var(--error);"></svg>';
+                            dom.uploadStatusTitle.textContent = 'Upload Failed or Interrupted';
+                            dom.uploadStatusMessage.textContent = errReason;
+                            dom.uploadProgressBarContainer.style.display = 'none';
+                            dom.uploadActionButtons.style.display = 'flex';
+                            dom.uploadActionButtons.innerHTML = `
+                                <button class="btn btn-secondary btn-sm" id="btnEditSettings">Edit Settings</button>
+                                <button class="btn btn-primary btn-sm" id="btnRetryPublish">Retry</button>
+                            `;
+                            const editBtn = document.getElementById('btnEditSettings');
+                            if (editBtn) {
+                                editBtn.addEventListener('click', () => {
+                                    dom.wizardProgressState.style.display = 'none';
+                                    dom.wizardFooter.style.display = 'flex';
+                                    setWizardStep(4);
+                                });
+                            }
+                            const retryBtn = document.getElementById('btnRetryPublish');
+                            if (retryBtn) retryBtn.addEventListener('click', () => executeFinalPublish());
+                            if (window.lucide) window.lucide.createIcons();
+                        }
+                        showToast(`Upload failed for "${videoTitle}": ${errReason}`, 'error');
+                        reject(new Error(errReason));
+                        return;
+                    }
+
+                    // Active uploading / processing state
+                    if (isCurrentWizardVideo) {
+                        const displayProgress = Math.max(12, Math.min(99, progress));
+                        dom.uploadProgressBarFill.style.width = `${displayProgress}%`;
+                        dom.uploadPercentText.textContent = `${displayProgress}%`;
+                        dom.uploadSpeedText.textContent = `Uploading chunks to YouTube (${displayProgress}%)...`;
+                    }
+
+                } catch (err) {
+                    if (attempts > maxAttempts) {
+                        clearInterval(interval);
+                        reject(err);
+                    }
+                }
+            }, 1200);
+        });
+    }
+
     async function executeFinalPublish() {
         const confirmed = await showConfirm(
             state.wizard.timingMode === 'schedule' ? 'Confirm Schedule' : 'Confirm Publish',
@@ -1038,13 +1172,16 @@
         );
         if (!confirmed) return;
 
-        // Hide wizard panes and footer, display progress state
+        // Reset and display progress state
         dom.wizardPanes.forEach(p => p.classList.remove('active'));
         dom.wizardProgressState.style.display = 'block';
         dom.wizardFooter.style.display = 'none';
-        dom.uploadProgressBarFill.style.width = '20%';
-        dom.uploadPercentText.textContent = '20%';
+        dom.uploadProgressBarContainer.style.display = 'block';
+        dom.uploadProgressBarFill.style.width = '15%';
+        dom.uploadProgressBarFill.style.background = 'linear-gradient(90deg, var(--primary), #34D399)';
+        dom.uploadPercentText.textContent = '15%';
         dom.uploadSpeedText.textContent = 'Saving metadata...';
+        dom.uploadActionButtons.style.display = 'none';
 
         try {
             // 1. Update Video Metadata
@@ -1060,8 +1197,8 @@
                 })
             });
 
-            dom.uploadProgressBarFill.style.width = '50%';
-            dom.uploadPercentText.textContent = '50%';
+            dom.uploadProgressBarFill.style.width = '25%';
+            dom.uploadPercentText.textContent = '25%';
 
             if (state.wizard.timingMode === 'schedule') {
                 // Schedule Mode
@@ -1088,10 +1225,18 @@
                 dom.uploadStatusTitle.textContent = 'Upload Scheduled Successfully!';
                 dom.uploadStatusMessage.textContent = `Your video is queued to release on ${state.wizard.scheduleDate} at ${state.wizard.scheduleTime}.`;
                 dom.uploadActionButtons.style.display = 'flex';
+                dom.uploadActionButtons.innerHTML = `
+                    <button class="btn btn-secondary btn-sm" id="btnUploadAnother">Upload Another Video</button>
+                    <button class="btn btn-primary btn-sm" data-nav="scheduled">View in Schedules</button>
+                `;
+                const anotherBtn = document.getElementById('btnUploadAnother');
+                if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard());
                 showToast('Release scheduled!', 'success');
+                loadOverview();
+                loadScheduled();
             } else {
-                // Publish Now Mode
-                dom.uploadSpeedText.textContent = 'Uploading to YouTube channels...';
+                // Publish Now Mode: Launch background upload worker
+                dom.uploadSpeedText.textContent = 'Adding to upload queue...';
 
                 const res = await fetch('/youtube/upload/execute', {
                     method: 'POST',
@@ -1099,22 +1244,60 @@
                     body: JSON.stringify({ video_id: state.wizard.videoId })
                 });
                 const data = await res.json();
-                if (!res.ok || !data.success) throw new Error(data.error || 'Failed to publish video');
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed to initialize YouTube upload');
 
+                const queueId = data.queue_id;
+                const videoId = state.wizard.videoId;
+                const videoTitle = state.wizard.title || 'Video';
+
+                // Instantly confirm video is added to Queue so user can upload another video immediately!
                 dom.uploadProgressBarFill.style.width = '100%';
-                dom.uploadPercentText.textContent = '100%';
-                dom.uploadStatusIcon.innerHTML = '<svg data-lucide="check-circle" width="32" height="32" style="color:var(--primary);"></svg>';
-                dom.uploadStatusTitle.textContent = 'Video Published Successfully!';
-                dom.uploadStatusMessage.textContent = 'Your video is now live on your YouTube channel.';
+                dom.uploadProgressBarFill.style.background = 'linear-gradient(90deg, var(--primary), #34D399)';
+                dom.uploadPercentText.textContent = 'In Queue';
+                dom.uploadSpeedText.textContent = 'Processing & uploading in background...';
+                dom.uploadStatusIcon.innerHTML = '<svg data-lucide="layers" width="36" height="36" style="color:var(--primary);"></svg>';
+                dom.uploadStatusTitle.textContent = 'Video Added to Upload Queue!';
+                dom.uploadStatusMessage.innerHTML = `<strong>${escapeHtml(videoTitle)}</strong> has been added to the upload queue and is uploading in the background. You can start uploading your next video immediately!`;
+
                 dom.uploadActionButtons.style.display = 'flex';
-                showToast('Video published to YouTube!', 'success');
+                dom.uploadActionButtons.innerHTML = `
+                    <button class="btn btn-primary btn-sm" id="btnUploadAnother">
+                        <svg data-lucide="plus" width="16" height="16" style="margin-right:6px;"></svg>
+                        Upload Another Video
+                    </button>
+                    <button class="btn btn-secondary btn-sm" data-nav="queue" id="btnGoToQueue">
+                        <svg data-lucide="layers" width="16" height="16" style="margin-right:6px;"></svg>
+                        View Upload Queue
+                    </button>
+                `;
+
+                const anotherBtn = document.getElementById('btnUploadAnother');
+                if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard());
+
+                const queueBtn = document.getElementById('btnGoToQueue');
+                if (queueBtn) {
+                    queueBtn.addEventListener('click', () => {
+                        const tab = Array.from(dom.navTabs).find(t => t.dataset.view === 'queue');
+                        if (tab) tab.click();
+                    });
+                }
+
+                if (window.lucide) window.lucide.createIcons();
+                showToast('Video added to Upload Queue! Background processing started.', 'success');
+                loadOverview();
+                loadQueue();
+
+                // Non-blocking background monitoring: polls while not blocking the UI or next uploads
+                pollUploadProgress(videoId, queueId, videoTitle).catch(err => {
+                    console.warn('Background upload status check error:', err);
+                });
             }
 
             if (window.lucide) window.lucide.createIcons();
         } catch (err) {
             dom.uploadProgressBarFill.style.background = 'var(--error)';
             dom.uploadStatusIcon.innerHTML = '<svg data-lucide="alert-circle" width="32" height="32" style="color:var(--error);"></svg>';
-            dom.uploadStatusTitle.textContent = 'Upload Encountered an Issue';
+            dom.uploadStatusTitle.textContent = 'Upload Failed or Interrupted';
             dom.uploadStatusMessage.textContent = err.message || 'Could not complete YouTube publish.';
             dom.uploadProgressBarContainer.style.display = 'none';
             dom.uploadActionButtons.style.display = 'flex';
@@ -1132,8 +1315,6 @@
             showToast(err.message, 'error');
         }
     }
-
-    dom.btnUploadAnother.addEventListener('click', () => resetWizard());
 
     // =========================================================================
     // 7. Dedicated Pages: Queue, Scheduled, History, Connection
@@ -1328,13 +1509,41 @@
                         <div class="compact-video-title" style="font-size:14px;">${escapeHtml(s.title || 'Scheduled Video')}</div>
                         <div class="compact-video-meta">
                             <span style="color:var(--primary); font-weight:700;">${formatDate(s.scheduled_at)} (${escapeHtml(s.timezone || 'UTC')})</span>
+                            ${s.due_now ? '<span class="status-pill retrying" style="font-size:10px; margin-left:6px;">Due Now</span>' : ''}
                         </div>
                     </div>
-                    <div class="compact-video-actions">
-                        <button class="btn btn-outline btn-sm btn-cancel-schedule" data-id="${s.id}" style="color:var(--error); border-color:rgba(239,68,68,0.3);">Cancel</button>
+                    <div class="compact-video-actions" style="display:flex; gap:6px; align-items:center;">
+                        <button class="btn btn-primary btn-sm btn-publish-schedule-now" data-id="${s.id}" style="padding:4px 10px; font-size:12px;">Publish Now</button>
+                        <button class="btn btn-outline btn-sm btn-cancel-schedule" data-id="${s.id}" style="color:var(--error); border-color:rgba(239,68,68,0.3); padding:4px 10px; font-size:12px;">Cancel</button>
                     </div>
                 </div>
             `).join('');
+
+            dom.scheduledItemsList.querySelectorAll('.btn-publish-schedule-now').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const confirmed = await showConfirm('Publish Immediately', 'Are you sure you want to trigger YouTube publish for this video right now?');
+                    if (confirmed) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner"></span> Starting...';
+                        try {
+                            const res = await fetch(`/youtube/schedules/${btn.dataset.id}/publish-now`, { method: 'POST' });
+                            const resData = await res.json();
+                            if (resData.success) {
+                                showToast('Upload worker launched! Redirecting to queue...', 'success');
+                                switchView('queue');
+                            } else {
+                                showToast(resData.error || 'Failed to start upload', 'error');
+                                btn.disabled = false;
+                                btn.textContent = 'Publish Now';
+                            }
+                        } catch (e) {
+                            showToast('Error: ' + e.message, 'error');
+                            btn.disabled = false;
+                            btn.textContent = 'Publish Now';
+                        }
+                    }
+                });
+            });
 
             dom.scheduledItemsList.querySelectorAll('.btn-cancel-schedule').forEach(btn => {
                 btn.addEventListener('click', async () => {
@@ -1485,9 +1694,10 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
-    async function loadConnection() {
+    async function loadConnection(forceRefresh = false) {
         try {
-            const res = await fetch('/youtube/status');
+            const url = forceRefresh ? '/youtube/status?refresh=1' : '/youtube/status';
+            const res = await fetch(url);
             const data = await res.json();
             state.connected = data.connected;
             state.channel = data.channel;
@@ -1508,9 +1718,11 @@
                 } else {
                     dom.channelAvatar.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="%23888" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
                 }
+                renderOverviewChannel();
             } else {
                 dom.connectionActiveCard.style.display = 'none';
                 dom.connectionInactiveCard.style.display = 'block';
+                renderOverviewChannel();
             }
 
             if (window.lucide) window.lucide.createIcons();
@@ -1520,9 +1732,25 @@
     }
 
     dom.btnRefreshConnection.addEventListener('click', async () => {
-        showToast('Refreshing connection...', 'info');
-        await loadConnection();
-        showToast('Connection status updated', 'success');
+        const originalHtml = dom.btnRefreshConnection.innerHTML;
+        dom.btnRefreshConnection.disabled = true;
+        dom.btnRefreshConnection.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:4px;"></span> Refreshing...';
+        showToast('Refreshing live channel statistics from YouTube...', 'info');
+        try {
+            await loadConnection(true);
+            await loadOverview();
+            if (state.connected && state.channel) {
+                showToast(`YouTube Channel Synced: ${state.channel.title} (${state.channel.subscribers} Subs, ${state.channel.video_count} Videos)`, 'success');
+            } else {
+                showToast('Connection status updated', 'success');
+            }
+        } catch (err) {
+            showToast('Failed to refresh channel: ' + err.message, 'error');
+        } finally {
+            dom.btnRefreshConnection.disabled = false;
+            dom.btnRefreshConnection.innerHTML = originalHtml;
+            if (window.lucide) window.lucide.createIcons();
+        }
     });
 
     dom.btnDisconnectChannel.addEventListener('click', async () => {
@@ -1570,6 +1798,364 @@
             showToast('Failed to save settings', 'error');
         }
     });
+
+    // =========================================================================
+    // 7.5 Publishing Presets & Profiles
+    // =========================================================================
+    async function loadPresets() {
+        if (!dom.presetsCardsGrid) return;
+        dom.presetsCardsGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; padding:32px; color:var(--text-muted);"><span class="spinner"></span> Loading publishing presets...</div>';
+        try {
+            const res = await fetch('/youtube/presets');
+            const data = await res.json();
+            state.presets = data.presets || [];
+            if (dom.presetsBadgeCount) dom.presetsBadgeCount.textContent = state.presets.length;
+
+            populateWizardPresetsDropdown();
+            renderPresetsGrid();
+        } catch (err) {
+            dom.presetsCardsGrid.innerHTML = `<div style="grid-column: 1 / -1; color:var(--error); padding:20px;">Failed to load presets: ${escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    function populateWizardPresetsDropdown() {
+        if (!dom.wizardPresetDropdown) return;
+        const currentVal = dom.wizardPresetDropdown.value;
+        dom.wizardPresetDropdown.innerHTML = '<option value="">-- Choose a Preset Profile --</option>' +
+            state.presets.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+        if (currentVal) dom.wizardPresetDropdown.value = currentVal;
+    }
+
+    function renderPresetsGrid() {
+        if (!dom.presetsCardsGrid) return;
+
+        if (state.presets.length === 0) {
+            dom.presetsCardsGrid.innerHTML = `
+                <div class="compact-empty-state" style="grid-column: 1 / -1;">
+                    <svg data-lucide="sliders" width="36" height="36"></svg>
+                    <h4>No Publishing Presets Yet</h4>
+                    <p>Create reusable presets with predefined tags, category, playlist, and visibility to publish podcasts, shorts, or series in 1-click.</p>
+                    <button class="btn btn-primary btn-sm" id="btnEmptyCreatePreset">Create Your First Preset</button>
+                </div>
+            `;
+            const emptyBtn = document.getElementById('btnEmptyCreatePreset');
+            if (emptyBtn) emptyBtn.addEventListener('click', () => openPresetModal());
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+
+        const categoryNames = {
+            '1': 'Film & Animation',
+            '10': 'Music',
+            '17': 'Sports',
+            '20': 'Gaming',
+            '22': 'People & Blogs',
+            '23': 'Comedy',
+            '24': 'Entertainment',
+            '25': 'News & Politics',
+            '26': 'Howto & Style',
+            '27': 'Education',
+            '28': 'Science & Tech'
+        };
+
+        dom.presetsCardsGrid.innerHTML = state.presets.map(p => {
+            const catName = categoryNames[String(p.category_id)] || 'People & Blogs';
+            const tags = Array.isArray(p.tags) ? p.tags : [];
+            const tagsPreview = tags.slice(0, 5).map(t => `<span class="tag-chip" style="font-size:10px; padding:2px 7px; margin:0 4px 4px 0;">#${escapeHtml(t)}</span>`).join('');
+            const moreTagsCount = tags.length > 5 ? `<span style="font-size:10px; color:var(--text-muted);">+${tags.length - 5} more</span>` : '';
+
+            return `
+                <div class="desk-card" style="display:flex; flex-direction:column; justify-content:space-between; transition:transform 0.15s ease, box-shadow 0.15s ease;" data-id="${p.id}">
+                    <div>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                            <div>
+                                <h4 style="margin:0 0 4px; font-size:15px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                                    ${escapeHtml(p.name)}
+                                </h4>
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    <span class="status-pill queued" style="font-size:10px; padding:2px 8px;">${escapeHtml(catName)}</span>
+                                    <span class="status-pill ${p.visibility === 'public' ? 'published' : 'retrying'}" style="font-size:10px; padding:2px 8px; text-transform:capitalize;">${escapeHtml(p.visibility || 'public')}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${p.title_pattern ? `
+                            <div style="margin-bottom:10px;">
+                                <span style="font-size:11px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:2px;">Title Pattern:</span>
+                                <code style="font-size:11px; background:var(--surface-1); padding:3px 6px; border-radius:4px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:1px solid var(--border);">${escapeHtml(p.title_pattern)}</code>
+                            </div>
+                        ` : ''}
+
+                        ${p.description ? `
+                            <div style="margin-bottom:10px;">
+                                <span style="font-size:11px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:2px;">Description Snippet:</span>
+                                <div style="font-size:11px; color:var(--text-secondary); max-height:42px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.4;">
+                                    ${escapeHtml(p.description)}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <div style="margin-bottom:14px;">
+                            <span style="font-size:11px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Tags (${tags.length}):</span>
+                            <div style="display:flex; flex-wrap:wrap; align-items:center;">
+                                ${tagsPreview || '<span style="font-size:11px; color:var(--text-muted); font-style:italic;">No preset tags</span>'}
+                                ${moreTagsCount}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:12px; margin-top:8px;">
+                        <button type="button" class="btn btn-primary btn-sm btn-apply-preset-card" data-id="${p.id}" style="font-size:12px; padding:5px 12px;">
+                            <svg data-lucide="sparkles" width="13" height="13"></svg>
+                            <span>Use In Upload</span>
+                        </button>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn btn-secondary btn-sm btn-edit-preset" data-id="${p.id}" style="padding:5px 9px;" title="Edit Preset">
+                                <svg data-lucide="edit-2" width="13" height="13"></svg>
+                            </button>
+                            <button type="button" class="btn btn-outline btn-sm btn-delete-preset" data-id="${p.id}" style="padding:5px 9px; color:var(--error); border-color:rgba(239,68,68,0.3);" title="Delete Preset">
+                                <svg data-lucide="trash-2" width="13" height="13"></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        dom.presetsCardsGrid.querySelectorAll('.btn-apply-preset-card').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const presetId = btn.dataset.id;
+                switchView('upload');
+                if (state.wizard.step === 1) {
+                    setWizardStep(2);
+                }
+                applyPresetToWizard(presetId);
+            });
+        });
+
+        dom.presetsCardsGrid.querySelectorAll('.btn-edit-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = state.presets.find(p => String(p.id) === String(btn.dataset.id));
+                if (preset) openPresetModal(preset);
+            });
+        });
+
+        dom.presetsCardsGrid.querySelectorAll('.btn-delete-preset').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const preset = state.presets.find(p => String(p.id) === String(btn.dataset.id));
+                const name = preset ? preset.name : 'this preset';
+                const confirmed = await showConfirm('Delete Preset', `Are you sure you want to delete preset "${name}"?`);
+                if (confirmed) {
+                    try {
+                        const res = await fetch(`/youtube/presets/${btn.dataset.id}`, { method: 'DELETE' });
+                        const resData = await res.json();
+                        if (resData.success) {
+                            showToast('Preset deleted successfully', 'info');
+                            loadPresets();
+                        } else {
+                            showToast(resData.error || 'Failed to delete preset', 'error');
+                        }
+                    } catch (e) {
+                        showToast('Error: ' + e.message, 'error');
+                    }
+                }
+            });
+        });
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    function applyPresetToWizard(presetId) {
+        const preset = state.presets.find(p => String(p.id) === String(presetId));
+        if (!preset) {
+            showToast('Selected preset could not be found.', 'error');
+            return;
+        }
+
+        // 1. Title pattern
+        if (preset.title_pattern) {
+            const rawTitle = state.wizard.title || 'Video Clip';
+            let newTitle = preset.title_pattern;
+            if (newTitle.includes('{title}')) {
+                newTitle = newTitle.replace(/{title}/g, rawTitle);
+            }
+            state.wizard.title = newTitle;
+            if (dom.inputVideoTitle) {
+                dom.inputVideoTitle.value = newTitle;
+                dom.titleCharCounter.textContent = `${newTitle.length}/100`;
+            }
+        }
+
+        // 2. Description
+        if (preset.description) {
+            state.wizard.description = preset.description;
+            if (dom.inputVideoDescription) {
+                dom.inputVideoDescription.value = preset.description;
+                dom.descCharCounter.textContent = `${preset.description.length}/5000`;
+            }
+        }
+
+        // 3. Tags
+        const tags = Array.isArray(preset.tags) ? preset.tags : [];
+        if (tags.length > 0) {
+            [...state.wizard.tags].forEach(t => removeTagChip(t));
+            tags.forEach(t => {
+                const cleanTag = String(t).trim().replace(/^#/, '');
+                if (cleanTag && !state.wizard.tags.includes(cleanTag)) {
+                    addTagChip(cleanTag);
+                }
+            });
+        }
+
+        // 4. Category
+        if (preset.category_id && dom.selectCategory) {
+            state.wizard.categoryId = String(preset.category_id);
+            dom.selectCategory.value = state.wizard.categoryId;
+        }
+
+        // 5. Playlist
+        if (preset.playlist_id && dom.selectPlaylist) {
+            state.wizard.playlistId = preset.playlist_id;
+            dom.selectPlaylist.value = preset.playlist_id;
+        }
+
+        // 6. Visibility
+        if (preset.visibility) {
+            state.wizard.visibility = preset.visibility;
+            const rad = document.querySelector(`input[name="videoVisibility"][value="${preset.visibility}"]`);
+            if (rad) {
+                rad.checked = true;
+                rad.dispatchEvent(new Event('change'));
+            }
+        }
+
+        // 7. Language
+        if (preset.language && dom.selectLanguage) {
+            state.wizard.language = preset.language;
+            dom.selectLanguage.value = preset.language;
+        }
+
+        if (dom.wizardPresetDropdown) {
+            dom.wizardPresetDropdown.value = String(preset.id);
+        }
+
+        validateCurrentStep();
+        showToast(`Preset "${preset.name}" applied! All fields populated.`, 'success');
+    }
+
+    function openPresetModal(preset = null) {
+        if (!dom.modalPresetEditor) return;
+        if (preset) {
+            dom.modalPresetTitle.textContent = 'Edit Publishing Preset';
+            dom.inputPresetId.value = preset.id;
+            dom.inputPresetName.value = preset.name || '';
+            dom.inputPresetTitlePattern.value = preset.title_pattern || '';
+            dom.inputPresetDescription.value = preset.description || '';
+            const tags = Array.isArray(preset.tags) ? preset.tags.join(', ') : (preset.tags || '');
+            dom.inputPresetTags.value = tags;
+            dom.selectPresetCategory.value = String(preset.category_id || '22');
+            dom.selectPresetPlaylist.value = preset.playlist_id || '';
+            dom.selectPresetVisibility.value = preset.visibility || 'public';
+            dom.selectPresetLanguage.value = preset.language || 'en';
+        } else {
+            dom.modalPresetTitle.textContent = 'Create Publishing Preset';
+            dom.inputPresetId.value = '';
+            dom.inputPresetName.value = '';
+            dom.inputPresetTitlePattern.value = '{title} | UpClip Studio';
+            dom.inputPresetDescription.value = '';
+            dom.inputPresetTags.value = '';
+            dom.selectPresetCategory.value = '22';
+            dom.selectPresetPlaylist.value = '';
+            dom.selectPresetVisibility.value = 'public';
+            dom.selectPresetLanguage.value = 'en';
+        }
+        dom.modalPresetEditor.classList.add('active');
+    }
+
+    function closePresetModal() {
+        if (dom.modalPresetEditor) {
+            dom.modalPresetEditor.classList.remove('active');
+        }
+    }
+
+    if (dom.btnNewPreset) {
+        dom.btnNewPreset.addEventListener('click', () => openPresetModal());
+    }
+    if (dom.btnPresetModalClose) {
+        dom.btnPresetModalClose.addEventListener('click', closePresetModal);
+    }
+    if (dom.btnPresetModalCancel) {
+        dom.btnPresetModalCancel.addEventListener('click', closePresetModal);
+    }
+    if (dom.btnApplyWizardPreset) {
+        dom.btnApplyWizardPreset.addEventListener('click', () => {
+            const presetId = dom.wizardPresetDropdown.value;
+            if (!presetId) {
+                showToast('Please select a preset from the dropdown first', 'info');
+                return;
+            }
+            applyPresetToWizard(presetId);
+        });
+    }
+
+    if (dom.formPresetEditor) {
+        dom.formPresetEditor.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = dom.inputPresetId.value;
+            const name = dom.inputPresetName.value.trim();
+            if (!name) {
+                showToast('Preset name is required', 'error');
+                return;
+            }
+
+            const rawTags = dom.inputPresetTags.value;
+            const parsedTags = rawTags.split(',')
+                .map(t => t.trim().replace(/^#/, ''))
+                .filter(t => t.length > 0);
+
+            const payload = {
+                name: name,
+                title_pattern: dom.inputPresetTitlePattern.value.trim(),
+                description: dom.inputPresetDescription.value.trim(),
+                tags: parsedTags,
+                category_id: dom.selectPresetCategory.value,
+                playlist_id: dom.selectPresetPlaylist.value,
+                visibility: dom.selectPresetVisibility.value,
+                language: dom.selectPresetLanguage.value
+            };
+
+            const saveBtn = document.getElementById('btnSavePreset');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+            }
+
+            try {
+                const url = id ? `/youtube/presets/${id}` : '/youtube/presets';
+                const method = id ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const resData = await res.json();
+                if (resData.success) {
+                    showToast(`Preset "${name}" saved successfully!`, 'success');
+                    closePresetModal();
+                    await loadPresets();
+                } else {
+                    showToast(resData.error || 'Failed to save preset', 'error');
+                }
+            } catch (err) {
+                showToast('Error saving preset: ' + err.message, 'error');
+            } finally {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save Preset';
+                }
+            }
+        });
+    }
 
     // Quick action buttons
     dom.btnQuickUpload.addEventListener('click', () => switchView('upload'));
@@ -1630,8 +2216,10 @@
         // Initial view activation
         switchView(state.currentView, false);
 
-        // Fetch initial overview
+        // Fetch initial overview, presets, and playlists
         loadOverview();
+        loadPresets();
+        loadPlaylistsDropdown();
 
         // Background polling for queue if items are in flight (every 10s)
         setInterval(() => {

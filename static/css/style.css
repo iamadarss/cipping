@@ -6204,6 +6204,64 @@ input[type="checkbox"]:checked::after {
     gap: 4px;
 }
 
+.template-card-preview {
+    height: 110px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.template-preview-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+}
+
+.template-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.template-card-category {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.template-card-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 4px 0 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+
 /* ==========================================================================
    PROJECT UNAVAILABLE OVERLAY & COMPACT RECENT CARDS
    ========================================================================== */
@@ -7543,39 +7601,11 @@ input[type="checkbox"]:checked::after {
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1.35fr 1fr;
     gap: 12px;
     padding: 0;
     overflow: hidden;
     box-sizing: border-box;
-    transition: grid-template-columns 0.25s ease;
-}
-
-/* 2-Column Mode (Default: Templates & Presets + Text Settings) */
-.caption-right-workspace .caption-upper-panels-row.cols-two {
-    grid-template-columns: 1fr 1fr;
-}
-
-.caption-right-workspace .caption-upper-panels-row.cols-two #panelAiSettings {
-    display: none !important;
-}
-
-.caption-right-workspace .caption-upper-panels-row.cols-two .presets-visual-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-}
-
-/* 3-Column Mode (Dynamic: Templates + Text Settings + Column 3) */
-.caption-right-workspace .caption-upper-panels-row.cols-three {
-    grid-template-columns: 1fr 1.35fr 1.05fr;
-}
-
-.caption-right-workspace .caption-upper-panels-row.cols-three #panelAiSettings {
-    display: flex !important;
-    flex-direction: column;
-}
-
-.caption-right-workspace .caption-upper-panels-row.cols-three .presets-visual-grid {
-    grid-template-columns: 1fr !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -7611,76 +7641,47 @@ input[type="checkbox"]:checked::after {
 
 .presets-visual-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 4px 2px;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
 }
 
 .preset-visual-card {
     background: var(--surface-2);
     border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 10px;
+    border-radius: 8px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s ease;
     box-sizing: border-box;
-    position: relative;
-    overflow: hidden;
 }
 
 .preset-visual-card:hover {
-    border-color: rgba(16, 185, 129, 0.6);
+    border-color: rgba(16, 185, 129, 0.5);
     background: var(--surface-3);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transform: translateY(-1px);
 }
 
 .preset-visual-card.selected,
 .preset-visual-card.active {
     border-color: var(--primary);
-    background: rgba(16, 185, 129, 0.08);
-    box-shadow: 0 0 16px rgba(16, 185, 129, 0.35), inset 0 0 0 1px var(--primary);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+    background: var(--surface-3);
 }
-
-.preset-card-top-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
-}
-
-.preset-card-badge {
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 4px;
-    line-height: 1;
-}
-
-.badge-viral { background: rgba(245, 158, 11, 0.2); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.4); }
-.badge-clean { background: rgba(56, 189, 248, 0.2); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.4); }
-.badge-cyber { background: rgba(236, 72, 153, 0.2); color: #EC4899; border: 1px solid rgba(236, 72, 153, 0.4); }
-.badge-creator { background: rgba(16, 185, 129, 0.2); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.4); }
-.badge-pop { background: rgba(168, 85, 247, 0.2); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.4); }
 
 .preset-card-preview {
-    height: 60px;
-    background: radial-gradient(circle at 50% 50%, #1c2430 0%, #0e1217 100%);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    height: 48px;
+    background: #111111;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: 4px;
     text-align: center;
-    font-size: 13px;
+    font-size: 10px;
     overflow: hidden;
-    position: relative;
 }
 
 .preview-mini-pill {
@@ -7703,17 +7704,9 @@ input[type="checkbox"]:checked::after {
 }
 
 .preset-card-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.preset-card-desc {
     font-size: 10px;
-    color: var(--text-muted);
+    font-weight: 600;
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7727,98 +7720,6 @@ input[type="checkbox"]:checked::after {
     flex-direction: column;
     gap: 10px;
     padding: 10px 12px;
-}
-
-/* Accordion Groups in Text Settings */
-.accordion-group {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-    box-sizing: border-box;
-}
-
-.accordion-group:hover {
-    border-color: rgba(16, 185, 129, 0.35);
-}
-
-.accordion-group.open {
-    border-color: rgba(16, 185, 129, 0.45);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-}
-
-.accordion-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 11px 14px;
-    cursor: pointer;
-    user-select: none;
-    background: var(--surface-2);
-    transition: background var(--transition-fast);
-}
-
-.accordion-header:hover {
-    background: var(--surface-3);
-}
-
-.accordion-header-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.accordion-header-title svg {
-    color: var(--primary);
-    flex-shrink: 0;
-}
-
-.accordion-header-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.color-preview-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.4);
-    display: inline-block;
-}
-
-.accordion-chevron {
-    font-size: 13px;
-    color: var(--text-muted);
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: inline-block;
-}
-
-.accordion-group:not(.open) .accordion-chevron {
-    transform: rotate(-90deg);
-}
-
-.accordion-group.open .accordion-chevron {
-    transform: rotate(0deg);
-}
-
-.accordion-body {
-    padding: 12px 14px;
-    border-top: 1px solid var(--border-subtle);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.12);
-}
-
-.accordion-group:not(.open) .accordion-body {
-    display: none !important;
 }
 
 .settings-group-card {
@@ -8173,159 +8074,8 @@ input[type="checkbox"]:checked::after {
 /* --------------------------------------------------------------------------
    PANEL 3: OFFLINE AI SETTINGS
    -------------------------------------------------------------------------- */
-.panel-offline-ai .panel-content-scroll,
-.panel-dynamic-third .panel-content-scroll {
-    display: flex;
-    flex-direction: column;
+.panel-offline-ai .panel-content-scroll {
     gap: 12px;
-}
-
-/* Close / Cut Button in Column 3 Header */
-.btn-close-col3 {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.btn-close-col3:hover {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #EF4444;
-    transform: scale(1.05);
-}
-
-/* Column 3 Subviews (AI vs Manual Cue Edit) */
-.col3-subview {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-/* Manual Cue & Spelling Editor Card */
-.manual-edit-card {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-sizing: border-box;
-}
-
-.manual-edit-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.edit-cue-badge {
-    font-size: 10px;
-    font-weight: 800;
-    color: var(--primary);
-    background: var(--primary-soft);
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    padding: 2px 8px;
-    border-radius: var(--radius-full);
-}
-
-.edit-cue-tip {
-    font-size: 10px;
-    color: var(--text-muted);
-}
-
-.manual-cue-textarea {
-    width: 100%;
-    min-height: 64px;
-    background: var(--surface-3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 13px;
-    font-family: var(--font-sans);
-    padding: 8px 10px;
-    line-height: 1.45;
-    resize: vertical;
-    outline: none;
-    box-sizing: border-box;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.manual-cue-textarea:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
-}
-
-.words-correction-block {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.words-correction-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.word-chips-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    max-height: 110px;
-    overflow-y: auto;
-    padding: 2px 0;
-}
-
-.word-chip-pill {
-    font-size: 11px;
-    font-family: var(--font-mono);
-    background: var(--surface-3);
-    border: 1px solid var(--border-strong);
-    color: var(--text-primary);
-    padding: 4px 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    user-select: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.word-chip-pill:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: rgba(16, 185, 129, 0.15);
-    transform: translateY(-1px);
-}
-
-.cue-timing-grid {
-    display: flex;
-    gap: 8px;
-}
-
-.cue-time-box {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.cue-time-label {
-    font-size: 10px;
-    color: var(--text-muted);
-    font-weight: 600;
 }
 
 .ai-field-block {

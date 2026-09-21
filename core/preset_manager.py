@@ -446,7 +446,7 @@ class PresetManager:
                 json.dump({ "captions": [], "graphics": [], "audio": [], "export": [] }, f, indent=2)
 
     def get_templates(self, category=None):
-        """Return combined system templates and user templates."""
+        """Return combined system templates and clean user templates."""
         user_templates = []
         try:
             if TEMPLATES_FILE.exists():
@@ -455,7 +455,22 @@ class PresetManager:
         except Exception as e:
             print("[PRESETS] Failed to read user templates:", e)
 
-        all_templates = SYSTEM_TEMPLATES + user_templates
+        # Filter out dummy/test templates and deduplicate by name
+        cleaned_user = []
+        seen_names = set()
+        for t in user_templates:
+            name = (t.get("name") or "").strip()
+            if not name or "test template" in name.lower():
+                continue
+            if name.lower() in seen_names:
+                continue
+            seen_names.add(name.lower())
+            cleaned_user.append(t)
+
+        # Enforce strict user templates limit (max 6)
+        cleaned_user = cleaned_user[:6]
+
+        all_templates = SYSTEM_TEMPLATES + cleaned_user
         if category and category != "All":
             all_templates = [t for t in all_templates if t.get("category", "").lower() == category.lower()]
 
@@ -466,7 +481,7 @@ class PresetManager:
         return next((t for t in all_t if t.get("id") == template_id), None)
 
     def save_user_template(self, template_data):
-        """Save a new user template."""
+        """Save a user template with strict deduplication and max limit."""
         user_templates = []
         try:
             if TEMPLATES_FILE.exists():
@@ -475,17 +490,27 @@ class PresetManager:
         except Exception:
             user_templates = []
 
+        template_name = (template_data.get("name") or "Custom Template").strip()
         new_id = template_data.get("id") or f"tpl_user_{len(user_templates) + 1}_{int(time.time())}"
         template_data["id"] = new_id
+        template_data["name"] = template_name
         template_data["isSystem"] = False
         template_data["favorite"] = template_data.get("favorite", False)
         template_data["thumbnailIcon"] = template_data.get("thumbnailIcon", "🎨")
 
-        existing_idx = next((i for i, t in enumerate(user_templates) if t.get("id") == new_id), -1)
+        # Deduplicate: if template with same name or ID exists, update in-place
+        existing_idx = next(
+            (i for i, t in enumerate(user_templates)
+             if t.get("id") == new_id or (t.get("name") or "").strip().lower() == template_name.lower()),
+            -1
+        )
         if existing_idx >= 0:
             user_templates[existing_idx] = template_data
         else:
             user_templates.append(template_data)
+
+        # Enforce strict limit: keep at most 6 user templates
+        user_templates = user_templates[-6:]
 
         with open(TEMPLATES_FILE, "w", encoding="utf-8") as f:
             json.dump(user_templates, f, indent=2)

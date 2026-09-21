@@ -171,6 +171,22 @@ def get_db():
         )
     """)
     conn.execute("""
+        CREATE TABLE IF NOT EXISTS templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            title_pattern TEXT,
+            description TEXT,
+            tags TEXT,
+            category_id TEXT,
+            language TEXT,
+            visibility TEXT,
+            playlist_id TEXT,
+            schedule_rule TEXT,
+            created_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER)),
+            updated_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER))
+        )
+    """)
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS presets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -180,7 +196,7 @@ def get_db():
             category_id TEXT,
             language TEXT,
             visibility TEXT,
-            playlist_id INTEGER,
+            playlist_id TEXT,
             schedule_rule TEXT,
             created_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER)),
             updated_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER))
@@ -200,6 +216,7 @@ def get_db():
         CREATE TABLE IF NOT EXISTS upload_queue (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             video_id INTEGER,
+            youtube_video_id TEXT,
             title TEXT,
             description TEXT,
             tags TEXT,
@@ -239,14 +256,75 @@ def get_db():
             updated_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER))
         )
     """)
+
+    # Ensure youtube_video_id column exists in upload_queue
+    try:
+        conn.execute("ALTER TABLE upload_queue ADD COLUMN youtube_video_id TEXT")
+    except Exception:
+        pass
+
     conn.commit()
     return conn
 
 
 def init_db():
-    """Initialize the database."""
+    """Initialize the database and clear interrupted uploads from prior sessions."""
     conn = get_db()
-    conn.close()
+    try:
+        # Mark any uploads interrupted by a previous server run as failed with clear reason
+        conn.execute("""
+            UPDATE upload_queue
+            SET status = 'failed', error_message = 'Upload interrupted by server restart. Click Retry to re-upload.'
+            WHERE status IN ('uploading', 'retrying')
+        """)
+        conn.execute("UPDATE videos SET status = 'failed' WHERE status IN ('uploading', 'retrying')")
+
+        # Ensure default presets are available
+        preset_count = conn.execute("SELECT COUNT(*) FROM templates").fetchone()[0]
+        if preset_count == 0:
+            default_presets = [
+                (
+                    "🎙️ Podcast Clips",
+                    "{title} | Clip",
+                    "Best moment from the podcast! Subscribe for daily insights and deep dives.\n\n#podcast #clips #interview",
+                    json.dumps(["podcast", "interview", "highlights", "clips", "talkshow", "viral"]),
+                    "22",
+                    "en",
+                    "public",
+                    ""
+                ),
+                (
+                    "🔥 Viral Shorts",
+                    "{title} #shorts",
+                    "Wait till the end! ⚡ Drop a like if you enjoyed this.\n\n#shorts #viral #trending #fyp",
+                    json.dumps(["shorts", "viral", "trending", "fyp", "clip", "reels", "youtube"]),
+                    "24",
+                    "en",
+                    "public",
+                    ""
+                ),
+                (
+                    "💻 Tech & Explainer",
+                    "{title} Explained",
+                    "A quick breakdown and tutorial. Check out the complete playlist for more guides.\n\n#tech #tutorial #explainer",
+                    json.dumps(["tech", "explainer", "tutorial", "guide", "howto", "coding"]),
+                    "28",
+                    "en",
+                    "public",
+                    ""
+                ),
+            ]
+            for p in default_presets:
+                conn.execute(
+                    """INSERT INTO templates (name, title_pattern, description, tags, category_id, language, visibility, playlist_id, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST(strftime('%s', 'now') AS INTEGER), CAST(strftime('%s', 'now') AS INTEGER))""",
+                    p,
+                )
+        conn.commit()
+    except Exception as e:
+        logger.warning("init_db cleanup exception: %s", e)
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------
@@ -589,9 +667,51 @@ def callback():
         return redirect("/youtube-desk?error=oauth_failed")
 
 
+def fetch_and_update_channel_info(credentials: Optional[Credentials] = None) -> Optional[Dict[str, Any]]:
+    """Fetch live channel information from YouTube API and update database tokens."""
+    try:
+        if not credentials:
+            credentials = get_credentials()
+        if not credentials:
+            return None
+        youtube = get_youtube_service()
+        channels_response = youtube.channels().list(
+            part="snippet,contentDetails,statistics",
+            mine=True,
+        ).execute()
+
+        if channels_response.get("items"):
+            channel = channels_response["items"][0]
+            snippet = channel.get("snippet", {})
+            statistics = channel.get("statistics", {})
+            thumbnails = snippet.get("thumbnails", {})
+
+            avatar = ""
+            for size in ["high", "medium", "default"]:
+                if size in thumbnails and "url" in thumbnails[size]:
+                    avatar = thumbnails[size]["url"]
+                    break
+
+            channel_info = {
+                "id": channel.get("id", ""),
+                "title": snippet.get("title", ""),
+                "handle": snippet.get("customUrl", ""),
+                "avatar": avatar,
+                "subscribers": str(statistics.get("subscriberCount", "0")),
+                "video_count": str(statistics.get("videoCount", "0")),
+                "view_count": str(statistics.get("viewCount", "0")),
+            }
+            save_credentials(credentials, channel_info=channel_info)
+            logger.info("Updated YouTube channel stats for '%s': %s subs, %s videos", channel_info["title"], channel_info["subscribers"], channel_info["video_count"])
+            return channel_info
+    except Exception as api_err:
+        logger.warning("Channel info fetch error: %s", type(api_err).__name__)
+        return None
+
+
 @youtube_bp.route("/status", methods=["GET"])
 def status():
-    """Check YouTube connection status."""
+    """Check YouTube connection status with live refresh support."""
     conn = get_db()
     row = conn.execute(
         "SELECT * FROM tokens WHERE user_id = 'default' ORDER BY id DESC LIMIT 1"
@@ -605,6 +725,26 @@ def status():
         })
 
     row_dict = dict(row)
+    force_refresh = request.args.get("refresh") in ("1", "true", "True")
+
+    # Auto-refresh live stats if requested or if current metrics are placeholder '0' / None
+    if force_refresh or row_dict.get("channel_subscribers") in (None, "0", ""):
+        live_info = fetch_and_update_channel_info()
+        if live_info:
+            return jsonify({
+                "connected": True,
+                "channel": {
+                    "id": live_info.get("id") or "",
+                    "title": live_info.get("title") or "Connected YouTube Channel",
+                    "handle": live_info.get("handle") or "",
+                    "avatar": live_info.get("avatar") or "",
+                    "thumbnail": live_info.get("avatar") or "",
+                    "subscribers": live_info.get("subscribers") or "0",
+                    "video_count": live_info.get("video_count") or "0",
+                    "view_count": live_info.get("view_count") or "0",
+                }
+            })
+
     avatar = row_dict.get("channel_avatar") or ""
     handle = row_dict.get("channel_handle") or ""
     title = row_dict.get("channel_name") or "Connected YouTube Channel"
@@ -622,6 +762,37 @@ def status():
             "subscribers": subscribers,
             "video_count": video_count,
         }
+    })
+
+
+@youtube_bp.route("/refresh-channel", methods=["POST", "GET"])
+def refresh_channel():
+    """Explicitly refresh YouTube channel statistics and channel info from YouTube API."""
+    live_info = fetch_and_update_channel_info()
+    if not live_info:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT * FROM tokens WHERE user_id = 'default' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        conn.close()
+        if row and row["access_token"]:
+            r = dict(row)
+            live_info = {
+                "id": r.get("channel_id") or "",
+                "title": r.get("channel_name") or "Connected YouTube Channel",
+                "handle": r.get("channel_handle") or "",
+                "avatar": r.get("channel_avatar") or "",
+                "thumbnail": r.get("channel_avatar") or "",
+                "subscribers": str(r.get("channel_subscribers") or "0"),
+                "video_count": str(r.get("channel_video_count") or "0"),
+            }
+        else:
+            return jsonify({"success": False, "connected": False, "error": "Not connected to YouTube"}), 400
+
+    return jsonify({
+        "success": True,
+        "connected": True,
+        "channel": live_info
     })
 
 
@@ -1027,10 +1198,14 @@ def update_video(video_id: int):
 
     for field in ["title", "description", "tags", "category_id", "visibility"]:
         if field in data:
+            val = data[field]
+            if field == "tags" and isinstance(val, (list, dict)):
+                val = json.dumps(val)
             update_fields.append(f"{field} = ?")
-            params.append(data[field])
+            params.append(val)
 
     if not update_fields:
+        conn.close()
         return jsonify({"success": False, "error": "No fields to update"}), 400
 
     update_fields.append("updated_at = CAST(strftime('%s', 'now') AS INTEGER)")
@@ -1127,14 +1302,218 @@ def upload_start():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+_active_upload_threads = set()
+
+
+def start_upload_worker(queue_id: int, video_id: int):
+    """Execute upload in a background thread with real-time progress and error handling."""
+    _active_upload_threads.add(queue_id)
+
+    def _do_upload():
+        try:
+            conn = get_db()
+            q_row = conn.execute("SELECT * FROM upload_queue WHERE id = ?", (queue_id,)).fetchone()
+            v_row = conn.execute("SELECT * FROM videos WHERE id = ?", (video_id,)).fetchone()
+            conn.close()
+
+            if not v_row:
+                c = get_db()
+                c.execute("UPDATE upload_queue SET status = 'failed', error_message = 'Video record not found' WHERE id = ?", (queue_id,))
+                c.commit()
+                c.close()
+                return
+
+            q_dict = dict(q_row) if q_row else {}
+            v_dict = dict(v_row) if v_row else {}
+
+            filename = v_dict.get("filename", "")
+            title = q_dict.get("title") or v_dict.get("title") or filename
+            description = q_dict.get("description") or v_dict.get("description") or ""
+            tags_raw = q_dict.get("tags") or v_dict.get("tags") or "[]"
+            category_id = str(q_dict.get("category_id") or v_dict.get("category_id") or "22")
+            visibility = q_dict.get("visibility") or v_dict.get("visibility") or "public"
+            playlist_id = q_dict.get("playlist_id") or v_dict.get("playlist_id") or None
+
+            # Resolve video file path
+            p = Path(filename)
+            video_path = None
+            if p.is_absolute() and p.exists():
+                video_path = p
+            elif (config.INPUT_DIR / filename).exists():
+                video_path = config.INPUT_DIR / filename
+            elif (config.CLIPS_DIR / filename).exists():
+                video_path = config.CLIPS_DIR / filename
+            elif (config.FINAL_DIR / filename).exists():
+                video_path = config.FINAL_DIR / filename
+            elif (config.DOWNLOAD_DIR / filename).exists():
+                video_path = config.DOWNLOAD_DIR / filename
+
+            if not video_path or not video_path.exists():
+                c = get_db()
+                c.execute("UPDATE upload_queue SET status = 'failed', error_message = 'Video file not found on disk' WHERE id = ?", (queue_id,))
+                c.execute("UPDATE videos SET status = 'failed' WHERE id = ?", (video_id,))
+                c.commit()
+                c.close()
+                return
+
+            # Parse tags safely
+            parsed_tags = []
+            if tags_raw:
+                if isinstance(tags_raw, str):
+                    try:
+                        parsed_tags = json.loads(tags_raw)
+                    except Exception:
+                        parsed_tags = [t.strip().lstrip('#') for t in tags_raw.split(',') if t.strip()]
+                elif isinstance(tags_raw, list):
+                    parsed_tags = [str(t).lstrip('#') for t in tags_raw]
+
+            # Mark upload starting
+            c = get_db()
+            c.execute("UPDATE upload_queue SET status = 'uploading', progress = 10, updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?", (queue_id,))
+            c.commit()
+            c.close()
+
+            youtube = get_youtube_service()
+
+            file_size = video_path.stat().st_size
+            media = MediaFileUpload(
+                str(video_path),
+                resumable=True,
+                chunksize=1024 * 1024 * 2,  # 2MB chunks for smoother progress
+            )
+
+            body = {
+                "snippet": {
+                    "title": title[:100],  # YouTube title max 100 chars
+                    "description": description[:5000],  # YouTube desc max 5000 chars
+                    "tags": parsed_tags[:20],
+                    "categoryId": category_id,
+                },
+                "status": {
+                    "privacyStatus": visibility,
+                },
+            }
+
+            insert_request = youtube.videos().insert(
+                part="snippet,status",
+                body=body,
+                media_body=media,
+            )
+
+            response = None
+            while response is None:
+                status, response = insert_request.next_chunk()
+                if status:
+                    uploaded = int(status.resumable_progress or 0)
+                    pct = round(min(98, (uploaded / file_size) * 100)) if file_size else 10
+                    c = get_db()
+                    c.execute(
+                        "UPDATE upload_queue SET progress = ?, updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?",
+                        (pct, queue_id),
+                    )
+                    c.execute("UPDATE videos SET progress = ? WHERE id = ?", (pct, video_id))
+                    c.commit()
+                    c.close()
+
+            youtube_video_id = response.get("id")
+
+            # Check and upload custom thumbnail if exists
+            thumb_name = f"{Path(filename).stem}_thumb.jpg"
+            thumb_path = config.THUMBNAIL_DIR / thumb_name
+            if thumb_path.exists() and youtube_video_id:
+                try:
+                    youtube.thumbnails().set(
+                        videoId=youtube_video_id,
+                        media_body=MediaFileUpload(str(thumb_path), resumable=True),
+                    ).execute()
+                except Exception as th_err:
+                    logger.warning("Thumbnail upload skipped/failed: %s", th_err)
+
+            # Add to playlist if specified
+            if playlist_id and youtube_video_id:
+                try:
+                    youtube.playlistItems().insert(
+                        part="snippet",
+                        body={
+                            "snippet": {
+                                "playlistId": playlist_id,
+                                "resourceId": {
+                                    "kind": "youtube#video",
+                                    "videoId": youtube_video_id,
+                                },
+                            }
+                        },
+                    ).execute()
+                except Exception as pl_err:
+                    logger.warning("Playlist insertion skipped: %s", pl_err)
+
+            # Finalize completion in DB
+            c = get_db()
+            c.execute(
+                """UPDATE videos SET youtube_video_id = ?, status = 'uploaded', progress = 100,
+                   published_at = CAST(strftime('%s', 'now') AS INTEGER),
+                   updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?""",
+                (youtube_video_id, video_id),
+            )
+            c.execute(
+                """UPDATE upload_queue SET status = 'completed', progress = 100,
+                   youtube_video_id = ?, updated_at = CAST(strftime('%s', 'now') AS INTEGER)
+                   WHERE id = ?""",
+                (youtube_video_id, queue_id),
+            )
+            # Update matching schedules
+            c.execute(
+                "UPDATE schedules SET status = 'published', youtube_video_id = ? WHERE video_id = ?",
+                (youtube_video_id, video_id),
+            )
+            # Record in History
+            c.execute(
+                """INSERT INTO history (video_id, youtube_video_id, title, description, visibility, published_at, created_at)
+                   VALUES (?, ?, ?, ?, ?, CAST(strftime('%s', 'now') AS INTEGER), CAST(strftime('%s', 'now') AS INTEGER))""",
+                (video_id, youtube_video_id, title, description, visibility),
+            )
+            c.commit()
+            c.close()
+
+            logger.info("Successfully uploaded YouTube video: %s (ID: %s)", title, youtube_video_id)
+            # Sync fresh channel stats
+            fetch_and_update_channel_info()
+
+        except Exception as e:
+            err_str = str(e)
+            logger.error("YouTube upload failed for queue #%s: %s", queue_id, err_str)
+            if "quotaExceeded" in err_str or "uploadLimitExceeded" in err_str:
+                user_msg = "YouTube daily upload limit reached for today. Please try again tomorrow."
+            elif "invalid_grant" in err_str or "expired" in err_str:
+                user_msg = "YouTube authorization expired. Please reconnect in YouTube Connection tab."
+            elif "unsupportedMediaFormat" in err_str:
+                user_msg = "Unsupported media format for YouTube."
+            else:
+                user_msg = f"Upload failed: {err_str[:200]}"
+
+            c = get_db()
+            c.execute(
+                """UPDATE upload_queue SET status = 'failed', error_message = ?,
+                   updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?""",
+                (user_msg, queue_id),
+            )
+            c.execute(
+                """UPDATE videos SET status = 'failed',
+                   updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?""",
+                (video_id,),
+            )
+            c.commit()
+            c.close()
+        finally:
+            _active_upload_threads.discard(queue_id)
+
+    thread = threading.Thread(target=_do_upload, daemon=True)
+    thread.start()
+
+
 @youtube_bp.route("/upload/execute", methods=["POST"])
 def upload_execute():
-    """Execute the actual YouTube upload to completion in a background thread.
-
-    Accepts a DB video_id (from the videos table) and uses the stored metadata
-    (title, description, tags, category, visibility).  Progress is tracked
-    via the upload_queue table so the frontend can poll it.
-    """
+    """Execute the actual YouTube upload to completion in a background thread."""
     data = request.get_json() or {}
     video_id = data.get("video_id")
 
@@ -1147,7 +1526,6 @@ def upload_execute():
         conn.close()
         return jsonify({"success": False, "error": "Video not found"}), 404
 
-    # Insert a queue row so progress can be polled
     title = video_row["title"] or video_row["filename"]
     description = video_row["description"] or ""
     tags = video_row["tags"] or json.dumps([])
@@ -1158,8 +1536,8 @@ def upload_execute():
     cursor = conn.execute(
         """
         INSERT INTO upload_queue (video_id, title, description, tags, category_id,
-                                  visibility, scheduled_at, status, retry_count, max_retries)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'uploading', 0, 3)
+                                  visibility, scheduled_at, status, progress, retry_count, max_retries)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'uploading', 5, 0, 3)
         """,
         (video_id, title, description, tags, category_id, visibility, scheduled_at),
     )
@@ -1167,127 +1545,7 @@ def upload_execute():
     conn.commit()
     conn.close()
 
-    # Resolve file path (check input, clips, final dirs)
-    filename = video_row["filename"]
-    video_path = config.INPUT_DIR / filename
-    if not video_path.exists():
-        video_path = config.CLIPS_DIR / filename
-    if not video_path.exists():
-        video_path = config.FINAL_DIR / filename
-    if not video_path.exists():
-        conn = get_db()
-        conn.execute("UPDATE upload_queue SET status = 'failed', error_message = 'Video file not found' WHERE id = ?", (queue_id,))
-        conn.commit()
-        conn.close()
-        return jsonify({"success": False, "error": "Video file not found"}), 404
-
-    def _do_upload():
-        try:
-            youtube = get_youtube_service()
-
-            media = MediaFileUpload(
-                str(video_path),
-                resumable=True,
-                chunksize=1024 * 1024 * 5,
-            )
-            body = {
-                "snippet": {
-                    "title": title,
-                    "description": description,
-                    "tags": json.loads(tags)[:5] if tags else [],
-                    "categoryId": category_id,
-                },
-                "status": {
-                    "privacyStatus": visibility,
-                },
-            }
-
-            # Add thumbnail if the video has one stored
-            thumb_name = f"{Path(filename).stem}_thumb.jpg"
-            thumb_path = config.THUMBNAIL_DIR / thumb_name
-            if thumb_path.exists():
-                body["thumbnails"] = {}  # placeholder; thumbnails set separately
-
-            insert_request = youtube.videos().insert(
-                part="snippet,status",
-                body=body,
-                media_body=media,
-            )
-
-            response = None
-            file_size = video_path.stat().st_size
-            uploaded = 0
-
-            def _on_progress(chunk_size):
-                nonlocal uploaded
-                uploaded += chunk_size
-                pct = round(min(100, (uploaded / file_size) * 100)) if file_size else 0
-                c = get_db()
-                c.execute(
-                    "UPDATE upload_queue SET progress = ?, updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?",
-                    (pct, queue_id),
-                )
-                c.commit()
-                c.close()
-
-            # Execute the resumable upload with progress callback
-            while response is None:
-                status, response = insert_request.next_chunk()
-                if status:
-                    uploaded = int(status.resumable_progress or 0)
-                    pct = round(min(100, (uploaded / file_size) * 100)) if file_size else 0
-                    c = get_db()
-                    c.execute(
-                        "UPDATE upload_queue SET progress = ?, updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?",
-                        (pct, queue_id),
-                    )
-                    c.commit()
-                    c.close()
-
-            youtube_video_id = response.get("id")
-
-            # Upload thumbnail separately if available
-            if thumb_path.exists() and youtube_video_id:
-                try:
-                    youtube.thumbnails().set(
-                        videoId=youtube_video_id,
-                        media_body=MediaFileUpload(str(thumb_path), resumable=True),
-                    ).execute()
-                except Exception:
-                    pass
-
-            conn = get_db()
-            conn.execute(
-                """UPDATE videos SET youtube_video_id = ?, status = 'uploaded',
-                   updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?""",
-                (youtube_video_id, video_id),
-            )
-            conn.execute(
-                """UPDATE upload_queue SET status = 'done', progress = 100,
-                   youtube_video_id = ?, updated_at = CAST(strftime('%s', 'now') AS INTEGER)
-                   WHERE id = ?""",
-                (youtube_video_id, queue_id),
-            )
-            conn.commit()
-            conn.close()
-
-        except Exception as e:
-            conn = get_db()
-            conn.execute(
-                """UPDATE upload_queue SET status = 'failed', error_message = ?,
-                   updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?""",
-                (str(e), queue_id),
-            )
-            conn.execute(
-                """UPDATE videos SET status = 'failed',
-                   updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?""",
-                (video_id,),
-            )
-            conn.commit()
-            conn.close()
-
-    thread = threading.Thread(target=_do_upload, daemon=True)
-    thread.start()
+    start_upload_worker(queue_id, video_id)
 
     return jsonify({
         "success": True,
@@ -1338,13 +1596,18 @@ def upload_progress(video_id: int):
         (video_id,),
     ).fetchone()
     if queue_row:
+        yt_id = queue_row["youtube_video_id"]
+        status_val = queue_row["status"] or "queued"
+        progress_val = 100 if status_val in ("completed", "uploaded") else (queue_row["progress"] or 0)
         result = {
             "success": True,
-            "progress": queue_row["progress"] or 0,
-            "status": queue_row["status"] or "queued",
+            "progress": progress_val,
+            "status": status_val,
             "queue_id": queue_row["id"],
             "error_message": queue_row["error_message"],
             "retry_count": queue_row["retry_count"] or 0,
+            "youtube_video_id": yt_id,
+            "youtube_url": f"https://youtu.be/{yt_id}" if yt_id else None,
         }
         conn.close()
         return jsonify(result)
@@ -1355,10 +1618,15 @@ def upload_progress(video_id: int):
     if not row:
         return jsonify({"success": False, "error": "Video not found"}), 404
 
+    yt_id = row["youtube_video_id"]
+    status_val = row["status"] or "queued"
+    progress_val = 100 if status_val in ("completed", "uploaded") else (row["progress"] or 0)
     return jsonify({
         "success": True,
-        "progress": row["progress"] or 0,
-        "status": row["status"] or "queued",
+        "progress": progress_val,
+        "status": status_val,
+        "youtube_video_id": yt_id,
+        "youtube_url": f"https://youtu.be/{yt_id}" if yt_id else None,
     })
 
 
@@ -1422,13 +1690,105 @@ def create_schedule():
 
 @youtube_bp.route("/schedules", methods=["GET"])
 def list_schedules():
-    """List all schedules."""
+    """List all schedules, automatically launching any releases that have become due."""
     conn = get_db()
+    now_ts = int(time.time())
+
+    # Check for any scheduled items that have reached their release timestamp
+    due_rows = conn.execute(
+        "SELECT * FROM schedules WHERE status = 'scheduled' AND scheduled_at <= ?",
+        (now_ts,),
+    ).fetchall()
+
+    for sched in due_rows:
+        try:
+            s_id = sched["id"]
+            v_id = sched["video_id"]
+            v_row = conn.execute("SELECT * FROM videos WHERE id = ?", (v_id,)).fetchone()
+            if v_row:
+                conn.execute(
+                    "UPDATE schedules SET status = 'publishing' WHERE id = ?",
+                    (s_id,),
+                )
+                cur = conn.execute(
+                    """INSERT INTO upload_queue (video_id, title, description, tags, category_id,
+                                              visibility, scheduled_at, status, progress, retry_count, max_retries)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, 'uploading', 5, 0, 3)""",
+                    (
+                        v_id,
+                        v_row["title"] or v_row["filename"],
+                        v_row["description"] or "",
+                        v_row["tags"] or "[]",
+                        v_row["category_id"] or "22",
+                        v_row["visibility"] or "public",
+                        sched["scheduled_at"],
+                    ),
+                )
+                conn.commit()
+                start_upload_worker(cur.lastrowid, v_id)
+        except Exception as e:
+            logger.warning("Auto-trigger schedule %s error: %s", sched["id"], e)
+
     rows = conn.execute(
-        "SELECT s.*, v.title as video_title FROM schedules s JOIN videos v ON s.video_id = v.id ORDER BY s.scheduled_at ASC"
+        """SELECT s.*, v.title as video_title, v.filename as video_filename
+           FROM schedules s JOIN videos v ON s.video_id = v.id ORDER BY s.scheduled_at ASC"""
     ).fetchall()
     conn.close()
-    return jsonify({"success": True, "schedules": [dict(r) for r in rows]})
+
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["due_now"] = bool((d.get("scheduled_at") or 0) <= now_ts)
+        result.append(d)
+
+    return jsonify({"success": True, "schedules": result})
+
+
+@youtube_bp.route("/schedules/<int:schedule_id>/publish-now", methods=["POST"])
+def publish_schedule_now(schedule_id: int):
+    """Manually trigger immediate upload of a scheduled video."""
+    conn = get_db()
+    sched = conn.execute("SELECT * FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
+    if not sched:
+        conn.close()
+        return jsonify({"success": False, "error": "Schedule not found"}), 404
+
+    v_id = sched["video_id"]
+    v_row = conn.execute("SELECT * FROM videos WHERE id = ?", (v_id,)).fetchone()
+    if not v_row:
+        conn.close()
+        return jsonify({"success": False, "error": "Associated video not found"}), 404
+
+    conn.execute(
+        "UPDATE schedules SET status = 'publishing', updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?",
+        (schedule_id,),
+    )
+    cur = conn.execute(
+        """INSERT INTO upload_queue (video_id, title, description, tags, category_id,
+                                  visibility, scheduled_at, status, progress, retry_count, max_retries)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'uploading', 5, 0, 3)""",
+        (
+            v_id,
+            v_row["title"] or v_row["filename"],
+            v_row["description"] or "",
+            v_row["tags"] or "[]",
+            v_row["category_id"] or "22",
+            v_row["visibility"] or "public",
+            sched["scheduled_at"],
+        ),
+    )
+    queue_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    start_upload_worker(queue_id, v_id)
+    return jsonify({
+        "success": True,
+        "queue_id": queue_id,
+        "video_id": v_id,
+        "status": "uploading",
+        "message": "Scheduled video publishing started immediately.",
+    })
 
 
 @youtube_bp.route("/schedules/<int:schedule_id>", methods=["PUT"])
@@ -1610,62 +1970,90 @@ def add_to_playlist(video_id: int):
 
 
 @youtube_bp.route("/templates", methods=["GET"])
+@youtube_bp.route("/presets", methods=["GET"])
 def list_templates():
-    """List metadata templates."""
+    """List metadata templates / presets with parsed tags."""
     conn = get_db()
     rows = conn.execute("SELECT * FROM templates ORDER BY created_at DESC").fetchall()
     conn.close()
-    return jsonify({"success": True, "templates": [dict(r) for r in rows]})
+
+    result = []
+    for r in rows:
+        d = dict(r)
+        raw_tags = d.get("tags")
+        if raw_tags:
+            if isinstance(raw_tags, str):
+                try:
+                    d["tags"] = json.loads(raw_tags)
+                except Exception:
+                    d["tags"] = [t.strip().lstrip("#") for t in raw_tags.split(",") if t.strip()]
+        else:
+            d["tags"] = []
+        result.append(d)
+
+    return jsonify({"success": True, "templates": result, "presets": result})
 
 
 @youtube_bp.route("/templates", methods=["POST"])
+@youtube_bp.route("/presets", methods=["POST"])
 def create_template():
-    """Create a new metadata template."""
+    """Create a new metadata template / preset."""
     data = request.get_json() or {}
-    name = data.get("name", "New Template")
+    name = (data.get("name") or "New Preset").strip()
+
+    tags = data.get("tags", [])
+    if isinstance(tags, str):
+        tags = [t.strip().lstrip("#") for t in tags.split(",") if t.strip()]
 
     conn = get_db()
-    conn.execute(
+    cur = conn.execute(
         """INSERT INTO templates (name, title_pattern, description, tags, category_id,
-                                  language, visibility, playlist_id, schedule_rule)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                  language, visibility, playlist_id, schedule_rule, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(strftime('%s', 'now') AS INTEGER), CAST(strftime('%s', 'now') AS INTEGER))""",
         (
             name,
             data.get("title_pattern", ""),
             data.get("description", ""),
-            json.dumps(data.get("tags", [])),
-            data.get("category_id"),
-            data.get("language"),
+            json.dumps(tags),
+            str(data.get("category_id") or "22"),
+            data.get("language") or "en",
             data.get("visibility", "public"),
-            data.get("playlist_id"),
-            data.get("schedule_rule"),
+            data.get("playlist_id") or "",
+            data.get("schedule_rule") or "",
         ),
     )
+    new_id = cur.lastrowid
     conn.commit()
     conn.close()
 
-    return jsonify({"success": True})
+    return jsonify({"success": True, "id": new_id, "name": name})
 
 
 @youtube_bp.route("/templates/<int:template_id>", methods=["PUT"])
+@youtube_bp.route("/presets/<int:template_id>", methods=["PUT"])
 def update_template(template_id: int):
-    """Update a metadata template."""
+    """Update a metadata template / preset."""
     data = request.get_json() or {}
     conn = get_db()
 
     update_fields = []
     params = []
 
-    for field in ["name", "title_pattern", "description", "tags", "category_id",
+    for field in ["name", "title_pattern", "description", "category_id",
                   "language", "visibility", "playlist_id", "schedule_rule"]:
         if field in data:
             update_fields.append(f"{field} = ?")
-            if field == "tags":
-                params.append(json.dumps(data[field]))
-            else:
-                params.append(data[field])
+            params.append(data[field])
+
+    if "tags" in data:
+        tags = data["tags"]
+        if isinstance(tags, str):
+            tags = [t.strip().lstrip("#") for t in tags.split(",") if t.strip()]
+        update_fields.append("tags = ?")
+        params.append(json.dumps(tags))
 
     if not update_fields:
+        conn.close()
         return jsonify({"success": False, "error": "No fields to update"}), 400
 
     update_fields.append("updated_at = CAST(strftime('%s', 'now') AS INTEGER)")
@@ -1682,8 +2070,9 @@ def update_template(template_id: int):
 
 
 @youtube_bp.route("/templates/<int:template_id>", methods=["DELETE"])
+@youtube_bp.route("/presets/<int:template_id>", methods=["DELETE"])
 def delete_template(template_id: int):
-    """Delete a metadata template."""
+    """Delete a metadata template / preset."""
     conn = get_db()
     conn.execute("DELETE FROM templates WHERE id = ?", (template_id,))
     conn.commit()
@@ -1692,8 +2081,9 @@ def delete_template(template_id: int):
 
 
 @youtube_bp.route("/templates/apply/<int:template_id>", methods=["POST"])
+@youtube_bp.route("/presets/apply/<int:template_id>", methods=["POST"])
 def apply_template(template_id: int):
-    """Apply a template to a video."""
+    """Apply a preset to a video record."""
     data = request.get_json() or {}
     video_id = data.get("video_id")
 
@@ -1708,40 +2098,52 @@ def apply_template(template_id: int):
         conn.close()
         return jsonify({"success": False, "error": "Template or video not found"}), 404
 
-    # Apply template fields
+    t_dict = dict(template_row)
     updates = {}
 
-    if template_row["title_pattern"]:
-        updates["title"] = template_row["title_pattern"]
+    if t_dict.get("title_pattern"):
+        updates["title"] = t_dict["title_pattern"]
 
-    if template_row["description"]:
-        updates["description"] = template_row["description"]
+    if t_dict.get("description"):
+        updates["description"] = t_dict["description"]
 
-    if template_row["tags"]:
-        updates["tags"] = template_row["tags"]
+    if t_dict.get("tags"):
+        updates["tags"] = t_dict["tags"]
 
-    if template_row["category_id"]:
-        updates["category_id"] = template_row["category_id"]
+    if t_dict.get("category_id"):
+        updates["category_id"] = str(t_dict["category_id"])
 
-    if template_row["language"]:
-        updates["language"] = template_row["language"]
-
-    if template_row["visibility"]:
-        updates["visibility"] = template_row["visibility"]
-
-    if template_row["playlist_id"]:
-        updates["playlist_id"] = template_row["playlist_id"]
+    if t_dict.get("visibility"):
+        updates["visibility"] = t_dict["visibility"]
 
     for field, value in updates.items():
-        conn.execute(
-            f"UPDATE videos SET {field} = ? WHERE id = ?",
-            (value, video_id),
-        )
+        conn.execute(f"UPDATE videos SET {field} = ? WHERE id = ?", (value, video_id))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"success": True, "updated": updates})
+    raw_tags = t_dict.get("tags")
+    parsed_tags = []
+    if raw_tags:
+        try:
+            parsed_tags = json.loads(raw_tags)
+        except Exception:
+            parsed_tags = [t.strip().lstrip("#") for t in raw_tags.split(",") if t.strip()]
+
+    return jsonify({
+        "success": True,
+        "updated": updates,
+        "preset": {
+            "id": t_dict["id"],
+            "name": t_dict["name"],
+            "title_pattern": t_dict.get("title_pattern") or "",
+            "description": t_dict.get("description") or "",
+            "tags": parsed_tags,
+            "category_id": t_dict.get("category_id") or "22",
+            "playlist_id": t_dict.get("playlist_id") or "",
+            "visibility": t_dict.get("visibility") or "public",
+        }
+    })
 
 
 # ---------------------------------------------------------------
@@ -1878,28 +2280,8 @@ def list_errors():
 
 @youtube_bp.route("/errors/<int:queue_id>/retry", methods=["POST"])
 def retry_error(queue_id: int):
-    """Retry a failed upload."""
-    conn = get_db()
-    row = conn.execute("SELECT * FROM upload_queue WHERE id = ?", (queue_id,)).fetchone()
-
-    if not row:
-        conn.close()
-        return jsonify({"success": False, "error": "Queue item not found"}), 404
-
-    if row["retry_count"] >= (row["max_retries"] or 3):
-        conn.close()
-        return jsonify({"success": False, "error": "Max retries exceeded"}), 400
-
-    # Increment retry count and update status
-    conn.execute(
-        "UPDATE upload_queue SET retry_count = retry_count + 1, status = 'retrying', updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?",
-        (queue_id,),
-    )
-    conn.commit()
-    conn.close()
-
-    # Trigger retry logic (would typically call upload_start)
-    return jsonify({"success": True, "retry_count": row["retry_count"] + 1})
+    """Retry a failed upload from Error Center."""
+    return retry_queue_item(queue_id)
 
 
 # ---------------------------------------------------------------
@@ -2007,18 +2389,47 @@ def set_selected_channel():
 
 @youtube_bp.route("/upload-queue", methods=["GET"])
 def list_upload_queue():
-    """List upload queue items."""
+    """List upload queue items, auto-detecting and cleaning up stalled or orphaned uploads."""
     conn = get_db()
     rows = conn.execute(
         "SELECT * FROM upload_queue ORDER BY created_at DESC LIMIT 50"
     ).fetchall()
+
+    now_ts = int(time.time())
+    updated_any = False
+    for r in rows:
+        st = r["status"]
+        q_id = r["id"]
+        v_id = r["video_id"]
+        if st in ("uploading", "retrying") and q_id not in _active_upload_threads:
+            upd = r["updated_at"] or r["created_at"] or 0
+            if now_ts - upd > 15:
+                conn.execute(
+                    """UPDATE upload_queue SET status = 'failed',
+                       error_message = 'Upload interrupted or thread halted. Click Retry to re-upload.',
+                       updated_at = ? WHERE id = ?""",
+                    (now_ts, q_id),
+                )
+                if v_id:
+                    conn.execute(
+                        "UPDATE videos SET status = 'failed', updated_at = ? WHERE id = ?",
+                        (now_ts, v_id),
+                    )
+                updated_any = True
+
+    if updated_any:
+        conn.commit()
+        rows = conn.execute(
+            "SELECT * FROM upload_queue ORDER BY created_at DESC LIMIT 50"
+        ).fetchall()
+
     conn.close()
     return jsonify({"success": True, "items": [dict(r) for r in rows]})
 
 
 @youtube_bp.route("/upload-queue/<int:queue_id>/retry", methods=["POST"])
 def retry_queue_item(queue_id: int):
-    """Retry a failed upload queue item."""
+    """Retry a failed upload queue item by re-launching the upload worker."""
     conn = get_db()
     row = conn.execute("SELECT * FROM upload_queue WHERE id = ?", (queue_id,)).fetchone()
 
@@ -2026,19 +2437,34 @@ def retry_queue_item(queue_id: int):
         conn.close()
         return jsonify({"success": False, "error": "Queue item not found"}), 404
 
-    if row["retry_count"] >= (row["max_retries"] or 3):
-        conn.close()
-        return jsonify({"success": False, "error": "Max retries exceeded"}), 400
+    video_id = row["video_id"]
+    new_retry_count = (row["retry_count"] or 0) + 1
 
-    # Increment retry count and update status
+    # Reset status and clear previous error
     conn.execute(
-        "UPDATE upload_queue SET retry_count = retry_count + 1, status = 'retrying', updated_at = CAST(strftime('%s', 'now') AS INTEGER) WHERE id = ?",
-        (queue_id,),
+        """UPDATE upload_queue SET retry_count = ?, status = 'uploading', progress = 5,
+           error_message = NULL, updated_at = CAST(strftime('%s', 'now') AS INTEGER)
+           WHERE id = ?""",
+        (new_retry_count, queue_id),
     )
+    if video_id:
+        conn.execute(
+            """UPDATE videos SET status = 'uploading', progress = 5,
+               updated_at = CAST(strftime('%s', 'now') AS INTEGER)
+               WHERE id = ?""",
+            (video_id,),
+        )
     conn.commit()
     conn.close()
 
-    return jsonify({"success": True, "retry_count": row["retry_count"] + 1})
+    start_upload_worker(queue_id, video_id)
+    return jsonify({
+        "success": True,
+        "retry_count": new_retry_count,
+        "status": "uploading",
+        "queue_id": queue_id,
+        "video_id": video_id,
+    })
 
 
 @youtube_bp.route("/upload-queue/<int:queue_id>", methods=["DELETE"])

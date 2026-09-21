@@ -538,11 +538,34 @@ function resetPipelineBtn() {
 
 // ---------- Polling ----------
 function startPolling(jobId) {
+    let notFoundCount = 0;
     state.pollInterval = setInterval(async () => {
         try {
             const res = await fetch(`/process/status/${jobId}`);
+            if (res.status === 404) {
+                notFoundCount++;
+                if (notFoundCount >= 3) {
+                    clearInterval(state.pollInterval);
+                    state.pollInterval = null;
+                    resetPipelineBtn();
+                    stopTimer();
+                    addLog('❌ Job not found or server restarted. Please re-run the pipeline.', 'error-line');
+                }
+                return;
+            }
             const data = await res.json();
-            if (!data.success) return;
+            if (!data.success) {
+                notFoundCount++;
+                if (notFoundCount >= 3) {
+                    clearInterval(state.pollInterval);
+                    state.pollInterval = null;
+                    resetPipelineBtn();
+                    stopTimer();
+                    addLog(`❌ Job failed: ${data.error || 'Unknown error'}`, 'error-line');
+                }
+                return;
+            }
+            notFoundCount = 0;
             updateProgressUI(data);
         } catch (err) {
             addLog('Polling error: ' + err.message, 'error-line');
@@ -1944,25 +1967,11 @@ async function initHomeTemplateSelector() {
     // Use selected template button
     const btnUse = document.getElementById('btnUseSelectedTemplate');
     if (btnUse) {
-        btnUse.addEventListener('click', async () => {
+        btnUse.addEventListener('click', () => {
             if (!selectedTemplateId) return;
-            btnUse.disabled = true;
-            btnUse.innerHTML = '<span class="spinner"></span> Creating Project...';
-            try {
-                const res = await fetch(`/api/templates/${selectedTemplateId}/create-project`, { method: 'POST' });
-                const data = await res.json();
-                if (data.success && data.project) {
-                    if (window.UpClipToast) window.UpClipToast.show('Project created from template!', 'success');
-                    window.location.href = `/editor?project_id=${data.project.id}`;
-                } else {
-                    if (window.UpClipToast) window.UpClipToast.show('Failed to create project: ' + (data.error || 'Unknown'), 'error');
-                    btnUse.disabled = false;
-                    btnUse.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> <span>Use Selected Template</span>';
-                }
-            } catch (e) {
-                if (window.UpClipToast) window.UpClipToast.show('Error: ' + e.message, 'error');
-                btnUse.disabled = false;
-                btnUse.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> <span>Use Selected Template</span>';
+            const t = homeTemplates.find(x => x.id === selectedTemplateId);
+            if (t) {
+                openTemplateModal(t);
             }
         });
     }
@@ -1980,6 +1989,119 @@ async function initHomeTemplateSelector() {
         console.error('Failed to load templates:', e);
         grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--error); padding: 20px;">Failed to load templates. <button class="btn btn-secondary btn-sm" onclick="initHomeTemplateSelector()">Retry</button></div>';
     }
+}
+
+function openTemplateModal(t) {
+    if (!t) return;
+    selectedTemplateId = t.id;
+    const modal = document.getElementById('templateActionModal');
+    if (!modal) {
+        // Fallback: create project and go to editor directly
+        fetch(`/api/templates/${t.id}/create-project`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.project) {
+                    window.location.href = `/editor?project_id=${data.project.id}`;
+                }
+            });
+        return;
+    }
+
+    const iconEl = document.getElementById('modalTemplateIcon');
+    const titleEl = document.getElementById('modalTemplateTitle');
+    const catEl = document.getElementById('modalTemplateCategory');
+    const aspectEl = document.getElementById('modalTemplateAspect');
+    const descEl = document.getElementById('modalTemplateDesc');
+    const captionEl = document.getElementById('modalTemplateCaption');
+    const graphicsEl = document.getElementById('modalTemplateGraphics');
+    const audioEl = document.getElementById('modalTemplateAudio');
+    const canvasEl = document.getElementById('modalTemplateCanvas');
+    const btnOpenEditor = document.getElementById('btnTemplateOpenEditor');
+    const btnOpenClipStudio = document.getElementById('btnTemplateOpenClipStudio');
+    const btnClose = document.getElementById('btnTemplateModalClose');
+
+    const aspect = t.aspect || t.aspectRatio || (t.data && t.data.aspectRatio) || '9:16';
+    const icon = t.thumbnailIcon || (t.category === 'Podcast' ? '🎙' : (t.category === 'Shorts' ? '🔥' : '🎬'));
+
+    if (iconEl) iconEl.textContent = icon;
+    if (titleEl) titleEl.textContent = t.name;
+    if (catEl) catEl.textContent = t.category || 'Preset';
+    if (aspectEl) aspectEl.textContent = aspect;
+    if (descEl) descEl.textContent = t.description || 'Pre-configured timeline preset with synchronized audio and graphics.';
+
+    const captionStyle = t.data && t.data.captionStyle;
+    if (captionEl) {
+        captionEl.textContent = captionStyle ? `${captionStyle.fontFamily || 'Bold'}, ${captionStyle.animation || 'Pop'} animation` : 'Standard Subtitles';
+    }
+
+    const graphics = t.data && t.data.graphics;
+    if (graphicsEl) {
+        graphicsEl.textContent = (graphics && graphics.length) ? `${graphics.length} graphic elements included` : 'Default graphics preset';
+    }
+
+    const audioTracks = t.data && t.data.audioTracks;
+    if (audioEl) {
+        audioEl.textContent = (audioTracks && audioTracks.length) ? `${audioTracks.length} tracks with smart ducking` : 'Stereo Audio Ducking';
+    }
+
+    if (canvasEl) {
+        canvasEl.textContent = `${aspect} ${aspect === '9:16' ? '(Shorts / Reels / TikTok)' : (aspect === '16:9' ? '(YouTube Landscape)' : '(Square)')}`;
+    }
+
+    // Modal open animation
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
+    });
+
+    const closeModal = () => {
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 200);
+    };
+
+    if (btnClose) btnClose.onclick = closeModal;
+    modal.onclick = (e) => {
+        if (e.target === modal) closeModal();
+    };
+
+    if (btnOpenEditor) {
+        btnOpenEditor.disabled = false;
+        btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="16" height="16"></svg><span>Open in Timeline Editor</span>';
+        btnOpenEditor.onclick = async () => {
+            btnOpenEditor.disabled = true;
+            btnOpenEditor.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span> Creating Project...';
+            try {
+                const res = await fetch(`/api/templates/${t.id}/create-project`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success && data.project) {
+                    if (window.UpClipToast) window.UpClipToast.show('Project created from template!', 'success');
+                    window.location.href = `/editor?project_id=${data.project.id}`;
+                } else {
+                    alert('Failed to create project: ' + (data.error || 'Unknown error'));
+                    btnOpenEditor.disabled = false;
+                    btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="16" height="16"></svg><span>Open in Timeline Editor</span>';
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            } catch (err) {
+                alert('Error creating project: ' + err.message);
+                btnOpenEditor.disabled = false;
+                btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="16" height="16"></svg><span>Open in Timeline Editor</span>';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+    }
+
+    if (btnOpenClipStudio) {
+        btnOpenClipStudio.onclick = () => {
+            window.location.href = `/dashboard?template_id=${encodeURIComponent(t.id)}&aspect=${encodeURIComponent(aspect)}`;
+        };
+    }
+
+    if (window.lucide) window.lucide.createIcons();
 }
 
 function renderHomeTemplates() {
@@ -2006,12 +2128,13 @@ function renderHomeTemplates() {
 
     grid.innerHTML = filtered.map(t => {
         const isSelected = selectedTemplateId === t.id;
-        const aspect = t.aspect || '9:16';
+        const aspect = t.aspect || (t.data && t.data.aspectRatio) || '9:16';
+        const icon = t.thumbnailIcon || (t.category === 'Podcast' ? '🎙' : (t.category === 'Shorts' ? '🔥' : '🎬'));
         return `
-        <div class="template-card ${isSelected ? 'selected' : ''}" data-id="${t.id}" tabindex="0" role="button" aria-label="Select template ${t.name}">
+        <div class="template-card ${isSelected ? 'selected' : ''}" data-id="${t.id}" tabindex="0" role="button" aria-label="Use template ${t.name}">
             <div class="template-card-preview">
                 <div class="template-preview-badge">${aspect}</div>
-                <div style="font-size: 28px; opacity: 0.85;">🎬</div>
+                <div style="font-size: 28px; opacity: 0.95;">${icon}</div>
                 ${isSelected ? '<div class="template-selected-badge">✓ Selected</div>' : ''}
             </div>
             <div class="template-card-body">
@@ -2020,10 +2143,11 @@ function renderHomeTemplates() {
                     <span class="template-card-category">${t.category || 'Preset'}</span>
                 </div>
                 <p class="template-card-desc">${t.description || ''}</p>
-                <div class="template-card-footer">
-                    <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">${aspect}</span>
-                    <button type="button" class="btn btn-secondary btn-sm btn-select-template" style="padding: 3px 10px; font-size: 11px;">
-                        ${isSelected ? 'Selected' : 'Select'}
+                <div class="template-card-footer" style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:auto; padding-top:8px;">
+                    <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); font-weight:600;">${aspect}</span>
+                    <button type="button" class="btn btn-primary btn-sm btn-use-template" data-id="${t.id}" style="padding: 4px 12px; font-size: 11px; font-weight:600; display:flex; align-items:center; gap:4px;">
+                        <span>Use Template</span>
+                        <svg data-lucide="arrow-right" width="12" height="12"></svg>
                     </button>
                 </div>
             </div>
@@ -2031,7 +2155,7 @@ function renderHomeTemplates() {
     }).join('');
 
     grid.querySelectorAll('.template-card').forEach(card => {
-        const selectAction = () => {
+        const handleCardAction = (e) => {
             const id = card.dataset.id;
             selectedTemplateId = id;
             const t = homeTemplates.find(x => x.id === id);
@@ -2039,20 +2163,42 @@ function renderHomeTemplates() {
             const textSpan = document.getElementById('btnUseSelectedTemplateText');
             if (actionWrap) actionWrap.style.display = 'block';
             if (textSpan && t) textSpan.textContent = `Use "${t.name}" Template`;
-            renderHomeTemplates();
+            
+            grid.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+
+            if (t) openTemplateModal(t);
         };
 
-        card.addEventListener('click', selectAction);
+        card.addEventListener('click', handleCardAction);
         card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                selectAction();
+                handleCardAction(e);
             }
         });
     });
+
+    if (window.lucide) window.lucide.createIcons();
 }
 
 function initStep1AspectCards() {
+    // Check if aspect parameter passed in URL
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const aspectParam = urlParams.get('aspect');
+        if (aspectParam) {
+            const matchingRadio = document.querySelector(`input[type="radio"][name="aspect"][value="${aspectParam}"]`);
+            if (matchingRadio) {
+                matchingRadio.checked = true;
+                document.querySelectorAll('.aspect-option-card, .aspect-card').forEach(c => c.classList.remove('selected'));
+                const parentCard = matchingRadio.closest('.aspect-option-card, .aspect-card');
+                if (parentCard) parentCard.classList.add('selected');
+                if (typeof saveClipSettings === 'function') saveClipSettings();
+            }
+        }
+    } catch (_) {}
+
     const radioInputs = document.querySelectorAll('input[type="radio"][name="aspect"]');
     radioInputs.forEach(radio => {
         radio.addEventListener('change', () => {

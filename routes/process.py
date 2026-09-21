@@ -4,7 +4,7 @@ import threading
 from pathlib import Path
 
 import config
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 
 from utils.ffmpeg_utils import check_ffmpeg
 from utils.video_utils import VideoLoader
@@ -130,8 +130,15 @@ def _build_style_options(settings):
     return style or None
 
 
-def run_pipeline_job(job):
+def run_pipeline_job(job, app=None):
     """Execute the full AI pipeline and update the job status."""
+    ctx = None
+    if app:
+        try:
+            ctx = app.app_context()
+            ctx.push()
+        except Exception:
+            ctx = None
 
     settings = job.settings
     try:
@@ -474,11 +481,79 @@ def run_pipeline_job(job):
         job.finished = True
         job.add_log("Pipeline completed successfully.")
 
+        # Persist generated clips to database Project and record recent project
+        try:
+            from models.project import Project
+            from extensions import db
+            from core.project_manager import project_manager
+            import json
+
+            db_proj = None
+            if project_id and str(project_id).isdigit():
+                db_proj = Project.query.get(int(project_id))
+            if not db_proj and job.filename:
+                db_proj = Project.query.filter_by(source_path=job.filename).first()
+
+            clips_data = [
+                {
+                    "filename": c,
+                    "url": f"/download/clip/{c}",
+                    "label": c,
+                    "media_type": "clip"
+                }
+                for c in final_clip_files
+            ]
+
+            thumb_url = f"/download/thumbnail/{stem}_thumb.jpg"
+            if not db_proj:
+                db_proj = Project(
+                    name=Path(job.filename).stem,
+                    source_path=job.filename,
+                    thumbnail_path=thumb_url,
+                    duration=float(info.get("duration", 0.0) or 0.0),
+                    status="done"
+                )
+                db.session.add(db_proj)
+                db.session.flush()
+
+            existing_editor_state = {}
+            if db_proj.editor_state:
+                try:
+                    existing_editor_state = json.loads(db_proj.editor_state)
+                except Exception:
+                    existing_editor_state = {}
+            existing_editor_state["clips"] = clips_data
+            existing_editor_state["aspect"] = aspect_key
+            db_proj.editor_state = json.dumps(existing_editor_state)
+            db_proj.status = "done"
+            db_proj.thumbnail_path = thumb_url
+            db.session.commit()
+
+            # Record in recent projects
+            project_manager.record_recent_project(
+                project_id=db_proj.id,
+                name=db_proj.name,
+                source_path=db_proj.source_path or "",
+                thumbnail_path=db_proj.thumbnail_path or ""
+            )
+
+            job.project_id = db_proj.id
+            if job.result:
+                job.result["project_id"] = db_proj.id
+        except Exception as pe:
+            print(f"[PROCESS] Error persisting project clips to DB: {pe}")
+
     except Exception as e:
         job.status = "error"
         job.finished = True
         job.error = str(e)
         job.add_log(f"ERROR: {e}")
+    finally:
+        if ctx:
+            try:
+                ctx.pop()
+            except Exception:
+                pass
 
 
 @process_bp.route("/ffmpeg", methods=["GET"])
@@ -511,9 +586,10 @@ def start():
         JOBS[job_id] = job
 
     # Run in background thread
+    app_obj = current_app._get_current_object()
     thread = threading.Thread(
         target=run_pipeline_job,
-        args=(job,),
+        args=(job, app_obj),
         daemon=True
     )
     thread.start()

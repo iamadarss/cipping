@@ -67,6 +67,15 @@ class Project(db.Model):
         else:
             thumb = "/static/img/default_thumb.png"
 
+        clips = []
+        if self.editor_state:
+            try:
+                import json
+                state = json.loads(self.editor_state)
+                clips = state.get("clips", [])
+            except Exception:
+                clips = []
+
         return {
             "id": self.id,
             "name": self.name,
@@ -74,6 +83,7 @@ class Project(db.Model):
             "thumbnail_path": thumb,
             "status": self.status,
             "duration": self.duration,
+            "clips": clips,
             "editor_state": self.editor_state,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

@@ -53,6 +53,8 @@ class WhisperEngine:
 
         if whisper_lang:
             kwargs["language"] = whisper_lang
+            if whisper_lang in ("hi", "hindi"):
+                kwargs["initial_prompt"] = "यह वीडियो हिंदी में है। कृपया केवल हिंदी और देवनागरी लिपि का प्रयोग करें।"
 
         # Suppress verbose progress output
         kwargs["verbose"] = False
