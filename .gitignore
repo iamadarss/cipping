@@ -20,12 +20,12 @@ data/
 # Output Files
 output/
 
-# Input Videos
-input/*.mp4
-input/*.mov
-input/*.mkv
+# Input Videos & Subtitles
+input/*
+!input/.gitkeep
 *.part
 input/*.part
+*.mp4
 
 # Downloaded AI model weights
 *.pt

@@ -41,12 +41,24 @@
 
         // Video Analysis Result
         analysisResultCard: document.getElementById('analysisResultCard'),
+        analysisThumbCol: document.getElementById('analysisThumbCol'),
         analysisThumbImg: document.getElementById('analysisThumbImg'),
+        analysisResolutionBadge: document.getElementById('analysisResolutionBadge'),
         analysisDurationBadge: document.getElementById('analysisDurationBadge'),
         analysisVideoTitle: document.getElementById('analysisVideoTitle'),
         analysisChannelName: document.getElementById('analysisChannelName'),
         analysisViewsCount: document.getElementById('analysisViewsCount'),
         formatPillGrid: document.getElementById('formatPillGrid'),
+
+        // Captions / Subtitles
+        captionOptionCard: document.getElementById('captionOptionCard'),
+        chkDownloadCaptions: document.getElementById('chkDownloadCaptions'),
+        subtitlesAvailableBadge: document.getElementById('subtitlesAvailableBadge'),
+        subtitlesBadgeText: document.getElementById('subtitlesBadgeText'),
+        captionSettingsRow: document.getElementById('captionSettingsRow'),
+        captionLangSelect: document.getElementById('captionLangSelect'),
+        captionFormatSelect: document.getElementById('captionFormatSelect'),
+        btnDownloadCaptionsOnly: document.getElementById('btnDownloadCaptionsOnly'),
 
         // Advanced Options
         btnToggleAdvanced: document.getElementById('btnToggleAdvanced'),
@@ -278,6 +290,51 @@
         dom.analysisChannelName.textContent = data.channel || 'Creator';
         dom.analysisViewsCount.textContent = data.view_count_str || '0 views';
 
+        // Detect and handle thumbnail resolution badge & aspect ratio
+        const updateThumbnailDimensions = (w, h) => {
+            if (!w || !h) return;
+            const isVertical = h > w;
+            if (dom.analysisThumbCol) {
+                if (isVertical) {
+                    dom.analysisThumbCol.classList.add('is-vertical');
+                } else {
+                    dom.analysisThumbCol.classList.remove('is-vertical');
+                }
+            }
+            if (dom.analysisResolutionBadge) {
+                dom.analysisResolutionBadge.textContent = `${w} × ${h}`;
+                dom.analysisResolutionBadge.style.display = 'block';
+            }
+        };
+
+        if (data.thumbnail_width && data.thumbnail_height) {
+            updateThumbnailDimensions(data.thumbnail_width, data.thumbnail_height);
+        } else if (data.thumbnail_resolution) {
+            if (dom.analysisResolutionBadge) {
+                dom.analysisResolutionBadge.textContent = data.thumbnail_resolution;
+                dom.analysisResolutionBadge.style.display = 'block';
+            }
+            if (data.is_vertical && dom.analysisThumbCol) {
+                dom.analysisThumbCol.classList.add('is-vertical');
+            }
+        } else {
+            if (dom.analysisResolutionBadge) {
+                dom.analysisResolutionBadge.style.display = 'none';
+            }
+            if (dom.analysisThumbCol) {
+                dom.analysisThumbCol.classList.remove('is-vertical');
+            }
+        }
+
+        // Listen for image load event for natural dimension fallback
+        dom.analysisThumbImg.onload = () => {
+            const nw = dom.analysisThumbImg.naturalWidth;
+            const nh = dom.analysisThumbImg.naturalHeight;
+            if (nw && nh && (!data.thumbnail_width || !data.thumbnail_height)) {
+                updateThumbnailDimensions(nw, nh);
+            }
+        };
+
         // Render Format Pills
         const formats = data.formats || [];
         dom.formatPillGrid.innerHTML = formats.map((f, idx) => `
@@ -312,16 +369,112 @@
             });
         });
 
+        // Setup Caption / Subtitles info
+        if (dom.captionOptionCard) {
+            dom.captionOptionCard.style.display = 'block';
+            const hasSubs = Boolean(data.has_subtitles && data.subtitles && data.subtitles.length > 0);
+            if (hasSubs) {
+                const manualCount = data.subtitles.filter(s => !s.is_auto).length;
+                let statusText = `✓ ${data.subtitles.length} caption track${data.subtitles.length > 1 ? 's' : ''} available`;
+                if (manualCount > 0) {
+                    statusText = `✓ Subtitles detected (${manualCount} manual)`;
+                } else {
+                    statusText = `✓ Auto-captions available`;
+                }
+                dom.subtitlesBadgeText.innerHTML = `<span style="color:var(--success); font-weight:600;">${statusText}</span>`;
+
+                dom.captionLangSelect.innerHTML = data.subtitles.map(s => `
+                    <option value="${s.lang}" ${s.lang === data.default_subtitle_lang ? 'selected' : ''}>
+                        ${escapeHtml(s.display || s.label)}
+                    </option>
+                `).join('');
+            } else {
+                dom.subtitlesBadgeText.innerHTML = '<span style="color:var(--text-muted);">No subtitles found</span>';
+                dom.captionLangSelect.innerHTML = '<option value="en">English (auto-fallback)</option>';
+            }
+
+            // Default: unchecked until user ticks it
+            dom.chkDownloadCaptions.checked = false;
+            dom.captionSettingsRow.style.display = 'none';
+        }
+
         updateDownloadButtonLabel();
         if (window.lucide) window.lucide.createIcons();
     }
 
     function updateDownloadButtonLabel() {
+        const withCaptions = dom.chkDownloadCaptions && dom.chkDownloadCaptions.checked;
+        const captionSuffix = withCaptions ? ' + Captions' : '';
         if (state.selectedFormat.type === 'audio') {
-            dom.btnStartDownloadText.textContent = `Extract ${state.selectedFormat.id.toUpperCase()} Audio`;
+            dom.btnStartDownloadText.textContent = `Extract ${state.selectedFormat.id.toUpperCase()} Audio${captionSuffix}`;
         } else {
-            dom.btnStartDownloadText.textContent = `Download Video (${state.selectedFormat.id})`;
+            dom.btnStartDownloadText.textContent = `Download Video (${state.selectedFormat.id})${captionSuffix}`;
         }
+    }
+
+    // Toggle caption settings on checkbox tick
+    if (dom.chkDownloadCaptions) {
+        dom.chkDownloadCaptions.addEventListener('change', () => {
+            const isChecked = dom.chkDownloadCaptions.checked;
+            dom.captionSettingsRow.style.display = isChecked ? 'block' : 'none';
+            updateDownloadButtonLabel();
+            if (window.lucide) window.lucide.createIcons();
+        });
+    }
+
+    // Fast download of captions only
+    if (dom.btnDownloadCaptionsOnly) {
+        dom.btnDownloadCaptionsOnly.addEventListener('click', async () => {
+            const url = dom.inputYoutubeUrl.value.trim();
+            if (!url) return;
+
+            const subLang = dom.captionLangSelect ? dom.captionLangSelect.value : 'en';
+            const subFormat = dom.captionFormatSelect ? dom.captionFormatSelect.value : 'srt';
+            const customName = dom.advCustomFilename ? dom.advCustomFilename.value.trim() : '';
+            const titleHint = customName || (state.analysis ? state.analysis.title : 'youtube_video');
+
+            dom.btnDownloadCaptionsOnly.disabled = true;
+            const origContent = dom.btnDownloadCaptionsOnly.innerHTML;
+            dom.btnDownloadCaptionsOnly.innerHTML = '<svg data-lucide="loader" width="13" height="13" class="spin"></svg> <span>Downloading...</span>';
+            if (window.lucide) window.lucide.createIcons();
+
+            try {
+                const res = await fetch('/download/subtitles-only', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: url,
+                        subtitle_lang: subLang,
+                        subtitle_format: subFormat,
+                        title: titleHint,
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to download caption file');
+                }
+
+                showToast(`✓ Caption file downloaded: ${data.filename}`, 'success');
+
+                // Trigger direct file download in browser
+                if (data.download_url) {
+                    const dlLink = document.createElement('a');
+                    dlLink.href = data.download_url;
+                    dlLink.download = data.filename;
+                    document.body.appendChild(dlLink);
+                    dlLink.click();
+                    dlLink.remove();
+                }
+
+                loadLibrary();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                dom.btnDownloadCaptionsOnly.disabled = false;
+                dom.btnDownloadCaptionsOnly.innerHTML = origContent;
+                if (window.lucide) window.lucide.createIcons();
+            }
+        });
     }
 
     function renderPlaylistCard(data) {
@@ -397,12 +550,19 @@
         const customName = dom.advCustomFilename.value.trim();
         const titleHint = customName || state.analysis.title || 'YouTube Video';
 
+        const downloadSubtitles = dom.chkDownloadCaptions ? dom.chkDownloadCaptions.checked : false;
+        const subtitleLang = dom.captionLangSelect ? dom.captionLangSelect.value : 'en';
+        const subtitleFormat = dom.captionFormatSelect ? dom.captionFormatSelect.value : 'srt';
+
         await triggerDownloadTask({
             url,
             format: fmt,
             quality: quality,
             audio_format: audioFormat,
             title: titleHint,
+            download_subtitles: downloadSubtitles,
+            subtitle_lang: subtitleLang,
+            subtitle_format: subtitleFormat,
             async: true
         });
     });
@@ -571,8 +731,9 @@
     function renderLibraryTable() {
         let files = state.libraryFiles;
 
-        if (state.libraryFilter === 'video') files = files.filter(f => !f.is_audio);
+        if (state.libraryFilter === 'video') files = files.filter(f => !f.is_audio && !f.is_subtitle);
         if (state.libraryFilter === 'audio') files = files.filter(f => f.is_audio);
+        if (state.libraryFilter === 'captions') files = files.filter(f => f.is_subtitle || f.has_caption);
 
         if (state.librarySearch) {
             const q = state.librarySearch.toLowerCase();
@@ -581,37 +742,73 @@
 
         if (files.length === 0) {
             dom.libraryTableBody.innerHTML = `
-                <tr><td colspan="5">
+                <tr><td colspan="6">
                     <div class="compact-empty-state">
                         <svg data-lucide="folder-open" width="32" height="32"></svg>
                         <h4>No Media Files Found</h4>
-                        <p>Downloaded videos and audio tracks stored in your <code>input/</code> folder will appear here.</p>
+                        <p>Downloaded videos, audio tracks, and caption files stored in your <code>input/</code> folder will appear here.</p>
                     </div>
                 </td></tr>`;
             if (window.lucide) window.lucide.createIcons();
             return;
         }
 
-        dom.libraryTableBody.innerHTML = files.map(f => `
+        dom.libraryTableBody.innerHTML = files.map(f => {
+            const isSub = f.is_subtitle;
+            const isAudio = f.is_audio;
+            const iconName = isSub ? 'subtitles' : (isAudio ? 'music' : 'clapperboard');
+            const iconColor = isSub ? 'var(--warning)' : (isAudio ? 'var(--info)' : 'var(--primary)');
+
+            // Caption Cell
+            let captionCell = '<span style="color:var(--text-muted); font-size:11px;">None</span>';
+            if (f.has_caption || isSub) {
+                const capUrl = f.caption_url || f.path;
+                const capName = f.caption_file || f.name;
+                captionCell = `
+                    <div style="display:inline-flex; align-items:center; gap:6px;">
+                        <span class="badge" style="background:rgba(34,197,94,0.12); color:var(--success); border:1px solid rgba(34,197,94,0.3); font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">CC .SRT</span>
+                        <a href="${capUrl}" download="${escapeHtml(capName)}" class="btn btn-secondary btn-xs" title="Download Subtitle File (${escapeHtml(capName)})" style="padding:2px 6px; font-size:11px; display:inline-flex; align-items:center; gap:3px;">
+                            <svg data-lucide="download" width="11" height="11"></svg>
+                            <span>SRT</span>
+                        </a>
+                    </div>
+                `;
+            }
+
+            return `
             <tr>
                 <td>
-                    <div style="width:32px; height:32px; border-radius:var(--radius-xs); background:var(--surface-1); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:${f.is_audio ? 'var(--info)' : 'var(--primary)'};">
-                        <svg data-lucide="${f.is_audio ? 'music' : 'clapperboard'}" width="16" height="16"></svg>
+                    <div style="width:32px; height:32px; border-radius:var(--radius-xs); background:var(--surface-1); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:${iconColor};">
+                        <svg data-lucide="${iconName}" width="16" height="16"></svg>
                     </div>
                 </td>
-                <td style="font-weight:600; color:var(--text-primary); max-width:320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                <td style="font-weight:600; color:var(--text-primary); max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(f.name)}">
                     ${escapeHtml(f.name)}
+                </td>
+                <td>
+                    ${captionCell}
                 </td>
                 <td>${f.size}</td>
                 <td>${f.modified}</td>
                 <td style="text-align:right;">
                     <div style="display:inline-flex; gap:6px;">
-                        <button class="btn btn-secondary btn-sm btn-lib-preview" data-name="${escapeHtml(f.name)}" data-path="${f.path}" data-audio="${f.is_audio}" title="Play preview" style="padding:4px 8px;">
-                            <svg data-lucide="play" width="13" height="13"></svg>
-                        </button>
-                        <a href="/dashboard?file=${encodeURIComponent(f.name)}" class="btn btn-primary btn-sm" title="Open in AI Clip Studio" style="padding:4px 8px; text-decoration:none;">
-                            <svg data-lucide="wand-sparkles" width="13" height="13"></svg>
-                        </a>
+                        ${!isSub ? `
+                            <button class="btn btn-secondary btn-sm btn-lib-preview" data-name="${escapeHtml(f.name)}" data-path="${f.path}" data-audio="${f.is_audio}" title="Play preview" style="padding:4px 8px;">
+                                <svg data-lucide="play" width="13" height="13"></svg>
+                            </button>
+                            <a href="/dashboard?file=${encodeURIComponent(f.name)}" class="btn btn-primary btn-sm" title="Open in AI Clip Studio" style="padding:4px 8px; text-decoration:none;">
+                                <svg data-lucide="wand-sparkles" width="13" height="13"></svg>
+                            </a>
+                        ` : `
+                            <a href="${f.path}" download="${escapeHtml(f.name)}" class="btn btn-secondary btn-sm" title="Download Subtitle File" style="padding:4px 8px; text-decoration:none;">
+                                <svg data-lucide="download" width="13" height="13"></svg>
+                            </a>
+                        `}
+                        ${(f.has_caption || isSub) ? `
+                            <a href="/caption-studio" class="btn btn-secondary btn-sm" title="Open in Caption Studio" style="padding:4px 8px; text-decoration:none; color:var(--primary);">
+                                <svg data-lucide="captions" width="13" height="13"></svg>
+                            </a>
+                        ` : ''}
                         <button class="btn btn-secondary btn-sm btn-lib-rename" data-name="${escapeHtml(f.name)}" title="Rename" style="padding:4px 8px;">
                             <svg data-lucide="edit-3" width="13" height="13"></svg>
                         </button>
@@ -621,7 +818,8 @@
                     </div>
                 </td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
 
         // Wire Action Events
         dom.libraryTableBody.querySelectorAll('.btn-lib-preview').forEach(btn => {

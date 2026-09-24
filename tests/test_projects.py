@@ -102,6 +102,17 @@ def test_project_thumbnail_and_recent_sync():
     res = client.get('/api/projects')
     assert res.status_code == 200
     projects = res.get_json()
+    created_id = None
+    if len(projects) == 0:
+        create_res = client.post('/api/projects', json={
+            "name": "Sync Verification Project",
+            "source_path": "sample.mp4",
+            "aspect_ratio": "9:16",
+        })
+        assert create_res.status_code == 201
+        created_id = create_res.get_json()["id"]
+        projects = client.get('/api/projects').get_json()
+
     assert len(projects) > 0
 
     for p in projects:
@@ -111,3 +122,6 @@ def test_project_thumbnail_and_recent_sync():
         # Ensure thumbnail endpoint returns 200
         thumb_res = client.get(thumb)
         assert thumb_res.status_code == 200, f"Thumbnail failed for {p['name']}: {thumb}"
+
+    if created_id:
+        client.delete(f'/api/projects/{created_id}')

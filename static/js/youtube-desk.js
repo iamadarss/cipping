@@ -2210,6 +2210,86 @@
     }
 
     // =========================================================================
+    // 7.5 AI Smart Publishing Advisor & 1-Click Auto-Scheduler
+    // =========================================================================
+    async function loadSmartScheduleAdvice() {
+        try {
+            const res = await fetch('/youtube/smart-schedule-advice');
+            const data = await res.json();
+            if (!data.success || !data.advice) return;
+            const adv = data.advice;
+            const container = document.getElementById('smartAdvisorSlots');
+            if (container && adv.best_peak_slots && adv.best_peak_slots.length) {
+                container.innerHTML = `
+                    <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                        <div style="font-size:11px; font-weight:700; color:var(--primary); margin-bottom:2px;">🔥 PRIME PEAK WINDOWS</div>
+                        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">${adv.best_peak_slots.map(s => s.time).join(' &bull; ')}</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Audience engagement peaks</div>
+                    </div>
+                    <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                        <div style="font-size:11px; font-weight:700; color:#38bdf8; margin-bottom:2px;">⏱ ALGORITHM SPACING</div>
+                        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">4 to 6 Hours Apart</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Max shorts algorithm velocity</div>
+                    </div>
+                    <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                        <div style="font-size:11px; font-weight:700; color:#fbbf24; margin-bottom:2px;">🎯 TITLE & HASHTAGS</div>
+                        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">&lt; 50 Chars + 3 #Tags</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Clean hook + #Shorts #Viral</div>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            console.warn('Error loading schedule advice:', e);
+        }
+    }
+
+    async function handleAutoScheduleClips(btn) {
+        if (!btn) return;
+        const origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span> Distributing Across Peak Times...';
+
+        try {
+            const res = await fetch('/youtube/auto-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ spacing_hours: 4 })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'Clips auto-scheduled across peak release slots!', 'success');
+                await loadOverview();
+                if (typeof loadScheduled === 'function') await loadScheduled();
+            } else {
+                showToast(data.error || 'Failed to auto-schedule clips', 'error');
+            }
+        } catch (err) {
+            showToast('Auto-schedule failed: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            if (window.lucide) window.lucide.createIcons();
+        }
+    }
+
+    const btnAutoSchedule1 = document.getElementById('btnAutoScheduleClips');
+    if (btnAutoSchedule1) {
+        btnAutoSchedule1.addEventListener('click', () => handleAutoScheduleClips(btnAutoSchedule1));
+    }
+    const btnAutoSchedule2 = document.getElementById('btnAutoScheduleFromSchedView');
+    if (btnAutoSchedule2) {
+        btnAutoSchedule2.addEventListener('click', () => handleAutoScheduleClips(btnAutoSchedule2));
+    }
+    const btnRefreshAdv = document.getElementById('btnRefreshAdvisor');
+    if (btnRefreshAdv) {
+        btnRefreshAdv.addEventListener('click', async () => {
+            showToast('Refreshing AI schedule recommendations...', 'info');
+            await loadSmartScheduleAdvice();
+            showToast('Schedule advice refreshed', 'success');
+        });
+    }
+
+    // =========================================================================
     // 8. Initialization
     // =========================================================================
     function init() {
@@ -2220,6 +2300,7 @@
         loadOverview();
         loadPresets();
         loadPlaylistsDropdown();
+        loadSmartScheduleAdvice();
 
         // Background polling for queue if items are in flight (every 10s)
         setInterval(() => {

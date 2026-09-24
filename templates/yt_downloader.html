@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Downloader | UpClip Studio</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/creator_desk.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -183,8 +185,9 @@
                         <!-- URL Analysis Result Card (Sections 18 & 19) -->
                         <div class="analysis-result-card" id="analysisResultCard" style="display:none; margin-bottom:var(--space-6);">
                             <!-- Thumbnail Column -->
-                            <div class="analysis-thumb-col">
+                            <div class="analysis-thumb-col" id="analysisThumbCol">
                                 <img id="analysisThumbImg" src="" alt="Thumbnail">
+                                <div class="analysis-resolution-badge" id="analysisResolutionBadge" style="display:none;">1280 × 720</div>
                                 <div class="analysis-duration-badge" id="analysisDurationBadge">0:00</div>
                             </div>
 
@@ -202,6 +205,47 @@
                                     <label style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Select Format & Quality</label>
                                     <div class="format-pill-grid" id="formatPillGrid">
                                         <!-- Dynamically generated format pills -->
+                                    </div>
+                                </div>
+
+                                <!-- Caption / Subtitle Download Option Box -->
+                                <div class="caption-option-card" id="captionOptionCard" style="margin:16px 0 12px; padding:12px 14px; background:var(--surface-1); border:1px solid var(--border); border-radius:var(--radius-sm); transition:all var(--transition-base);">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; user-select:none;">
+                                            <input type="checkbox" id="chkDownloadCaptions" style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer;">
+                                            <span style="font-size:13px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                                                <svg data-lucide="subtitles" width="16" height="16" style="color:var(--primary);"></svg>
+                                                <span>Download Caption / Subtitle File (.SRT)</span>
+                                            </span>
+                                        </label>
+                                        <div id="subtitlesAvailableBadge" style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:4px;">
+                                            <span id="subtitlesBadgeText">Checking captions...</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expandable Subtitle Settings when checked -->
+                                    <div id="captionSettingsRow" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-subtle);">
+                                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                                <div style="display:flex; align-items:center; gap:6px;">
+                                                    <label for="captionLangSelect" style="font-size:11px; font-weight:600; color:var(--text-secondary);">Language:</label>
+                                                    <select id="captionLangSelect" style="padding:5px 8px; font-size:12px; border-radius:var(--radius-xs); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary); min-width:140px;">
+                                                        <option value="en">English</option>
+                                                    </select>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:6px;">
+                                                    <label for="captionFormatSelect" style="font-size:11px; font-weight:600; color:var(--text-secondary);">Format:</label>
+                                                    <select id="captionFormatSelect" style="padding:5px 8px; font-size:12px; border-radius:var(--radius-xs); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary);">
+                                                        <option value="srt" selected>.SRT (Standard)</option>
+                                                        <option value="vtt">.VTT (WebVTT)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btnDownloadCaptionsOnly" title="Download only the caption file (.srt) without downloading the full video" style="padding:5px 12px; font-size:12px;">
+                                                <svg data-lucide="file-text" width="13" height="13"></svg>
+                                                <span>Download Captions Only (.srt)</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -229,12 +273,6 @@
                                                 <label for="advCustomFilename" style="font-size:11px; color:var(--text-secondary); display:block; margin-bottom:4px;">Custom Filename (Optional)</label>
                                                 <input type="text" id="advCustomFilename" placeholder="my_clip_source" style="width:100%; padding:6px 10px; font-size:12px; border-radius:var(--radius-xs); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary);">
                                             </div>
-                                        </div>
-                                        <div style="display:flex; gap:16px; font-size:12px; color:var(--text-secondary);">
-                                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-                                                <input type="checkbox" id="chkEmbedSubs" style="accent-color:var(--primary);">
-                                                <span>Download English subtitles if available</span>
-                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -333,6 +371,7 @@
                                 <button class="filter-tab active" data-filter="all">All Media</button>
                                 <button class="filter-tab" data-filter="video">Videos</button>
                                 <button class="filter-tab" data-filter="audio">Audio Only</button>
+                                <button class="filter-tab" data-filter="captions">Captions (.srt)</button>
                             </div>
                             <div style="display:flex; gap:8px;">
                                 <div class="filter-search">
@@ -356,9 +395,10 @@
                                     <tr>
                                         <th style="width:48px;">Type</th>
                                         <th>Filename</th>
+                                        <th style="width:100px;">Captions</th>
                                         <th style="width:100px;">Size</th>
                                         <th style="width:140px;">Downloaded</th>
-                                        <th style="width:240px; text-align:right;">Actions</th>
+                                        <th style="width:260px; text-align:right;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="libraryTableBody">

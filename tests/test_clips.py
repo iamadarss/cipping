@@ -8,7 +8,8 @@ from utils.scene_merger import SceneMerger
 from utils.clip_generator import ClipGenerator
 from pathlib import Path
 
-video = list(config.INPUT_DIR.glob('*.mp4'))[0]
+sample_vid = config.INPUT_DIR / 'sample.mp4'
+video = sample_vid if sample_vid.exists() else list(config.INPUT_DIR.glob('*.mp4'))[0]
 print('Video:', video.name)
 
 detector = SceneDetector(video)

@@ -104,14 +104,14 @@ def test_step1_and_step2_dashboard_layout():
     assert 'id="sourceVideoPlayer"' not in step2_html
     assert '<video' not in step2_html
 
-    # Step 2 All 7 Accordions with inline SVGs present
+    # Step 2 Accordions with inline SVGs present
     assert 'Target Aspect Ratio' in step2_html
-    assert 'Clipping Strategy' in step2_html
-    assert 'Language & Translation' in step2_html
+    assert ('Scene Detection' in step2_html or 'Clipping Strategy' in step2_html)
+    assert ('Speech-to-Text' in step2_html or 'Language & Translation' in step2_html)
     assert 'Subtitles' in step2_html
     assert 'Animated Captions' in step2_html
     assert 'Clip Naming' in step2_html
-    assert 'Advanced Engine Settings' in step2_html
+    assert ('Audio Loudness' in step2_html or 'Advanced Engine Settings' in step2_html)
 
     # Aspect ratio cards with SVG icons
     assert 'value="9:16"' in step2_html

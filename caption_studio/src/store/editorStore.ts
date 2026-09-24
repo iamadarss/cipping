@@ -346,7 +346,7 @@ const PRESET_STYLES: CaptionStyle[] = [
 ];
 
 const getInitialState = (inheritedStyle?: CaptionStyle | null): ProjectState => {
-  const initialId = inheritedStyle ? `inherited-${inheritedStyle.id}` : DEFAULT_STYLE.id;
+  const initialId = inheritedStyle ? inheritedStyle.id : DEFAULT_STYLE.id;
   return {
     id: uuidv4(),
     name: "Untitled Project",

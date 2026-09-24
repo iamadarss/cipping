@@ -1,22 +1,3 @@
-r"""
-==========================================
-Animated Caption Renderer — Phase 18
-==========================================
-
-Renders short-form style animated captions (word-by-word karaoke
-highlighting) into a video using ffmpeg's ASS subtitle renderer.
-
-Features
---------
-✓ Word-by-word progressive highlight (karaoke \k) using accurate word timestamps
-✓ Comprehensive animation library (fade_in, fade_out, pop, scale_in, slide_up, slide_down, slide_left, slide_right, bounce, word_reveal, character_reveal, none)
-✓ Highlight styles (text color change, background highlight, scale emphasis, accent highlight)
-✓ Precise positioning: Top, Center, Bottom, Lower Third, or exact pixel coordinates via \pos(X,Y)
-✓ Full typography: font, size, weight, scale, tracking/spacing, alignment (left/center/right)
-✓ Rich styling: outline width & color, shadow blur/offset & color, opaque or semi-transparent background box
-✓ Safe-area aware margin calculations for 9:16, 1:1, 4:5, 16:9 aspect ratios
-"""
-
 from pathlib import Path
 import subprocess
 import config
@@ -103,8 +84,50 @@ class AnimatedCaptionRenderer:
 
     @staticmethod
     def _template_options(template):
-        template = (template or "classic").lower()
+        template = (template or "hormozi_pop").lower()
         templates = {
+            "hormozi_pop": {
+                "font": "Arial Black", "size": 42, "weight": 900, "color": "#FFFFFF",
+                "highlight_color": "#FFDD00", "background": "#000000", "background_opacity": 0.0,
+                "outline": 4, "shadow": 4, "position": "bottom", "margin_v": 75, "animation": "pop",
+                "description": "Alex Hormozi Viral Style — Yellow punch, bold black outline, high-energy pop"
+            },
+            "beast_glow": {
+                "font": "Arial Black", "size": 44, "weight": 900, "color": "#FFFFFF",
+                "highlight_color": "#39FF14", "background": "#000000", "background_opacity": 0.0,
+                "outline": 5, "shadow": 6, "position": "bottom", "margin_v": 80, "animation": "bounce",
+                "description": "MrBeast Style — Electric lime neon active word with heavy punchy stroke"
+            },
+            "red_punch": {
+                "font": "Arial Black", "size": 42, "weight": 900, "color": "#FFFFFF",
+                "highlight_color": "#FF2A2A", "background": "#000000", "background_opacity": 0.0,
+                "outline": 4, "shadow": 5, "position": "bottom", "margin_v": 75, "animation": "pop",
+                "description": "High Drama / Breaking News — Fiery red highlight on crisp white text"
+            },
+            "clean_gold": {
+                "font": "Inter", "size": 36, "weight": 700, "color": "#FFFFFF",
+                "highlight_color": "#F59E0B", "background": "#0F172A", "background_opacity": 0.45,
+                "outline": 2, "shadow": 3, "position": "bottom", "margin_v": 70, "animation": "fade_in",
+                "description": "Luxury Gold — Podcast & business minimal aesthetic with warm amber highlight"
+            },
+            "neon_cyber": {
+                "font": "Montserrat", "size": 40, "weight": 800, "color": "#FFFFFF",
+                "highlight_color": "#D946EF", "background": "#000000", "background_opacity": 0.0,
+                "outline": 3, "shadow": 5, "position": "bottom", "margin_v": 75, "animation": "pop",
+                "description": "Cyberpunk Neon — Vibrant fuchsia glow for modern gaming/tech reels"
+            },
+            "karaoke_pill": {
+                "font": "Inter", "size": 34, "weight": 700, "color": "#FFFFFF",
+                "highlight_color": "#38BDF8", "background": "#000000", "background_opacity": 0.70,
+                "outline": 0, "shadow": 0, "position": "bottom", "margin_v": 65, "animation": "none",
+                "description": "Karaoke Pill — Smooth rounded backdrop container with electric cyan highlight"
+            },
+            # Aliases & backward compatibility
+            "tiktok_pop": {
+                "font": "Arial Black", "size": 42, "weight": 900, "color": "#FFFFFF",
+                "highlight_color": "#FFDD00", "background": "#000000", "background_opacity": 0.0,
+                "outline": 4, "shadow": 4, "position": "bottom", "margin_v": 75, "animation": "pop"
+            },
             "clean": {
                 "font": "Inter", "size": 32, "weight": 700, "color": "#FFFFFF",
                 "highlight_color": "#38BDF8", "background": "#000000", "background_opacity": 0.0,
@@ -151,7 +174,7 @@ class AnimatedCaptionRenderer:
                 "outline": 3, "shadow": 3, "position": "bottom", "margin_v": 60, "animation": "pop"
             }
         }
-        return templates.get(template, templates["classic"])
+        return templates.get(template, templates["hormozi_pop"])
 
     # -----------------------------------------------
     # Merge template + user overrides
@@ -171,72 +194,123 @@ class AnimatedCaptionRenderer:
     # -----------------------------------------------
 
     def _build_header(self, opts):
-        font = opts.get("font_family") or opts.get("font") or config.SUBTITLE_FONT
+        opts = opts or {}
+        font = (
+            opts.get("font_family")
+            or opts.get("fontFamily")
+            or opts.get("font")
+            or config.SUBTITLE_FONT
+        )
         try:
-            size = int(opts.get("font_size") or opts.get("size") or 34)
+            raw_size = (
+                opts.get("font_size")
+                or opts.get("fontSize")
+                or opts.get("size")
+                or opts.get("caption_size")
+                or 34
+            )
+            size = int(raw_size)
         except (TypeError, ValueError):
             size = 34
 
         # Primary text color & active highlight color
-        text_color_hex = opts.get("text_color") or opts.get("color") or "#FFFFFF"
-        active_color_hex = opts.get("active_word_color") or opts.get("highlight_color") or "#FBBF24"
+        text_color_hex = (
+            opts.get("text_color")
+            or opts.get("textColor")
+            or opts.get("color")
+            or "#FFFFFF"
+        )
+        active_color_hex = (
+            opts.get("active_word_color")
+            or opts.get("activeWordColor")
+            or opts.get("highlight_color")
+            or "#FBBF24"
+        )
 
-        # Check highlight style
-        highlight_style = opts.get("highlight_style", "text_color")
-        if highlight_style == "accent":
-            primary_ass = self._to_ass_color(active_color_hex)
+        # Check animation & highlight style
+        anim_name = (opts.get("animation") or "pop").lower()
+        if anim_name == "none":
+            primary_ass = self._to_ass_color(text_color_hex)
             secondary_ass = self._to_ass_color(text_color_hex)
         else:
             primary_ass = self._to_ass_color(active_color_hex)
             secondary_ass = self._to_ass_color(text_color_hex)
 
         # Background / outline color & opacity
-        bg_opacity = float(opts.get("background_opacity", 0.0))
+        raw_bg_opacity = opts.get("background_opacity", opts.get("bgOpacity", 0.0))
+        try:
+            bg_opacity = float(raw_bg_opacity)
+            if bg_opacity > 1.0:
+                bg_opacity = bg_opacity / 100.0
+        except (TypeError, ValueError):
+            bg_opacity = 0.0
         bg_alpha = int((1.0 - max(0.0, min(1.0, bg_opacity))) * 255)
 
-        bg_hex = opts.get("background_color") or opts.get("background") or "#000000"
+        bg_hex = (
+            opts.get("background_color")
+            or opts.get("backgroundColor")
+            or opts.get("bgColor")
+            or opts.get("background")
+            or "#000000"
+        )
         back_ass = self._to_ass_color(bg_hex, alpha=bg_alpha)
 
-        # Outline color
-        outline_hex = opts.get("outline_color") or "#000000"
-        outline_enabled = opts.get("outline_enabled", True)
+        # Outline color & width
+        outline_hex = (
+            opts.get("outline_color")
+            or opts.get("outlineColor")
+            or opts.get("strokeColor")
+            or "#000000"
+        )
+        outline_enabled = opts.get("outline_enabled", opts.get("strokeEnabled", True))
         if not outline_enabled:
             outline_w = 0
             outline_ass = self._to_ass_color(outline_hex, alpha=255)
         else:
             try:
-                outline_w = int(opts.get("outline_width", opts.get("outline", 3)))
+                outline_w = int(opts.get("outline_width", opts.get("strokeWidth", opts.get("outline", 3))))
             except (TypeError, ValueError):
                 outline_w = 3
             outline_ass = self._to_ass_color(outline_hex, alpha=0)
 
         # Shadow color & blur/offset
-        shadow_hex = opts.get("shadow_color") or "#000000"
+        shadow_hex = (
+            opts.get("shadow_color")
+            or opts.get("shadowColor")
+            or "#000000"
+        )
         shadow_enabled = opts.get("shadow_enabled", True)
         if not shadow_enabled:
             shadow_w = 0
             shadow_ass = self._to_ass_color(shadow_hex, alpha=255)
         else:
             try:
-                shadow_w = int(opts.get("shadow_blur", opts.get("shadow", 2)))
+                shadow_w = int(opts.get("shadow_blur", opts.get("shadowBlur", opts.get("shadow", 2))))
             except (TypeError, ValueError):
                 shadow_w = 2
             shadow_ass = self._to_ass_color(shadow_hex, alpha=0)
 
         # Bold & Italic flags
-        font_weight = int(opts.get("font_weight", opts.get("weight", 800)))
+        try:
+            font_weight = int(opts.get("font_weight", opts.get("fontWeight", opts.get("weight", 800))))
+        except (TypeError, ValueError):
+            font_weight = 800
         bold_flag = -1 if font_weight >= 600 else 0
         italic_flag = -1 if bool(opts.get("italic", False)) else 0
 
         # Scale factor (100 = default)
         try:
-            scale_factor = round(float(opts.get("scale", 100)))
+            raw_scale = float(opts.get("scale", 100))
+            if 0 < raw_scale <= 5.0:
+                scale_factor = round(raw_scale * 100)
+            else:
+                scale_factor = round(raw_scale)
         except (TypeError, ValueError):
             scale_factor = 100
 
         # Letter spacing
         try:
-            spacing = int(opts.get("spacing", 0))
+            spacing = int(opts.get("letter_spacing", opts.get("letterSpacing", opts.get("spacing", 0))))
         except (TypeError, ValueError):
             spacing = 0
 
@@ -244,7 +318,7 @@ class AnimatedCaptionRenderer:
         border_style = 3 if bg_opacity >= 0.15 else 1
 
         # Alignment calculation (ASS: 1=bot-left, 2=bot-center, 3=bot-right, 4=mid-left, 5=mid-center, 6=mid-right, 7=top-left, 8=top-center, 9=top-right)
-        align_horiz = (opts.get("alignment") or "center").lower()
+        align_horiz = (opts.get("text_align") or opts.get("textAlign") or opts.get("alignment") or "center").lower()
         position = (opts.get("position") or "bottom").lower()
 
         if position == "top":
@@ -263,12 +337,29 @@ class AnimatedCaptionRenderer:
 
         alignment = base_row + col_offset
 
-        try:
-            margin_v = int(opts.get("margin_v", opts.get("margin_y", 60)))
-            if position == "lower_third":
-                margin_v = max(margin_v, 140)
-        except (TypeError, ValueError):
-            margin_v = 60
+        play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
+        play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
+
+        # Vertical margin calculation (support posYPercent from Caption Studio)
+        pos_y_pct = opts.get("posYPercent", opts.get("pos_y_percent"))
+        if pos_y_pct is not None:
+            try:
+                py = float(pos_y_pct)
+                if position == "top":
+                    margin_v = max(20, int(py / 100.0 * play_res_y))
+                elif position in ("middle", "center"):
+                    margin_v = 0
+                else:
+                    margin_v = max(20, int((100.0 - py) / 100.0 * play_res_y))
+            except (TypeError, ValueError):
+                margin_v = 60
+        else:
+            try:
+                margin_v = int(opts.get("margin_v", opts.get("margin_y", 60)))
+                if position == "lower_third":
+                    margin_v = max(margin_v, 140)
+            except (TypeError, ValueError):
+                margin_v = 60
 
         try:
             margin_l = int(opts.get("margin_l", opts.get("margin_x", 30)))
@@ -276,9 +367,6 @@ class AnimatedCaptionRenderer:
         except (TypeError, ValueError):
             margin_l = 30
             margin_r = 30
-
-        play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
-        play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
 
         return f"""[Script Info]
 ScriptType: v4.00+
@@ -296,6 +384,107 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
     # -----------------------------------------------
+    # Prepare kinetic, non-overlapping subtitle chunks
+    # -----------------------------------------------
+
+    def _prepare_kinetic_chunks(self, transcript, max_words=4):
+        """
+        Split long sentences into short 3-4 word kinetic chunks
+        and enforce strict non-overlapping timestamps so no two lines ever collide.
+        """
+        raw_chunks = []
+
+        for item in transcript:
+            seg_start = float(item.get("start", 0))
+            seg_end = float(item.get("end", 0))
+            text = (item.get("text") or "").replace("\n", " ").strip()
+            if not text or seg_end <= seg_start:
+                continue
+
+            words_data = item.get("words")
+            if words_data and isinstance(words_data, list) and len(words_data) > 0:
+                # Group word timestamps into chunks of at most max_words
+                curr_group = []
+                for w in words_data:
+                    curr_group.append(w)
+                    w_t = w.get("text", "").strip()
+                    ends_sentence = any(w_t.endswith(p) for p in (".", "!", "?", "।", "|"))
+                    if len(curr_group) >= max_words or ends_sentence:
+                        c_start = float(curr_group[0].get("start", seg_start))
+                        c_end = float(curr_group[-1].get("end", seg_end))
+                        if c_end > c_start:
+                            raw_chunks.append({
+                                "start": c_start,
+                                "end": c_end,
+                                "text": " ".join(x.get("text", "") for x in curr_group).strip(),
+                                "words": list(curr_group)
+                            })
+                        curr_group = []
+                if curr_group:
+                    c_start = float(curr_group[0].get("start", seg_start))
+                    c_end = float(curr_group[-1].get("end", seg_end))
+                    if c_end > c_start:
+                        raw_chunks.append({
+                            "start": c_start,
+                            "end": c_end,
+                            "text": " ".join(x.get("text", "") for x in curr_group).strip(),
+                            "words": list(curr_group)
+                        })
+            else:
+                words = text.split()
+                if not words:
+                    continue
+                # Split into slices of max_words
+                groups = [words[i:i + max_words] for i in range(0, len(words), max_words)]
+                total_dur = max(0.4, seg_end - seg_start)
+                step_dur = total_dur / len(groups)
+                for g_idx, grp in enumerate(groups):
+                    g_start = seg_start + g_idx * step_dur
+                    g_end = seg_start + (g_idx + 1) * step_dur
+                    raw_chunks.append({
+                        "start": g_start,
+                        "end": g_end,
+                        "text": " ".join(grp),
+                        "words": []
+                    })
+
+        if not raw_chunks:
+            return []
+
+        # Sort strictly by start time
+        raw_chunks.sort(key=lambda c: c["start"])
+
+        # Enforce strict non-overlapping intervals and sequential gap
+        sanitized = []
+        prev_end = 0.0
+        for i, chunk in enumerate(raw_chunks):
+            start = round(chunk["start"], 2)
+            if start < prev_end:
+                start = round(prev_end + 0.04, 2)
+
+            end = round(chunk["end"], 2)
+            if end <= start:
+                end = round(start + 0.4, 2)
+
+            # Cap excessive line linger (max 2.2s per 3-4 word chunk)
+            if end - start > 2.2:
+                end = round(start + 2.2, 2)
+
+            if i + 1 < len(raw_chunks):
+                next_start = round(raw_chunks[i + 1]["start"], 2)
+                # If next chunk would start at or before current end, clamp current end
+                if next_start <= end:
+                    end = round(max(start + 0.15, next_start - 0.05), 2)
+
+            chunk["start"] = start
+            chunk["end"] = end
+            if chunk["end"] > chunk["start"]:
+                sanitized.append(chunk)
+                prev_end = chunk["end"]
+
+        return sanitized
+
+    # -----------------------------------------------
     # Build ASS dialogue with accurate word-by-word \k timing
     # -----------------------------------------------
 
@@ -303,7 +492,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         anim_name = opts.get("animation", "pop")
         anim = self._animation_block(anim_name)
         lines = []
-        min_word_ms = int(opts.get("min_word_ms", 60))
 
         # Check if manual coordinates were supplied
         pos_override = ""
@@ -315,30 +503,53 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             except Exception:
                 pos_override = ""
 
-        for item in transcript:
-            start = float(item.get("start", 0))
-            end = float(item.get("end", 0))
-            text = (item.get("text") or "").replace("\n", " ").strip()
-            if not text:
+        # Break long sentences into short kinetic chunks (2-4 words) with strict non-overlap
+        chunks = self._prepare_kinetic_chunks(transcript, max_words=4)
+
+        for chunk in chunks:
+            start = chunk["start"]
+            end = chunk["end"]
+            text = chunk["text"]
+            dur_total_cs = max(1, int((end - start) * 100))
+
+            words_data = chunk.get("words")
+            if anim_name == "none":
+                # Static subtitle line without karaoke wipes
+                dialogue = (
+                    f"Dialogue: 0,{self._format_time(start)},{self._format_time(end)},"
+                    f"Caption,,0,0,0,,{pos_override}{text}"
+                )
+                lines.append(dialogue)
                 continue
 
-            words_data = item.get("words")
-            if words_data and isinstance(words_data, list) and len(words_data) > 0:
-                # Use exact word timestamps
+            if words_data and len(words_data) > 0:
                 karaoke_parts = []
+                w_durs = []
                 for w in words_data:
-                    w_text = w.get("text", "")
-                    w_start = float(w.get("start", start))
-                    w_end = float(w.get("end", end))
-                    dur_cs = max(1, round((w_end - w_start) * 100))
-                    karaoke_parts.append(r"{\k%d}%s" % (dur_cs, w_text))
+                    w_s = float(w.get("start", start))
+                    w_e = float(w.get("end", end))
+                    w_durs.append(max(1, int((w_e - w_s) * 100)))
+
+                sum_d = sum(w_durs) or 1
+                scaled_durs = [max(1, int((d / sum_d) * dur_total_cs)) for d in w_durs]
+                diff = dur_total_cs - sum(scaled_durs)
+                scaled_durs[-1] = max(1, scaled_durs[-1] + diff)
+
+                for w, d_cs in zip(words_data, scaled_durs):
+                    w_text = w.get("text", "").strip()
+                    if w_text:
+                        karaoke_parts.append(r"{\k%d}%s" % (d_cs, w_text))
                 karaoke = " ".join(karaoke_parts)
             else:
-                # Distribute evenly across words
                 words = text.split()
-                seg_dur_ms = max(int((end - start) * 1000), len(words) * min_word_ms)
-                per_word_cs = max(1, (seg_dur_ms // max(len(words), 1)) // 10)
-                karaoke = "".join(r"{\k%d}%s " % (per_word_cs, w) for w in words).strip()
+                if not words:
+                    continue
+                per_word_cs = max(1, dur_total_cs // len(words))
+                karaoke_parts = []
+                for idx, w in enumerate(words):
+                    cs = per_word_cs if idx < len(words) - 1 else max(1, dur_total_cs - per_word_cs * (len(words) - 1))
+                    karaoke_parts.append(r"{\k%d}%s" % (cs, w))
+                karaoke = " ".join(karaoke_parts)
 
             dialogue = (
                 f"Dialogue: 0,{self._format_time(start)},{self._format_time(end)},"

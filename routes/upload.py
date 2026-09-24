@@ -112,3 +112,82 @@ def upload_video():
             "success": False,
             "error": str(e)
         }), 500
+
+
+@upload_bp.route("/subtitle", methods=["POST"])
+@upload_bp.route("/transcript", methods=["POST"])
+def upload_subtitle():
+    """Accept an uploaded subtitle/transcript file (.srt, .vtt, .json, .txt), parse segments and cache."""
+    file = None
+    for field in ("subtitle", "transcript", "file"):
+        if field in request.files:
+            file = request.files[field]
+            break
+
+    if not file or file.filename == "":
+        return jsonify({"success": False, "error": "No subtitle or transcript file provided"}), 400
+
+    import re
+    from ai.transcript import TranscriptManager
+    from ai.subtitle_builder import SubtitleBuilder
+
+    raw_name = Path(file.filename).name
+    # Clean filename
+    clean_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", raw_name).strip() or "uploaded_subtitles.srt"
+    ext = Path(clean_name).suffix.lower()
+
+    if ext not in [".srt", ".vtt", ".json", ".txt"]:
+        return jsonify({"success": False, "error": f"Unsupported subtitle format: '{ext}'. Please upload .srt, .vtt, .json, or .txt."}), 400
+
+    config.SUBTITLE_DIR.mkdir(parents=True, exist_ok=True)
+    config.TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+
+    dest_path = config.SUBTITLE_DIR / clean_name
+    file.save(str(dest_path))
+
+    try:
+        manager = TranscriptManager()
+        manager.load(dest_path)
+
+        segments = manager.segments
+        segment_count = len(segments)
+        duration = round(float(segments[-1]["end"]), 2) if segments else 0.0
+        word_count = len(manager.full_text.split())
+        preview = manager.full_text[:250] + ("..." if len(manager.full_text) > 250 else "")
+
+        # Guarantee both .json transcript and .srt exist for downstream modules
+        stem = Path(clean_name).stem
+        json_path = config.TRANSCRIPT_DIR / f"{stem}.json"
+        srt_path = config.SUBTITLE_DIR / f"{stem}.srt"
+        vtt_path = config.SUBTITLE_DIR / f"{stem}.vtt"
+
+        builder = SubtitleBuilder()
+        if segments:
+            builder.save_all(segments, srt_path, vtt_path)
+            with open(json_path, "w", encoding="utf-8") as jf:
+                import json
+                json.dump(segments, jf, ensure_ascii=False, indent=2)
+
+        return jsonify({
+            "success": True,
+            "filename": clean_name,
+            "stem": stem,
+            "format": ext.lstrip("."),
+            "segment_count": segment_count,
+            "segments_count": segment_count,
+            "duration": duration,
+            "word_count": word_count,
+            "preview": preview,
+            "text_preview": preview,
+            "srt_url": f"/download/subtitle/{stem}.srt",
+            "vtt_url": f"/download/subtitle/{stem}.vtt",
+            "json_url": f"/download/transcript/{stem}.json",
+            "message": f"Successfully loaded {segment_count} subtitle segments ({duration}s duration)."
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Failed to parse subtitle file: {str(e)}"
+        }), 500
+

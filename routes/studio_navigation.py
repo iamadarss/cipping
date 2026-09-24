@@ -32,27 +32,7 @@ def navigate_to_module():
         return jsonify({"success": False, "error": "Project not found"}), 404
 
     if caption_style:
-        style = CaptionStyleConfig(
-            id=caption_style.get("id", "custom"),
-            name=caption_style.get("name", "Custom"),
-            font_family=caption_style.get("font_family", "Arial Black"),
-            font_size=int(caption_style.get("font_size", 34)),
-            font_weight=int(caption_style.get("font_weight", 800)),
-            text_color=caption_style.get("text_color", "#FFFFFF"),
-            active_word_color=caption_style.get("active_word_color", "#fbbf24"),
-            background_color=caption_style.get("background_color", "#000000"),
-            background_opacity=float(caption_style.get("background_opacity", 0.0)),
-            outline_color=caption_style.get("outline_color", "#000000"),
-            outline_width=int(caption_style.get("outline_width", 3)),
-            shadow_color=caption_style.get("shadow_color", "#000000"),
-            shadow_blur=int(caption_style.get("shadow_blur", 4)),
-            shadow_offset_y=int(caption_style.get("shadow_offset_y", 2)),
-            position=caption_style.get("position", "bottom"),
-            animation=caption_style.get("animation", "pop"),
-            letter_spacing=int(caption_style.get("letter_spacing", 0)),
-            line_height=float(caption_style.get("line_height", 1.2)),
-            max_lines=int(caption_style.get("max_lines", 2)),
-        )
+        style = _parse_style_config(caption_style)
         project_state.set_caption_style(project_id, style)
 
     project_state.navigate_to(project_id, target_module, {
@@ -201,27 +181,7 @@ def caption_style_api():
         if not project_id:
             return jsonify({"success": False, "error": "project_id required"}), 400
 
-        style = CaptionStyleConfig(
-            id=style_data.get("id", "custom"),
-            name=style_data.get("name", "Custom"),
-            font_family=style_data.get("font_family", "Arial Black"),
-            font_size=int(style_data.get("font_size", 34)),
-            font_weight=int(style_data.get("font_weight", 800)),
-            text_color=style_data.get("text_color", "#FFFFFF"),
-            active_word_color=style_data.get("active_word_color", "#fbbf24"),
-            background_color=style_data.get("background_color", "#000000"),
-            background_opacity=float(style_data.get("background_opacity", 0.0)),
-            outline_color=style_data.get("outline_color", "#000000"),
-            outline_width=int(style_data.get("outline_width", 3)),
-            shadow_color=style_data.get("shadow_color", "#000000"),
-            shadow_blur=int(style_data.get("shadow_blur", 4)),
-            shadow_offset_y=int(style_data.get("shadow_offset_y", 2)),
-            position=style_data.get("position", "bottom"),
-            animation=style_data.get("animation", "pop"),
-            letter_spacing=int(style_data.get("letter_spacing", 0)),
-            line_height=float(style_data.get("line_height", 1.2)),
-            max_lines=int(style_data.get("max_lines", 2)),
-        )
+        style = _parse_style_config(style_data)
         project_state.set_caption_style(project_id, style)
         return jsonify({"success": True, "style": _style_to_dict(style)})
 
@@ -402,4 +362,81 @@ def _style_to_dict(style: Optional[CaptionStyleConfig]) -> Optional[dict]:
         "letter_spacing": style.letter_spacing,
         "line_height": style.line_height,
         "max_lines": style.max_lines,
+        # CamelCase aliases for client compatibility
+        "fontFamily": style.font_family,
+        "fontSize": style.font_size,
+        "fontWeight": style.font_weight,
+        "textColor": style.text_color,
+        "activeWordColor": style.active_word_color,
+        "backgroundColor": style.background_color,
+        "backgroundOpacity": style.background_opacity,
+        "outlineColor": style.outline_color,
+        "outlineWidth": style.outline_width,
+        "shadowColor": style.shadow_color,
+        "shadowBlur": style.shadow_blur,
+        "shadowOffsetY": style.shadow_offset_y,
+        "letterSpacing": style.letter_spacing,
+        "lineHeight": style.line_height,
+        "maxLines": style.max_lines,
     }
+
+
+def _parse_style_config(caption_style: dict) -> CaptionStyleConfig:
+    """Safely parse CaptionStyleConfig supporting both camelCase and snake_case keys."""
+    if not isinstance(caption_style, dict):
+        return CaptionStyleConfig(id="custom", name="Custom")
+
+    def _to_int(val, default):
+        try:
+            return int(val) if val is not None and val != "" else default
+        except (TypeError, ValueError):
+            return default
+
+    def _to_float(val, default):
+        try:
+            return float(val) if val is not None and val != "" else default
+        except (TypeError, ValueError):
+            return default
+
+    font_family = caption_style.get("font_family") or caption_style.get("fontFamily") or "Arial Black"
+    font_size = _to_int(caption_style.get("font_size") or caption_style.get("fontSize"), 34)
+    font_weight = _to_int(caption_style.get("font_weight") or caption_style.get("fontWeight"), 800)
+    text_color = caption_style.get("text_color") or caption_style.get("textColor") or "#FFFFFF"
+    active_word_color = caption_style.get("active_word_color") or caption_style.get("activeWordColor") or "#fbbf24"
+    background_color = caption_style.get("background_color") or caption_style.get("backgroundColor") or caption_style.get("bgColor") or "#000000"
+    background_opacity = _to_float(caption_style.get("background_opacity") or caption_style.get("backgroundOpacity") or caption_style.get("bgOpacity"), 0.0)
+    if background_opacity > 1.0:
+        background_opacity = background_opacity / 100.0
+
+    outline_color = caption_style.get("outline_color") or caption_style.get("outlineColor") or caption_style.get("strokeColor") or "#000000"
+    outline_width = _to_int(caption_style.get("outline_width") or caption_style.get("outlineWidth") or caption_style.get("strokeWidth"), 3)
+    shadow_color = caption_style.get("shadow_color") or caption_style.get("shadowColor") or "#000000"
+    shadow_blur = _to_int(caption_style.get("shadow_blur") or caption_style.get("shadowBlur"), 4)
+    shadow_offset_y = _to_int(caption_style.get("shadow_offset_y") or caption_style.get("shadowOffsetY") or caption_style.get("shadowY"), 2)
+    position = caption_style.get("position") or "bottom"
+    animation = caption_style.get("animation") or "pop"
+    letter_spacing = _to_int(caption_style.get("letter_spacing") or caption_style.get("letterSpacing"), 0)
+    line_height = _to_float(caption_style.get("line_height") or caption_style.get("lineHeight"), 1.2)
+    max_lines = _to_int(caption_style.get("max_lines") or caption_style.get("maxLines"), 2)
+
+    return CaptionStyleConfig(
+        id=caption_style.get("id", "custom"),
+        name=caption_style.get("name", "Custom"),
+        font_family=font_family,
+        font_size=font_size,
+        font_weight=font_weight,
+        text_color=text_color,
+        active_word_color=active_word_color,
+        background_color=background_color,
+        background_opacity=background_opacity,
+        outline_color=outline_color,
+        outline_width=outline_width,
+        shadow_color=shadow_color,
+        shadow_blur=shadow_blur,
+        shadow_offset_y=shadow_offset_y,
+        position=position,
+        animation=animation,
+        letter_spacing=letter_spacing,
+        line_height=line_height,
+        max_lines=max_lines,
+    )

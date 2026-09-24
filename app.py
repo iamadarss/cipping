@@ -57,7 +57,7 @@ from ai.subtitle_builder import SubtitleBuilder
 from ai.subtitle_renderer import SubtitleRenderer
 from ai.ass_builder import ASSBuilder
 
-from flask import Flask
+from flask import Flask, send_from_directory
 from extensions import db
 
 
@@ -322,6 +322,22 @@ def create_app():
     app.register_blueprint(youtube_bp)
     app.register_blueprint(studio_nav_bp)
     app.register_blueprint(projects_bp)
+
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(
+            os.path.join(app.root_path, "static"),
+            "favicon.ico",
+            mimetype="image/vnd.microsoft.icon",
+        )
+
+    @app.route("/favicon.svg")
+    def favicon_svg():
+        return send_from_directory(
+            os.path.join(app.root_path, "static"),
+            "favicon.svg",
+            mimetype="image/svg+xml",
+        )
 
     return app
 

@@ -3,9 +3,12 @@
 import io
 import os
 import re
+import html
+import json
 import subprocess
 import sys
 import zipfile
+import urllib.request
 from urllib.parse import urlparse
 from datetime import datetime
 
@@ -157,6 +160,7 @@ def final_video(filename):
 
 
 @download_bp.route("/subtitle/<filename>")
+@download_bp.route("/subtitles/<filename>")
 def subtitle(filename):
     return safe_send(config.SUBTITLE_DIR, filename)
 
@@ -376,9 +380,362 @@ def _format_views(count):
     return f"{count:,} views"
 
 
+LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "Hindi",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "zh": "Chinese",
+    "zh-Hans": "Chinese (Simplified)",
+    "zh-Hant": "Chinese (Traditional)",
+    "ar": "Arabic",
+    "bn": "Bengali",
+    "pa": "Punjabi",
+    "mr": "Marathi",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "ur": "Urdu",
+    "gu": "Gujarati",
+    "kn": "Kannada",
+    "ml": "Malayalam",
+    "tr": "Turkish",
+    "vi": "Vietnamese",
+    "id": "Indonesian",
+}
+
+
+def _get_lang_label(code: str) -> str:
+    """Return human readable label for a language code."""
+    if not code:
+        return "Unknown"
+    base = code.split("-")[0].lower()
+    name = LANGUAGE_NAMES.get(code) or LANGUAGE_NAMES.get(base) or code.upper()
+    if "-" in code and code not in LANGUAGE_NAMES:
+        return f"{name} ({code})"
+    return name
+
+
+def _json3_to_srt(json_data):
+    """Convert YouTube JSON3 caption events into standard SRT subtitles."""
+    events = json_data.get("events", []) if isinstance(json_data, dict) else []
+    srt_lines = []
+    idx = 1
+    for ev in events:
+        segs = ev.get("segs", [])
+        text = "".join(s.get("utf8", "") for s in segs).strip()
+        if not text:
+            continue
+        text = html.unescape(text)
+        start_ms = ev.get("tStartMs", 0)
+        dur_ms = ev.get("dDurationMs", 2000)
+        end_ms = start_ms + dur_ms
+
+        def ms_to_time(ms):
+            s, ms = divmod(int(ms), 1000)
+            m, s = divmod(s, 60)
+            h, m = divmod(m, 60)
+            return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+        srt_lines.append(f"{idx}\n{ms_to_time(start_ms)} --> {ms_to_time(end_ms)}\n{text}\n")
+        idx += 1
+    return "\n".join(srt_lines)
+
+
+def _json3_to_vtt(json_data):
+    """Convert YouTube JSON3 caption events into standard WebVTT subtitles."""
+    events = json_data.get("events", []) if isinstance(json_data, dict) else []
+    vtt_lines = ["WEBVTT\n"]
+    for ev in events:
+        segs = ev.get("segs", [])
+        text = "".join(s.get("utf8", "") for s in segs).strip()
+        if not text:
+            continue
+        text = html.unescape(text)
+        start_ms = ev.get("tStartMs", 0)
+        dur_ms = ev.get("dDurationMs", 2000)
+        end_ms = start_ms + dur_ms
+
+        def ms_to_vtt_time(ms):
+            s, ms = divmod(int(ms), 1000)
+            m, s = divmod(s, 60)
+            h, m = divmod(m, 60)
+            return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+
+        vtt_lines.append(f"{ms_to_vtt_time(start_ms)} --> {ms_to_vtt_time(end_ms)}\n{text}\n")
+    return "\n".join(vtt_lines)
+
+
+def _vtt_to_srt(vtt_text):
+    """Convert WebVTT text into standard SRT."""
+    lines = vtt_text.splitlines()
+    blocks = []
+    current_block = []
+    for line in lines:
+        if line.startswith("WEBVTT") or line.startswith("NOTE"):
+            continue
+        if line.strip() == "":
+            if current_block:
+                blocks.append(current_block)
+                current_block = []
+        else:
+            current_block.append(line)
+    if current_block:
+        blocks.append(current_block)
+
+    srt_entries = []
+    idx = 1
+    for block in blocks:
+        ts_idx = -1
+        for i, l in enumerate(block):
+            if "-->" in l:
+                ts_idx = i
+                break
+        if ts_idx == -1:
+            continue
+        ts_line = block[ts_idx]
+        m = re.search(r"(\d{1,2}:)?(\d{2}:\d{2}[\.,]\d{3})\s*-->\s*(\d{1,2}:)?(\d{2}:\d{2}[\.,]\d{3})", ts_line)
+        if not m:
+            continue
+        def fix_ts(h, rest):
+            rest = rest.replace(".", ",")
+            if not h:
+                return "00:" + rest
+            h = h.rstrip(":")
+            return f"{int(h):02d}:{rest}"
+
+        start_ts = fix_ts(m.group(1), m.group(2))
+        end_ts = fix_ts(m.group(3), m.group(4))
+        content = "\n".join(block[ts_idx + 1:])
+        content = re.sub(r"<[^>]+>", "", content).strip()
+        if content:
+            srt_entries.append(f"{idx}\n{start_ts} --> {end_ts}\n{content}\n")
+            idx += 1
+    return "\n".join(srt_entries)
+
+
+def _xml_to_srt(xml_text: str) -> str:
+    """Convert YouTube XML/srv1/srv2/srv3/ttml timedtext into standard SRT."""
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(xml_text)
+        srt_lines = []
+        idx = 1
+        for node in root.findall(".//text"):
+            start_s = float(node.attrib.get("start", 0))
+            dur_s = float(node.attrib.get("dur", 2))
+            end_s = start_s + dur_s
+            text = html.unescape("".join(node.itertext())).strip()
+            if not text:
+                continue
+
+            def sec_to_time(s):
+                sec, ms = divmod(s, 1.0)
+                sec = int(sec)
+                ms = int(ms * 1000)
+                m, sec = divmod(sec, 60)
+                h, m = divmod(m, 60)
+                return f"{h:02d}:{m:02d}:{sec:02d},{ms:03d}"
+
+            srt_lines.append(f"{idx}\n{sec_to_time(start_s)} --> {sec_to_time(end_s)}\n{text}\n")
+            idx += 1
+        return "\n".join(srt_lines)
+    except Exception:
+        return ""
+
+
+def _fetch_youtube_captions_direct(info: dict, target_lang: str = "en", output_format: str = "srt", output_path=None):
+    """
+    Directly and reliably download subtitles from YouTube metadata with anti-429 resilience.
+    Uses browser impersonation headers and automatic native original track fallback.
+    """
+    manual_subs = info.get("subtitles") or {}
+    auto_subs = info.get("automatic_captions") or {}
+
+    if not manual_subs and not auto_subs:
+        return None
+
+    # Step 1: Find candidate track
+    selected_track = None
+    selected_lang = None
+
+    # A) Try exact manual track
+    if target_lang in manual_subs:
+        selected_track = manual_subs[target_lang]
+        selected_lang = target_lang
+    else:
+        # B) Try base manual track (e.g. 'en-US' -> 'en')
+        for l, fmts in manual_subs.items():
+            if l.split("-")[0] == target_lang.split("-")[0]:
+                selected_track = fmts
+                selected_lang = l
+                break
+
+    # C) If not in manual, check auto-captions
+    if not selected_track:
+        if target_lang in auto_subs:
+            selected_track = auto_subs[target_lang]
+            selected_lang = target_lang
+        else:
+            for l, fmts in auto_subs.items():
+                if l.split("-")[0] == target_lang.split("-")[0]:
+                    selected_track = fmts
+                    selected_lang = l
+                    break
+
+    # Find the original native track for fallback
+    orig_track = None
+    orig_lang = None
+    for l, fmts in auto_subs.items():
+        if fmts and "tlang=" not in fmts[0].get("url", ""):
+            orig_track = fmts
+            orig_lang = l
+            break
+    if not orig_track and manual_subs:
+        orig_lang, orig_track = list(manual_subs.items())[0]
+
+    # Helper to download and parse a track
+    def try_download_track(fmts):
+        if not fmts:
+            return None
+        # Prefer json3 or vtt
+        best_fmt = next((f for f in fmts if f.get("ext") == "json3"), None)
+        is_json = True
+        if not best_fmt:
+            best_fmt = next((f for f in fmts if f.get("ext") == "vtt"), fmts[0])
+            is_json = best_fmt.get("ext") == "json3" or "fmt=json3" in best_fmt.get("url", "")
+
+        url = best_fmt.get("url")
+        if not url:
+            return None
+
+        # Add headers to avoid 429
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Referer": "https://www.youtube.com/",
+            "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
+            "Accept": "*/*"
+        }
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                raw_bytes = resp.read()
+                raw_text = raw_bytes.decode("utf-8", errors="ignore")
+                if is_json or raw_text.strip().startswith("{"):
+                    data = json.loads(raw_text)
+                    if output_format == "vtt":
+                        return _json3_to_vtt(data)
+                    return _json3_to_srt(data)
+                elif raw_text.startswith("WEBVTT"):
+                    if output_format == "srt":
+                        return _vtt_to_srt(raw_text)
+                    return raw_text
+                elif "<transcript" in raw_text or "<text" in raw_text:
+                    parsed_srt = _xml_to_srt(raw_text)
+                    if output_format == "vtt":
+                        return _vtt_to_srt(parsed_srt) if parsed_srt else raw_text
+                    return parsed_srt
+                else:
+                    if output_format == "vtt":
+                        return _vtt_to_srt(raw_text)
+                    return raw_text
+        except Exception as e:
+            print(f"[SUBTITLE_DIRECT] Download attempt failed for URL: {e}")
+            return None
+
+    # Attempt 1: Try the selected track
+    caption_content = None
+    if selected_track:
+        caption_content = try_download_track(selected_track)
+
+    # Attempt 2: If attempt 1 failed (e.g. 429 on auto-translate), fallback to native original track!
+    if not caption_content and orig_track and orig_track != selected_track:
+        print(f"[SUBTITLE_DIRECT] Fallback to original native track ({orig_lang})")
+        caption_content = try_download_track(orig_track)
+
+    # Attempt 3: If still nothing, try first available track
+    if not caption_content:
+        all_tracks = list(manual_subs.values()) + list(auto_subs.values())
+        for tr in all_tracks[:3]:
+            caption_content = try_download_track(tr)
+            if caption_content:
+                break
+
+    if not caption_content:
+        return None
+
+    # Write to target_path if provided
+    if output_path:
+        out_p = Path(output_path)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        out_p.write_text(caption_content, encoding="utf-8")
+        return out_p
+
+    return caption_content
+
+
+def _extract_available_subtitles(info: dict) -> list[dict]:
+    """Extract list of available subtitle tracks (manual and auto) with metadata."""
+    subs_map = {}
+
+    # 1. Manual subtitles (highest priority)
+    for lang, fmts in (info.get("subtitles") or {}).items():
+        if not lang or lang.startswith("live_"):
+            continue
+        label = _get_lang_label(lang)
+        subs_map[lang] = {
+            "lang": lang,
+            "label": label,
+            "is_auto": False,
+            "is_original": True,
+            "display": f"{label} (Manual)",
+        }
+
+    # 2. Automatic captions
+    for lang, fmts in (info.get("automatic_captions") or {}).items():
+        if not lang or lang.startswith("live_"):
+            continue
+        if lang not in subs_map:
+            label = _get_lang_label(lang)
+            # Detect if this is the native audio track (no tlang in URL)
+            is_orig = False
+            if fmts and isinstance(fmts, list) and len(fmts) > 0:
+                first_url = fmts[0].get("url", "")
+                if "tlang=" not in first_url:
+                    is_orig = True
+
+            if is_orig:
+                display_str = f"{label} (Original Audio)"
+            else:
+                display_str = f"{label} (Auto-generated)"
+
+            subs_map[lang] = {
+                "lang": lang,
+                "label": label,
+                "is_auto": True,
+                "is_original": is_orig,
+                "display": display_str,
+            }
+
+    def sort_key(item):
+        orig_prio = 0 if item.get("is_original") else 1
+        manual_prio = 0 if not item.get("is_auto") else 1
+        code = item["lang"].lower()
+        lang_prio = 0 if code.startswith("en") else (1 if code.startswith("hi") else 2)
+        return (orig_prio, manual_prio, lang_prio, item["label"])
+
+    sub_list = sorted(subs_map.values(), key=sort_key)
+    return sub_list
+
+
 @download_bp.route("/analyze", methods=["POST"])
 def analyze_youtube_url():
-    """Analyze a YouTube URL to retrieve metadata, available formats, and playlist info."""
+    """Analyze a YouTube URL to retrieve metadata, available formats, subtitles, and playlist info."""
     payload = request.get_json(silent=True) or {}
     url = payload.get("url", "").strip()
 
@@ -408,7 +765,51 @@ def analyze_youtube_url():
         duration_str = _format_duration(duration)
         view_count = info.get("view_count") or 0
         view_count_str = _format_views(view_count)
+        # Detect highest-resolution thumbnail and aspect ratio
+        raw_thumbs = info.get("thumbnails") or []
         thumbnail = info.get("thumbnail") or ""
+        thumb_width = None
+        thumb_height = None
+
+        if raw_thumbs:
+            # Sort by area (width * height), preference, then width
+            def _thumb_score(t):
+                w = t.get("width") or 0
+                h = t.get("height") or 0
+                p = t.get("preference") or 0
+                return (w * h, p, w)
+
+            sorted_thumbs = sorted(raw_thumbs, key=_thumb_score, reverse=True)
+            for t in sorted_thumbs:
+                t_url = t.get("url")
+                if t_url and ("http://" in t_url or "https://" in t_url):
+                    thumbnail = t_url
+                    thumb_width = t.get("width")
+                    thumb_height = t.get("height")
+                    break
+
+        video_w = info.get("width")
+        video_h = info.get("height")
+        is_vertical = False
+        if thumb_width and thumb_height:
+            is_vertical = (thumb_height > thumb_width)
+        elif video_w and video_h:
+            is_vertical = (video_h > video_w)
+
+        thumb_res_str = ""
+        if thumb_width and thumb_height:
+            thumb_res_str = f"{thumb_width} × {thumb_height}"
+        elif video_w and video_h:
+            thumb_res_str = f"{video_w} × {video_h}"
+
+        # Extract available captions / subtitles
+        subtitles = _extract_available_subtitles(info)
+        has_subtitles = len(subtitles) > 0
+        default_sub_lang = "en"
+        if subtitles:
+            # Pick first original/manual track as default to avoid 429 translation errors
+            orig_match = next((s["lang"] for s in subtitles if s.get("is_original")), None)
+            default_sub_lang = orig_match or subtitles[0]["lang"]
 
         # Calculate estimated sizes based on duration
         dur_mins = max(1, duration // 60)
@@ -448,9 +849,16 @@ def analyze_youtube_url():
             "view_count": view_count,
             "view_count_str": view_count_str,
             "thumbnail": thumbnail,
+            "thumbnail_width": thumb_width,
+            "thumbnail_height": thumb_height,
+            "thumbnail_resolution": thumb_res_str,
+            "is_vertical": is_vertical,
             "formats": formats,
             "playlist_entries": playlist_entries,
             "video_count": len(playlist_entries) if is_playlist else 1,
+            "has_subtitles": has_subtitles,
+            "subtitles": subtitles,
+            "default_subtitle_lang": default_sub_lang,
         })
     except Exception as exc:
         err_msg = str(exc)
@@ -463,8 +871,8 @@ def analyze_youtube_url():
         return jsonify({"success": False, "error": f"Failed to analyze URL: {err_msg}"}), 400
 
 
-def _execute_download(task_id, ydl_opts, url, fmt, quality):
-    """Background download worker with progress updates."""
+def _execute_download(task_id, ydl_opts, url, fmt, quality, download_subtitles=False, subtitle_format="srt", subtitle_lang="en"):
+    """Background download worker with progress updates and subtitle capture."""
     with _downloads_lock:
         if task_id not in _active_downloads:
             return
@@ -509,6 +917,33 @@ def _execute_download(task_id, ydl_opts, url, fmt, quality):
                 t["filename"] = match.name
                 t["path"] = f"/download/input/{match.name}"
                 t["size_str"] = _format_size(match.stat().st_size)
+
+            # Check for subtitle files if subtitles were requested
+            if download_subtitles or fmt == "subtitles":
+                sub_stem = match.stem if match else (re.sub(r"[^A-Za-z0-9._-]+", "_", title).strip("._") or "youtube_media")
+                clean_sub_name = f"{sub_stem}.{subtitle_format}"
+                clean_input_sub = config.INPUT_DIR / clean_sub_name
+                clean_output_sub = config.SUBTITLE_DIR / clean_sub_name
+
+                # Use resilient direct subtitle fetcher
+                if info and (not clean_input_sub.exists() or clean_input_sub.stat().st_size == 0):
+                    _fetch_youtube_captions_direct(info, subtitle_lang, subtitle_format, clean_input_sub)
+
+                if clean_input_sub.exists() and clean_input_sub.stat().st_size > 0:
+                    try:
+                        import shutil
+                        config.SUBTITLE_DIR.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(clean_input_sub, clean_output_sub)
+                    except Exception:
+                        pass
+
+                    t["subtitle_file"] = clean_input_sub.name
+                    t["subtitle_path"] = f"/download/input/{clean_input_sub.name}"
+                    t["has_subtitles"] = True
+                    if fmt == "subtitles":
+                        t["filename"] = clean_input_sub.name
+                        t["path"] = f"/download/input/{clean_input_sub.name}"
+                        t["size_str"] = _format_size(clean_input_sub.stat().st_size)
     except Exception as exc:
         err_msg = str(exc)
         if "bot" in err_msg.lower() or "confirm you're not a bot" in err_msg.lower():
@@ -527,15 +962,18 @@ def _execute_download(task_id, ydl_opts, url, fmt, quality):
 
 @download_bp.route("/youtube", methods=["POST"])
 def download_youtube_video():
-    """Download a YouTube video to the input folder for later processing."""
+    """Download a YouTube video, audio, or captions to the input folder for later processing."""
     payload = request.get_json(silent=True) or {}
     url = payload.get("url", "").strip()
-    fmt = payload.get("format", "video")  # "video" or "audio"
+    fmt = payload.get("format", "video")  # "video", "audio", or "subtitles"
     quality = payload.get("quality", "best")  # "best", "1080p", "720p", "480p", "360p"
     audio_format = payload.get("audio_format", "mp3")  # mp3, m4a, wav, flac
     limit = payload.get("limit")  # max videos for batch downloads
     is_async = payload.get("async", True)
     title_hint = payload.get("title", "YouTube Video")
+    download_subtitles = payload.get("download_subtitles", False)
+    subtitle_lang = payload.get("subtitle_lang", "en")
+    subtitle_format = payload.get("subtitle_format", "srt")
 
     if not _is_valid_youtube_url(url):
         return jsonify({"success": False, "error": "Please provide a valid YouTube URL."}), 400
@@ -558,6 +996,10 @@ def download_youtube_video():
             "preferredquality": quality_map.get(codec, "192"),
         }]
         merge_format = None
+    elif fmt == "subtitles":
+        format_selector = None
+        postprocessors = []
+        merge_format = None
     else:
         quality_map = {
             "best": "bestvideo+bestaudio/best",
@@ -572,14 +1014,20 @@ def download_youtube_video():
 
     ydl_opts = {
         "outtmpl": output_template,
-        "format": format_selector,
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
-        "merge_output_format": merge_format,
         "restrictfilenames": False,
         "postprocessors": postprocessors,
     }
+    if format_selector:
+        ydl_opts["format"] = format_selector
+    if merge_format:
+        ydl_opts["merge_output_format"] = merge_format
+
+    # Subtitles are downloaded cleanly and resiliently by _fetch_youtube_captions_direct in _execute_download
+    ydl_opts["writesubtitles"] = False
+    ydl_opts["writeautomaticsub"] = False
 
     if config.FFMPEG_PATH and Path(config.FFMPEG_PATH).exists():
         ydl_opts["ffmpeg_location"] = str(config.FFMPEG_PATH)
@@ -595,6 +1043,8 @@ def download_youtube_video():
         "title": title_hint,
         "format": fmt,
         "quality": quality,
+        "download_subtitles": download_subtitles,
+        "subtitle_lang": subtitle_lang,
         "status": "queued",
         "percent": 0.0,
         "speed_str": "0 KB/s",
@@ -603,6 +1053,7 @@ def download_youtube_video():
         "total_str": "--",
         "filename": None,
         "path": None,
+        "subtitle_file": None,
         "error": None,
         "created_at": time.time(),
     }
@@ -614,7 +1065,7 @@ def download_youtube_video():
         # Run in background thread
         thread = threading.Thread(
             target=_execute_download,
-            args=(task_id, ydl_opts, url, fmt, quality),
+            args=(task_id, ydl_opts, url, fmt, quality, download_subtitles, subtitle_format, subtitle_lang),
             daemon=True,
         )
         thread.start()
@@ -623,10 +1074,11 @@ def download_youtube_video():
             "task_id": task_id,
             "message": "Download task queued.",
             "title": title_hint,
+            "download_subtitles": download_subtitles,
         })
 
     # Synchronous execution fallback for legacy callers
-    _execute_download(task_id, ydl_opts, url, fmt, quality)
+    _execute_download(task_id, ydl_opts, url, fmt, quality, download_subtitles, subtitle_format, subtitle_lang)
     final_task = _active_downloads.get(task_id, {})
     if final_task.get("status") == "completed":
         return jsonify({
@@ -634,12 +1086,85 @@ def download_youtube_video():
             "message": "Download completed successfully.",
             "filename": final_task.get("filename"),
             "path": final_task.get("path"),
+            "subtitle_file": final_task.get("subtitle_file"),
             "size": final_task.get("size_str", "Unknown"),
             "format": fmt,
             "quality": quality,
         })
     else:
         return jsonify({"success": False, "error": final_task.get("error", "Download failed.")}), 500
+
+
+@download_bp.route("/subtitles-only", methods=["POST"])
+def download_subtitles_only():
+    """Download only the caption/subtitle file (.srt/.vtt) for a YouTube video within seconds with anti-429 protection."""
+    payload = request.get_json(silent=True) or {}
+    url = payload.get("url", "").strip()
+    subtitle_lang = payload.get("subtitle_lang", "en")
+    subtitle_format = (payload.get("subtitle_format") or "srt").lower()
+    title_hint = payload.get("title", "youtube_video")
+
+    if not _is_valid_youtube_url(url):
+        return jsonify({"success": False, "error": "Please provide a valid YouTube URL."}), 400
+
+    if yt_dlp is None:
+        return jsonify({"success": False, "error": "YouTube downloader is not installed."}), 500
+
+    config.INPUT_DIR.mkdir(parents=True, exist_ok=True)
+    config.SUBTITLE_DIR.mkdir(parents=True, exist_ok=True)
+
+    try:
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+        }
+        if config.FFMPEG_PATH and Path(config.FFMPEG_PATH).exists():
+            ydl_opts["ffmpeg_location"] = str(config.FFMPEG_PATH)
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        if not info:
+            return jsonify({"success": False, "error": "Could not extract video metadata from URL."}), 400
+
+        video_title = info.get("title") or title_hint or "youtube_captions"
+        safe_title = re.sub(r"[^A-Za-z0-9._-]+", "_", video_title).strip("._") or "youtube_captions"
+
+        clean_sub_name = f"{safe_title}.{subtitle_format}"
+        clean_input_path = config.INPUT_DIR / clean_sub_name
+        clean_output_path = config.SUBTITLE_DIR / clean_sub_name
+
+        # Direct, anti-429 resilient fetcher with browser headers and original-track fallback
+        result = _fetch_youtube_captions_direct(
+            info=info,
+            target_lang=subtitle_lang,
+            output_format=subtitle_format,
+            output_path=clean_input_path,
+        )
+
+        if not result or not clean_input_path.exists() or clean_input_path.stat().st_size == 0:
+            return jsonify({"success": False, "error": "No subtitles or captions could be retrieved for this video."}), 404
+
+        import shutil
+        shutil.copy2(clean_input_path, clean_output_path)
+
+        return jsonify({
+            "success": True,
+            "filename": clean_input_path.name,
+            "download_url": f"/download/input/{clean_input_path.name}",
+            "size": _format_size(clean_input_path.stat().st_size),
+            "message": f"Caption file ({clean_input_path.name}) downloaded successfully.",
+        })
+    except Exception as exc:
+        err_msg = str(exc)
+        if "bot" in err_msg.lower() or "confirm you're not a bot" in err_msg.lower():
+            err_msg = "YouTube bot detection triggered. Try again later or use another URL."
+        elif "private video" in err_msg.lower():
+            err_msg = "This video is private."
+        elif "unavailable" in err_msg.lower():
+            err_msg = "Video is unavailable or removed."
+        return jsonify({"success": False, "error": f"Failed to download captions: {err_msg}"}), 500
 
 
 @download_bp.route("/progress/<string:task_id>", methods=["GET"])
@@ -692,21 +1217,59 @@ def list_files():
 
 @download_bp.route("/downloaded")
 def list_downloaded():
-    """List all downloaded YouTube videos with metadata."""
+    """List all downloaded YouTube videos and captions with metadata."""
     config.INPUT_DIR.mkdir(parents=True, exist_ok=True)
     video_exts = {".mp4", ".webm", ".mkv", ".avi", ".mov", ".m4a", ".mp3", ".wav", ".flv"}
+    sub_exts = {".srt", ".vtt"}
     files = []
+
+    # Map available subtitle files by stem
+    sub_files_by_stem = {}
+    for p in config.INPUT_DIR.iterdir():
+        if p.is_file() and p.suffix.lower() in sub_exts:
+            clean_stem = re.sub(r"\.[a-z]{2,3}(-[A-Za-z]+)?$", "", p.stem)
+            sub_files_by_stem[p.stem] = p
+            sub_files_by_stem[clean_stem] = p
+
     for p in sorted(config.INPUT_DIR.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
-        if p.is_file() and p.suffix.lower() in video_exts:
+        if not p.is_file():
+            continue
+        ext = p.suffix.lower()
+        if ext in video_exts or ext in sub_exts:
             stat = p.stat()
+            is_audio = ext in {".mp3", ".wav", ".m4a"}
+            is_sub = ext in sub_exts
+
+            has_caption = False
+            caption_file = None
+            caption_url = None
+
+            if not is_sub:
+                sub_match = sub_files_by_stem.get(p.stem)
+                if not sub_match:
+                    direct_srt = config.INPUT_DIR / f"{p.stem}.srt"
+                    direct_vtt = config.INPUT_DIR / f"{p.stem}.vtt"
+                    if direct_srt.exists():
+                        sub_match = direct_srt
+                    elif direct_vtt.exists():
+                        sub_match = direct_vtt
+                if sub_match and sub_match.exists():
+                    has_caption = True
+                    caption_file = sub_match.name
+                    caption_url = f"/download/input/{sub_match.name}"
+
             files.append({
                 "name": p.name,
                 "size": _format_size(stat.st_size),
                 "size_bytes": stat.st_size,
                 "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M"),
                 "path": f"/download/input/{p.name}",
-                "stream_path": f"/download/input/stream/{p.name}",
-                "is_audio": p.suffix.lower() in {".mp3", ".wav", ".m4a"},
+                "stream_path": f"/download/input/stream/{p.name}" if not is_sub else None,
+                "is_audio": is_audio,
+                "is_subtitle": is_sub,
+                "has_caption": has_caption,
+                "caption_file": caption_file,
+                "caption_url": caption_url,
             })
     return jsonify({"success": True, "files": files})
 

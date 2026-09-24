@@ -55,6 +55,8 @@ function stopTimer() {
 const state = {
     currentFile: null,
     currentMetadata: null,
+    uploadedSubtitle: null,
+    uploadedSubtitleMeta: null,
     jobId: null,
     pollInterval: null,
     result: null,
@@ -134,9 +136,17 @@ function nextStep() {
         showStep(2);
     } else if (step === 2) {
         showStep(3);
-        startPipeline();
+        try {
+            startPipeline();
+        } catch (e) {
+            console.error('startPipeline execution error:', e);
+        }
     } else if (step === 3) {
-        startPipeline();
+        try {
+            startPipeline();
+        } catch (e) {
+            console.error('startPipeline execution error:', e);
+        }
     } else if (step === 4) {
         showStep(5);
     } else if (step === 5) {
@@ -197,6 +207,462 @@ const captionEnabled = document.getElementById('captionEnabled');
 if (captionEnabled) {
     captionEnabled.addEventListener('change', updateCaptionOptions);
     updateCaptionOptions();
+}
+
+// ---------- Trending Caption Preset Auto-Configurator ----------
+const CAPTION_PRESET_CONFIGS = {
+    hormozi_pop: {
+        font: 'Arial Black',
+        size: 38,
+        animation: 'pop',
+        color: '#FFFFFF',
+        highlightColor: '#FBBF24',
+        outline: 3,
+        position: 'bottom'
+    },
+    beast_glow: {
+        font: 'Arial Black',
+        size: 40,
+        animation: 'bounce',
+        color: '#FFFFFF',
+        highlightColor: '#00FF66',
+        outline: 3,
+        position: 'bottom'
+    },
+    red_punch: {
+        font: 'Arial Black',
+        size: 40,
+        animation: 'pop',
+        color: '#FFFFFF',
+        highlightColor: '#FF2A2A',
+        outline: 4,
+        position: 'bottom'
+    },
+    clean_gold: {
+        font: 'Montserrat',
+        size: 36,
+        animation: 'fade',
+        color: '#FFFFFF',
+        highlightColor: '#FFC837',
+        outline: 2,
+        position: 'bottom'
+    },
+    neon_cyber: {
+        font: 'Arial Black',
+        size: 38,
+        animation: 'bounce',
+        color: '#00F0FF',
+        highlightColor: '#FF007F',
+        outline: 3,
+        position: 'bottom'
+    },
+    karaoke_pill: {
+        font: 'Montserrat',
+        size: 36,
+        animation: 'highlight',
+        color: '#FFFFFF',
+        highlightColor: '#38EF7D',
+        outline: 2,
+        position: 'bottom'
+    },
+    classic: {
+        font: 'Arial Black',
+        size: 36,
+        animation: 'none',
+        color: '#FFFFFF',
+        highlightColor: '#FFFFFF',
+        outline: 2,
+        position: 'bottom'
+    }
+};
+
+function applyCaptionTemplate(templateName) {
+    const cfg = CAPTION_PRESET_CONFIGS[templateName];
+    if (!cfg) return;
+    const fontEl = document.getElementById('captionFont');
+    if (fontEl) fontEl.value = cfg.font;
+    const sizeEl = document.getElementById('captionSize');
+    if (sizeEl) sizeEl.value = cfg.size;
+    const animEl = document.getElementById('captionAnimation');
+    if (animEl) animEl.value = cfg.animation;
+    const colorEl = document.getElementById('captionColor');
+    if (colorEl) colorEl.value = cfg.color;
+    const hlColorEl = document.getElementById('captionHighlightColor');
+    if (hlColorEl) hlColorEl.value = cfg.highlightColor;
+    const outlineEl = document.getElementById('captionOutline');
+    if (outlineEl) outlineEl.value = cfg.outline;
+    const posEl = document.getElementById('captionPosition');
+    if (posEl) posEl.value = cfg.position;
+}
+
+const captionTemplateEl = document.getElementById('captionTemplate');
+if (captionTemplateEl) {
+    captionTemplateEl.addEventListener('change', () => {
+        applyCaptionTemplate(captionTemplateEl.value);
+        saveClipSettings();
+    });
+}
+
+
+// ---------- Switch Helpers & Modular Engine Controls ----------
+function updateSwitchUI(toggleId, statusId, subfieldsId) {
+    const toggle = document.getElementById(toggleId);
+    if (!toggle) return;
+    const status = statusId ? document.getElementById(statusId) : null;
+    const subfields = subfieldsId ? document.getElementById(subfieldsId) : null;
+
+    const isChecked = toggle.checked;
+    if (status) {
+        status.textContent = isChecked ? 'ON' : 'OFF';
+        status.classList.toggle('active', isChecked);
+    }
+    if (subfields) {
+        subfields.classList.toggle('engine-disabled', !isChecked);
+    }
+}
+
+const ENGINE_SWITCH_CONFIG = [
+    { toggle: 'smartReframeToggle', status: 'smartReframeStatus', subfields: 'smartReframeOptions' },
+    { toggle: 'sceneDetectionToggle', status: 'sceneDetectionStatus', subfields: 'sceneDetectionSubfields' },
+    { toggle: 'sceneMergerToggle', status: 'sceneMergerStatus', subfields: 'sceneMergerSubfields' },
+    { toggle: 'silenceHandlingToggle', status: 'silenceHandlingStatus', subfields: 'silenceSubfields' },
+    { toggle: 'whisperToggle', status: 'whisperStatus', subfields: 'whisperSubfields', onChange: (checked) => {
+        if (checked) {
+            const subToggle = document.getElementById('useUploadedSubtitlesToggle');
+            if (subToggle && subToggle.checked && !state.uploadedSubtitle) {
+                subToggle.checked = false;
+                updateSwitchUI('useUploadedSubtitlesToggle', 'useUploadedSubtitlesStatus', 'customSubSubfields');
+            }
+        }
+    }},
+    { toggle: 'gpuAccelToggle', status: 'gpuAccelStatus', subfields: null },
+    { toggle: 'useUploadedSubtitlesToggle', status: 'useUploadedSubtitlesStatus', subfields: 'customSubSubfields', onChange: (checked) => {
+        const whisperToggle = document.getElementById('whisperToggle');
+        if (checked) {
+            if (whisperToggle && whisperToggle.checked) {
+                whisperToggle.checked = false;
+                updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
+                if (window.UpClipToast) window.UpClipToast.show('Whisper transcription turned OFF (using custom subtitles)', 'info');
+            }
+        } else {
+            if (whisperToggle && !whisperToggle.checked) {
+                whisperToggle.checked = true;
+                updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
+            }
+        }
+    }},
+    { toggle: 'audioEnergyToggle', status: 'audioEnergyStatus', subfields: null },
+    { toggle: 'motionDetectionToggle', status: 'motionDetectionStatus', subfields: null },
+    { toggle: 'emotionDetectionToggle', status: 'emotionDetectionStatus', subfields: null },
+    { toggle: 'viralRankingToggle', status: 'viralRankingStatus', subfields: 'viralRankingSubfields' },
+    { toggle: 'keywordExtractionToggle', status: 'keywordExtractionStatus', subfields: null },
+    { toggle: 'subtitleEnabled', status: 'subtitleEnabledStatus', subfields: 'standardSubtitlesSubfields' },
+    { toggle: 'captionEnabled', status: 'captionEnabledStatus', subfields: 'animatedCaptionsSubfields', onChange: () => {
+        updateCaptionOptions();
+    }},
+    { toggle: 'audioNormalizationToggle', status: 'audioNormalizationStatus', subfields: null },
+];
+
+function initEngineSwitches() {
+    ENGINE_SWITCH_CONFIG.forEach(cfg => {
+        const toggle = document.getElementById(cfg.toggle);
+        if (!toggle) return;
+        updateSwitchUI(cfg.toggle, cfg.status, cfg.subfields);
+
+        toggle.addEventListener('change', () => {
+            updateSwitchUI(cfg.toggle, cfg.status, cfg.subfields);
+            if (cfg.onChange) cfg.onChange(toggle.checked);
+            saveClipSettings();
+        });
+    });
+}
+
+// ---------- Quick Presets ----------
+function applyPreset(presetName) {
+    document.querySelectorAll('.preset-pill-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === presetName);
+    });
+
+    const setToggle = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = val;
+    };
+
+    if (presetName === 'all') {
+        setToggle('smartReframeToggle', true);
+        setToggle('sceneDetectionToggle', true);
+        setToggle('sceneMergerToggle', true);
+        setToggle('silenceHandlingToggle', true);
+        setToggle('whisperToggle', true);
+        setToggle('gpuAccelToggle', true);
+        setToggle('useUploadedSubtitlesToggle', false);
+        setToggle('audioEnergyToggle', true);
+        setToggle('motionDetectionToggle', true);
+        setToggle('emotionDetectionToggle', true);
+        setToggle('viralRankingToggle', true);
+        setToggle('hookDetectionToggle', true);
+        setToggle('keywordExtractionToggle', true);
+        setToggle('subtitleEnabled', true);
+        setToggle('captionEnabled', false);
+        setToggle('audioNormalizationToggle', true);
+        const wModel = document.getElementById('whisperModel');
+        if (wModel) wModel.value = 'base';
+    } else if (presetName === 'fast') {
+        setToggle('smartReframeToggle', false);
+        setToggle('sceneDetectionToggle', true);
+        setToggle('sceneMergerToggle', true);
+        setToggle('silenceHandlingToggle', false);
+        setToggle('whisperToggle', true);
+        setToggle('gpuAccelToggle', true);
+        setToggle('useUploadedSubtitlesToggle', false);
+        setToggle('audioEnergyToggle', true);
+        setToggle('motionDetectionToggle', false);
+        setToggle('emotionDetectionToggle', false);
+        setToggle('viralRankingToggle', true);
+        setToggle('hookDetectionToggle', false);
+        setToggle('keywordExtractionToggle', false);
+        setToggle('subtitleEnabled', true);
+        setToggle('captionEnabled', false);
+        setToggle('audioNormalizationToggle', true);
+        const wModel = document.getElementById('whisperModel');
+        if (wModel) wModel.value = 'tiny';
+    } else if (presetName === 'subtitles') {
+        setToggle('smartReframeToggle', true);
+        setToggle('sceneDetectionToggle', true);
+        setToggle('sceneMergerToggle', true);
+        setToggle('silenceHandlingToggle', true);
+        setToggle('whisperToggle', false);
+        setToggle('gpuAccelToggle', true);
+        setToggle('useUploadedSubtitlesToggle', true);
+        setToggle('audioEnergyToggle', true);
+        setToggle('motionDetectionToggle', true);
+        setToggle('emotionDetectionToggle', true);
+        setToggle('viralRankingToggle', true);
+        setToggle('hookDetectionToggle', true);
+        setToggle('keywordExtractionToggle', true);
+        setToggle('subtitleEnabled', true);
+        setToggle('captionEnabled', true);
+        setToggle('audioNormalizationToggle', true);
+    } else if (presetName === 'minimal') {
+        setToggle('smartReframeToggle', false);
+        setToggle('sceneDetectionToggle', true);
+        setToggle('sceneMergerToggle', false);
+        setToggle('silenceHandlingToggle', false);
+        setToggle('whisperToggle', false);
+        setToggle('useUploadedSubtitlesToggle', false);
+        setToggle('audioEnergyToggle', false);
+        setToggle('motionDetectionToggle', false);
+        setToggle('emotionDetectionToggle', false);
+        setToggle('viralRankingToggle', false);
+        setToggle('hookDetectionToggle', false);
+        setToggle('keywordExtractionToggle', false);
+        setToggle('subtitleEnabled', false);
+        setToggle('captionEnabled', false);
+        setToggle('audioNormalizationToggle', false);
+    }
+
+    ENGINE_SWITCH_CONFIG.forEach(cfg => {
+        updateSwitchUI(cfg.toggle, cfg.status, cfg.subfields);
+    });
+    updateCaptionOptions();
+    saveClipSettings();
+    if (window.UpClipToast) {
+        window.UpClipToast.show(`Applied preset: ${presetName.toUpperCase()}`, 'info');
+    }
+}
+
+function initPresetButtons() {
+    document.querySelectorAll('.preset-pill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = btn.dataset.preset;
+            if (preset) applyPreset(preset);
+        });
+    });
+}
+
+// ---------- Subtitle / Transcript File Upload ----------
+async function uploadSubtitleFile(file) {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['srt', 'vtt', 'json', 'txt'].includes(ext)) {
+        if (window.UpClipToast) {
+            window.UpClipToast.show('Unsupported subtitle format. Please upload .srt, .vtt, .json, or .txt', 'error');
+        } else {
+            alert('Unsupported subtitle format. Please upload .srt, .vtt, .json, or .txt');
+        }
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('subtitle', file);
+
+    const sStatus = document.getElementById('settingsSubStatusText');
+    if (sStatus) sStatus.textContent = `Uploading ${file.name}...`;
+
+    try {
+        const res = await fetch('/upload/subtitle', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!data.success) {
+            if (window.UpClipToast) window.UpClipToast.show('Upload error: ' + (data.error || 'Failed'), 'error');
+            if (sStatus) sStatus.textContent = 'Upload failed. Try again.';
+            return;
+        }
+
+        state.uploadedSubtitle = data.filename;
+        state.uploadedSubtitleMeta = data;
+
+        // Update Step 1 UI
+        const card1 = document.getElementById('uploadedSubtitleCard');
+        if (card1) card1.hidden = false;
+        const fn1 = document.getElementById('subDisplayFilename');
+        if (fn1) fn1.textContent = data.filename;
+        const segs1 = document.getElementById('subDisplaySegments');
+        if (segs1) segs1.textContent = `${data.segments_count || 0} segments`;
+        const dur1 = document.getElementById('subDisplayDuration');
+        if (dur1) dur1.textContent = `${formatTime(data.duration || 0)} duration`;
+        const words1 = document.getElementById('subDisplayWords');
+        if (words1) words1.textContent = `${data.word_count || 0} words`;
+
+        // Update Step 2 UI
+        const subToggle = document.getElementById('useUploadedSubtitlesToggle');
+        if (subToggle) {
+            subToggle.checked = true;
+            updateSwitchUI('useUploadedSubtitlesToggle', 'useUploadedSubtitlesStatus', 'customSubSubfields');
+        }
+        const card2 = document.getElementById('settingsLoadedSubCard');
+        if (card2) card2.hidden = false;
+        const fn2 = document.getElementById('settingsSubFilename');
+        if (fn2) fn2.textContent = data.filename;
+        const segs2 = document.getElementById('settingsSubSegs');
+        if (segs2) segs2.textContent = `${data.segments_count || 0} segs`;
+        const dur2 = document.getElementById('settingsSubDur');
+        if (dur2) dur2.textContent = formatTime(data.duration || 0);
+        if (sStatus) sStatus.textContent = `Active subtitle: ${data.filename}`;
+
+        // Turn Whisper OFF automatically when custom subtitle loaded
+        const whisperToggle = document.getElementById('whisperToggle');
+        if (whisperToggle && whisperToggle.checked) {
+            whisperToggle.checked = false;
+            updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
+        }
+
+        if (window.UpClipToast) {
+            window.UpClipToast.show(`Subtitles loaded (${data.segments_count} segments)! Whisper bypassed.`, 'success');
+        }
+    } catch (err) {
+        console.error('Subtitle upload error:', err);
+        if (window.UpClipToast) window.UpClipToast.show('Subtitle upload failed: ' + err.message, 'error');
+        if (sStatus) sStatus.textContent = 'Upload failed. Try again.';
+    }
+}
+
+function removeUploadedSubtitle() {
+    state.uploadedSubtitle = null;
+    state.uploadedSubtitleMeta = null;
+
+    // Reset Step 1
+    const card1 = document.getElementById('uploadedSubtitleCard');
+    if (card1) card1.hidden = true;
+    const input1 = document.getElementById('subtitleFileInput');
+    if (input1) input1.value = '';
+
+    // Reset Step 2
+    const card2 = document.getElementById('settingsLoadedSubCard');
+    if (card2) card2.hidden = true;
+    const input2 = document.getElementById('settingsSubFileInput');
+    if (input2) input2.value = '';
+    const sStatus = document.getElementById('settingsSubStatusText');
+    if (sStatus) sStatus.textContent = 'Drop .SRT, .VTT, .JSON here or click to browse';
+
+    const subToggle = document.getElementById('useUploadedSubtitlesToggle');
+    if (subToggle) {
+        subToggle.checked = false;
+        updateSwitchUI('useUploadedSubtitlesToggle', 'useUploadedSubtitlesStatus', 'customSubSubfields');
+    }
+
+    // Restore Whisper
+    const whisperToggle = document.getElementById('whisperToggle');
+    if (whisperToggle && !whisperToggle.checked) {
+        whisperToggle.checked = true;
+        updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
+    }
+
+    if (window.UpClipToast) {
+        window.UpClipToast.show('Custom subtitle removed. Whisper speech recognition restored.', 'info');
+    }
+}
+
+function initSubtitleUploadHandlers() {
+    // Step 1: Browse button and file input
+    const btnUpload = document.getElementById('btnUploadSubtitles');
+    const fileInput1 = document.getElementById('subtitleFileInput');
+    const btnRemove1 = document.getElementById('btnRemoveSubtitle');
+
+    if (btnUpload && fileInput1) {
+        btnUpload.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput1.click();
+        });
+        fileInput1.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length) {
+                uploadSubtitleFile(e.target.files[0]);
+            }
+        });
+    }
+    if (btnRemove1) {
+        btnRemove1.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeUploadedSubtitle();
+        });
+    }
+
+    // Step 2: Settings sub box, file input, and remove button
+    const subDropBox = document.getElementById('settingsSubDropBox');
+    const fileInput2 = document.getElementById('settingsSubFileInput');
+    const btnRemove2 = document.getElementById('settingsSubRemoveBtn');
+
+    if (subDropBox && fileInput2) {
+        subDropBox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput2.click();
+        });
+        fileInput2.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length) {
+                uploadSubtitleFile(e.target.files[0]);
+            }
+        });
+
+        // Drag & Drop on Step 2 Sub Box
+        ['dragenter', 'dragover'].forEach(evt => {
+            subDropBox.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                subDropBox.style.borderColor = 'var(--primary)';
+                subDropBox.style.background = 'rgba(16, 185, 129, 0.08)';
+            });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            subDropBox.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                subDropBox.style.borderColor = '';
+                subDropBox.style.background = '';
+            });
+        });
+        subDropBox.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files && files.length) {
+                uploadSubtitleFile(files[0]);
+            }
+        });
+    }
+
+    if (btnRemove2) {
+        btnRemove2.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeUploadedSubtitle();
+        });
+    }
 }
 
 // ---------- FFmpeg Check ----------
@@ -400,24 +866,24 @@ function handleUploadSuccess(data) {
 
 // ---------- Build summary ----------
 function buildSummary() {
-    const lang = document.getElementById('langTranscript').selectedOptions[0].textContent;
-    const langSub = document.getElementById('langSubtitle').value;
+    const lang = document.getElementById('langTranscript')?.selectedOptions?.[0]?.textContent || 'Auto Detect';
+    const langSub = document.getElementById('langSubtitle')?.value || 'auto';
     const subLabel = langSub === 'auto' ? 'Same as transcript' :
-        document.getElementById('langSubtitle').selectedOptions[0].textContent;
-    const aspect = document.querySelector('input[name="aspect"]:checked').value;
-    const mode = document.querySelector('input[name="clipmode"]:checked').value;
-    const naming = document.querySelector('input[name="naming"]:checked').value;
+        (document.getElementById('langSubtitle')?.selectedOptions?.[0]?.textContent || langSub);
+    const aspect = document.querySelector('input[name="aspect"]:checked')?.value || '9:16';
+    const mode = document.querySelector('input[name="clipmode"]:checked')?.value || 'ai';
+    const naming = document.querySelector('input[name="naming"]:checked')?.value || 'sequential';
 
     const modeLabels = { ai: 'AI decides', duration: 'Duration', count: 'Count' };
     const namingLabels = { content: 'Content-based', sequential: 'Sequential' };
 
     let clipsInfo = '';
     if (mode === 'duration') {
-        const dur = document.getElementById('clipDuration').value;
-        const how = document.getElementById('clipCountMode').value;
-        clipsInfo = `${dur}s per clip, ${how === 'all' ? 'all possible' : document.getElementById('customCount').value + ' clips'}`;
+        const dur = document.getElementById('clipDuration')?.value || '30';
+        const how = document.getElementById('clipCountMode')?.value || 'all';
+        clipsInfo = `${dur}s per clip, ${how === 'all' ? 'all possible' : (document.getElementById('customCount')?.value || '5') + ' clips'}`;
     } else if (mode === 'count') {
-        clipsInfo = `${document.getElementById('clipCount').value} clips`;
+        clipsInfo = `${document.getElementById('clipCount')?.value || '5'} clips`;
     } else {
         clipsInfo = 'AI decides';
     }
@@ -429,20 +895,34 @@ function buildSummary() {
         captionStyleInfo = presetLabel;
     }
 
-    document.getElementById('settingsSummary').innerHTML = `
-        <div class="summary-row"><span class="summary-label">Video</span><span class="summary-value">${state.currentFile}</span></div>
-        <div class="summary-row"><span class="summary-label">Transcript Language</span><span class="summary-value">${lang}</span></div>
-        <div class="summary-row"><span class="summary-label">Subtitle Language</span><span class="summary-value">${subLabel}</span></div>
-        <div class="summary-row"><span class="summary-label">Aspect Ratio</span><span class="summary-value">${aspect}</span></div>
-        <div class="summary-row"><span class="summary-label">Clipping</span><span class="summary-value">${modeLabels[mode]} — ${clipsInfo}</span></div>
-        <div class="summary-row"><span class="summary-label">Naming</span><span class="summary-value">${namingLabels[naming]}</span></div>
-        ${captionStyleInfo ? `<div class="summary-row"><span class="summary-label">Caption Style</span><span class="summary-value">${captionStyleInfo}</span></div>` : ''}
-    `;
+    const summaryEl = document.getElementById('settingsSummary');
+    if (summaryEl) {
+        summaryEl.innerHTML = `
+            <div class="summary-row"><span class="summary-label">Video</span><span class="summary-value">${state.currentFile || '-'}</span></div>
+            <div class="summary-row"><span class="summary-label">Transcript Language</span><span class="summary-value">${lang}</span></div>
+            <div class="summary-row"><span class="summary-label">Subtitle Language</span><span class="summary-value">${subLabel}</span></div>
+            <div class="summary-row"><span class="summary-label">Aspect Ratio</span><span class="summary-value">${aspect}</span></div>
+            <div class="summary-row"><span class="summary-label">Clipping</span><span class="summary-value">${modeLabels[mode] || mode} — ${clipsInfo}</span></div>
+            <div class="summary-row"><span class="summary-label">Naming</span><span class="summary-value">${namingLabels[naming] || naming}</span></div>
+            ${captionStyleInfo ? `<div class="summary-row"><span class="summary-label">Caption Style</span><span class="summary-value">${captionStyleInfo}</span></div>` : ''}
+        `;
+    }
 }
 
 // ---------- Start Pipeline ----------
 async function startPipeline() {
-    const settings = collectSettings();
+    let settings;
+    try {
+        settings = collectSettings();
+    } catch (err) {
+        console.error('Error collecting settings:', err);
+        if (logBody) {
+            logBody.innerHTML = `<div class="log-line error-line">Error reading settings: ${err.message}</div>`;
+        }
+        if (pipelineWrap) pipelineWrap.hidden = false;
+        resetPipelineBtn();
+        return;
+    }
 
     wizNext.disabled = true;
     wizNext.innerHTML = '<span class="spinner"></span> Processing...';
@@ -480,6 +960,9 @@ function collectSettings() {
     const checkedAspect = document.querySelector('input[name="aspect"]:checked');
     const checkedNaming = document.querySelector('input[name="naming"]:checked');
 
+    const userCaptionSize = parseInt(document.getElementById('captionSize')?.value || document.getElementById('presetCaptionSize')?.value || '38', 10);
+    const userCaptionPosition = document.getElementById('captionPosition')?.value || document.getElementById('presetCaptionPosition')?.value || 'bottom';
+
     const captionStylePreset = document.getElementById('captionStylePreset')?.value || '';
     let captionStyleData = null;
     if (captionStylePreset) {
@@ -489,33 +972,80 @@ function collectSettings() {
             'minimal': { id: 'minimal', name: 'Minimal', font_family: 'Inter', font_size: 32, font_weight: 400, text_color: '#FFFFFF', active_word_color: '#FFFFFF', background_color: '#000000', background_opacity: 0.0, outline_color: '#000000', outline_width: 0, shadow_color: '#000000', shadow_blur: 0, shadow_offset_y: 0, position: 'bottom', animation: 'none', letter_spacing: 1, line_height: 1.4, max_lines: 2 },
             'bold': { id: 'bold', name: 'Bold', font_family: 'Arial Black', font_size: 48, font_weight: 900, text_color: '#FFFFFF', active_word_color: '#fbbf24', background_color: '#000000', background_opacity: 0.6, outline_color: '#000000', outline_width: 4, shadow_color: '#000000', shadow_blur: 8, shadow_offset_y: 2, position: 'bottom', animation: 'pop', letter_spacing: 0, line_height: 1.1, max_lines: 1 },
         };
-        const presetSize = parseInt(document.getElementById('presetCaptionSize')?.value || '34', 10);
-        const presetPosition = document.getElementById('presetCaptionPosition')?.value || 'bottom';
         const base = presetMap[captionStylePreset] || {};
-        captionStyleData = { ...base, font_size: presetSize, position: presetPosition };
+        captionStyleData = { ...base, font_size: userCaptionSize, fontSize: userCaptionSize, position: userCaptionPosition };
     }
+
+    const useUploadedSubs = document.getElementById('useUploadedSubtitlesToggle') ? document.getElementById('useUploadedSubtitlesToggle').checked : false;
+    const uploadedSubFile = (useUploadedSubs && state.uploadedSubtitle) ? state.uploadedSubtitle : (state.uploadedSubtitle || null);
+
     const settings = {
-        language: document.getElementById('langTranscript') ? document.getElementById('langTranscript').value : 'en',
+        language: document.getElementById('langTranscript') ? document.getElementById('langTranscript').value : 'auto',
         subtitle_language: document.getElementById('langSubtitle') ? document.getElementById('langSubtitle').value : 'auto',
-        subtitle_enabled: document.getElementById('subtitleEnabled') ? document.getElementById('subtitleEnabled').checked : true,
         aspect: checkedAspect ? checkedAspect.value : '9:16',
         clipping_mode: mode,
-        naming: checkedNaming ? checkedNaming.value : 'content',
+        naming: checkedNaming ? checkedNaming.value : 'sequential',
+        naming_prefix: document.getElementById('clipNamingPrefix') ? document.getElementById('clipNamingPrefix').value : 'Clip_',
+        naming_format: document.getElementById('clipNamingFormat') ? document.getElementById('clipNamingFormat').value : '001',
         quality: document.getElementById('exportQuality') ? document.getElementById('exportQuality').value : 'original',
+
+        // 1. Whisper AI Engine
+        whisper_enabled: document.getElementById('whisperToggle') ? document.getElementById('whisperToggle').checked : true,
+        whisper_model: document.getElementById('whisperModel') ? document.getElementById('whisperModel').value : 'base',
+        gpu_accel: document.getElementById('gpuAccelToggle') ? document.getElementById('gpuAccelToggle').checked : true,
+
+        // 2. Custom Subtitles
+        use_uploaded_subtitles: useUploadedSubs,
+        uploaded_subtitle_file: uploadedSubFile,
+
+        // 3. Scene Detection & Anti-Micro-Clip Scene Merger
+        scene_detection_enabled: document.getElementById('sceneDetectionToggle') ? document.getElementById('sceneDetectionToggle').checked : true,
+        scene_threshold: document.getElementById('sceneThresholdRange') ? parseFloat(document.getElementById('sceneThresholdRange').value) : 27.0,
+        scene_merger_enabled: document.getElementById('sceneMergerToggle') ? document.getElementById('sceneMergerToggle').checked : true,
+        min_clip_duration: document.getElementById('minClipDuration') ? parseInt(document.getElementById('minClipDuration').value, 10) : 60,
+        target_clip_duration: document.getElementById('targetClipDuration') ? parseInt(document.getElementById('targetClipDuration').value, 10) : 75,
+        max_clip_duration: document.getElementById('maxClipDuration') ? parseInt(document.getElementById('maxClipDuration').value, 10) : 120,
+
+        // 4. Silence & Dead-Air Detection
+        silence_trimming_enabled: document.getElementById('silenceHandlingToggle') ? document.getElementById('silenceHandlingToggle').checked : true,
+        silence_threshold_db: document.getElementById('silenceThresholdDb') ? parseFloat(document.getElementById('silenceThresholdDb').value) : -30.0,
+        min_silence_duration: document.getElementById('minSilenceDuration') ? parseFloat(document.getElementById('minSilenceDuration').value) : 0.5,
+
+        // 5. Smart Reframe & Face Tracking
+        smart_reframe_enabled: document.getElementById('smartReframeToggle') ? document.getElementById('smartReframeToggle').checked : true,
+        reframe_mode: document.getElementById('faceTrackingMode') ? document.getElementById('faceTrackingMode').value : 'smart',
+        face_tracking: document.getElementById('faceTrackingMode') ? document.getElementById('faceTrackingMode').value : 'smart',
+
+        // 6. Multi-Modal AI Intelligence
+        audio_energy_enabled: document.getElementById('audioEnergyToggle') ? document.getElementById('audioEnergyToggle').checked : true,
+        motion_detection_enabled: document.getElementById('motionDetectionToggle') ? document.getElementById('motionDetectionToggle').checked : true,
+        emotion_detection_enabled: document.getElementById('emotionDetectionToggle') ? document.getElementById('emotionDetectionToggle').checked : true,
+
+        // 7. Viral Scoring & Clip Ranking
+        viral_ranking_enabled: document.getElementById('viralRankingToggle') ? document.getElementById('viralRankingToggle').checked : true,
+        min_viral_score: document.getElementById('minViralScoreRange') ? parseFloat(document.getElementById('minViralScoreRange').value) : 50.0,
+        hook_detection_enabled: document.getElementById('hookDetectionToggle') ? document.getElementById('hookDetectionToggle').checked : true,
+        keyword_extraction_enabled: document.getElementById('keywordExtractionToggle') ? document.getElementById('keywordExtractionToggle').checked : true,
+
+        // 8. Subtitles & Burn-In
+        subtitle_enabled: document.getElementById('subtitleEnabled') ? document.getElementById('subtitleEnabled').checked : true,
+
+        // 9. Kinetic Animated Captions
         caption_enabled: document.getElementById('captionEnabled') ? document.getElementById('captionEnabled').checked : false,
-        caption_template: document.getElementById('captionTemplate') ? document.getElementById('captionTemplate').value : 'classic',
+        caption_template: document.getElementById('captionTemplate') ? document.getElementById('captionTemplate').value : 'hormozi_pop',
         caption_animation: document.getElementById('captionAnimation') ? document.getElementById('captionAnimation').value : 'pop',
         caption_position: document.getElementById('captionPosition') ? document.getElementById('captionPosition').value : 'bottom',
-        caption_font: document.getElementById('captionFont') ? document.getElementById('captionFont').value : 'Arial',
+        caption_font: document.getElementById('captionFont') ? document.getElementById('captionFont').value : 'Arial Black',
         caption_color: document.getElementById('captionColor') ? document.getElementById('captionColor').value : '#FFFFFF',
-        caption_size: document.getElementById('captionSize') ? parseInt(document.getElementById('captionSize').value, 10) || 22 : 22,
-        caption_outline: document.getElementById('captionOutline') ? parseInt(document.getElementById('captionOutline').value, 10) || 2 : 2,
+        caption_highlight_color: document.getElementById('captionHighlightColor') ? document.getElementById('captionHighlightColor').value : '#FBBF24',
+        caption_size: userCaptionSize,
+        caption_outline: document.getElementById('captionOutline') ? parseInt(document.getElementById('captionOutline').value, 10) || 3 : 3,
         caption_margin_v: document.getElementById('captionMarginV') ? parseInt(document.getElementById('captionMarginV').value, 10) || 60 : 60,
         caption_background: document.getElementById('captionBackground') ? document.getElementById('captionBackground').value : 'none',
         caption_style: captionStyleData,
-        whisper_model: document.getElementById('whisperModel') ? document.getElementById('whisperModel').value : 'base',
-        face_tracking: document.getElementById('faceTrackingMode') ? document.getElementById('faceTrackingMode').value : 'auto',
-        scene_threshold: document.getElementById('sceneThresholdRange') ? parseFloat(document.getElementById('sceneThresholdRange').value) : 0.3,
+
+        // 10. Audio Loudness Normalization
+        audio_normalization_enabled: document.getElementById('audioNormalizationToggle') ? document.getElementById('audioNormalizationToggle').checked : true,
     };
 
     if (mode === 'duration') {
@@ -534,6 +1064,8 @@ function collectSettings() {
 function resetPipelineBtn() {
     wizNext.disabled = false;
     wizNext.innerHTML = '<span class="spinner" hidden></span> Generate Clips';
+    const retryBtn = document.getElementById('retryPipelineBtn');
+    if (retryBtn) retryBtn.style.display = 'inline-block';
 }
 
 // ---------- Polling ----------
@@ -686,24 +1218,53 @@ function renderReviewGrid() {
     const sourceStem = state.currentFile ? state.currentFile.substring(0, state.currentFile.lastIndexOf('.')) : '';
     const thumbUrl = sourceStem ? `/download/thumbnail/${encodeURIComponent(sourceStem)}_thumb.jpg` : '/static/img/default_thumb.png';
 
+    const checkedAspect = document.querySelector('input[name="aspect"]:checked');
+    const aspectVal = checkedAspect ? checkedAspect.value : '9:16';
+    let cardAspectRatio = '9 / 16';
+    if (aspectVal === '16:9') cardAspectRatio = '16 / 9';
+    else if (aspectVal === '1:1') cardAspectRatio = '1 / 1';
+    else if (aspectVal === '4:5') cardAspectRatio = '4 / 5';
+
     state.clips.forEach((clip, idx) => {
         const card = document.createElement('div');
         card.className = 'review-clip card';
         card.setAttribute('data-clip-name', clip.name);
         card.setAttribute('data-idx', idx);
+
+        const viralScore = clip.viral_score !== undefined ? Math.round(clip.viral_score) : (clip.score !== undefined ? Math.round(clip.score) : null);
+        const grade = clip.grade || (viralScore !== null ? (viralScore >= 85 ? 'A+' : viralScore >= 75 ? 'A' : viralScore >= 60 ? 'B' : 'C') : '');
+        const rankBadge = clip.rank_badge || '';
+        const durText = clip.duration ? `${Math.round(clip.duration)}s` : 'Clip';
+        const tags = (clip.hashtags && clip.hashtags.length) ? clip.hashtags : (clip.keywords || []);
         
         card.innerHTML = `
             <input type="checkbox" class="review-clip-checkbox" data-idx="${idx}" style="position: absolute; top: 10px; left: 10px; z-index: 10; width: 18px; height: 18px; cursor: pointer;">
-            <div class="project-thumb-wrap" style="position: relative; aspect-ratio: 9/16; background: #000; overflow: hidden; border-radius: var(--radius-sm); cursor: pointer;" data-action="preview" data-idx="${idx}">
+            <div class="project-thumb-wrap" style="position: relative; aspect-ratio: ${cardAspectRatio}; background: #000; overflow: hidden; border-radius: var(--radius-sm); cursor: pointer;" data-action="preview" data-idx="${idx}">
                 <img class="project-thumb" src="${thumbUrl}" alt="Clip thumbnail" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='/static/img/default_thumb.png'">
+                ${viralScore !== null ? `
+                    <div style="position: absolute; top: 8px; right: 8px; z-index: 5; background: rgba(16, 185, 129, 0.9); backdrop-filter: blur(4px); color: #fff; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display:flex; align-items:center; gap:4px;">
+                        <span>${viralScore}/100</span>
+                        ${grade ? `<span style="background:rgba(0,0,0,0.3); padding:1px 4px; border-radius:3px; font-size:9px;">${grade}</span>` : ''}
+                    </div>
+                ` : ''}
                 <div class="play-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity var(--transition-fast);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </div>
+                ${rankBadge ? `
+                    <div style="position: absolute; bottom: 30px; left: 6px; right: 6px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #fbbf24; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid rgba(251, 191, 36, 0.35);">
+                        ${rankBadge}
+                    </div>
+                ` : ''}
                 <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-family: var(--font-mono); color: #fff;">
-                    Clip
+                    ${durText}
                 </div>
             </div>
             <input class="clip-name-input" value="${clip.name}" data-idx="${idx}" style="width: 100%; margin-top: 8px; font-size: 12px; font-weight: 600; text-align: center; background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 4px;">
+            ${tags.length ? `
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 6px;">
+                    ${tags.slice(0, 3).map(t => `<span style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border);">${t.startsWith('#') ? t : '#' + t}</span>`).join('')}
+                </div>
+            ` : ''}
             <div class="clip-actions" style="display: flex; gap: var(--space-1); justify-content: center; margin-top: 8px; width: 100%;">
                 <button class="btn-sm" data-action="preview" data-idx="${idx}" title="Preview Clip" style="padding: 4px 8px; font-size: 11px;">Preview</button>
                 <button class="btn-sm accent" data-action="open-caption" data-idx="${idx}" title="Open in Caption Studio" style="padding: 4px 8px; font-size: 11px;">Captions</button>
@@ -1552,10 +2113,32 @@ function previewClip(clipName) {
     const modal = document.getElementById('clipPreviewModal');
     const video = document.getElementById('clipPreviewVideo');
     const title = document.getElementById('clipPreviewTitle');
+    const container = document.getElementById('clipPreviewContainer');
     if (!modal || !video) return;
 
     title.textContent = clipName;
     video.src = `/download/clip/stream/${clipName}`;
+    const dialog = modal.querySelector('.modal-dialog');
+    video.onloadedmetadata = () => {
+        if (video.videoWidth && video.videoHeight) {
+            const aspect = video.videoWidth / video.videoHeight;
+            if (container) {
+                container.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+            }
+            if (dialog) {
+                if (aspect > 1.2) {
+                    // Landscape (16:9)
+                    dialog.style.maxWidth = '680px';
+                } else if (aspect >= 0.9 && aspect <= 1.2) {
+                    // Square (1:1)
+                    dialog.style.maxWidth = '460px';
+                } else {
+                    // Vertical / Portrait (9:16 or 4:5)
+                    dialog.style.maxWidth = '380px';
+                }
+            }
+        }
+    };
     modal.hidden = false;
     video.play();
 }
@@ -1775,6 +2358,13 @@ function initBatchAndRefreshListeners() {
             } finally {
                 refreshClipsBtn.classList.remove('spinning');
             }
+        });
+    }
+
+    const retryPipelineBtn = document.getElementById('retryPipelineBtn');
+    if (retryPipelineBtn) {
+        retryPipelineBtn.addEventListener('click', () => {
+            startPipeline();
         });
     }
 
@@ -2323,6 +2913,15 @@ function initSliderListeners() {
             saveClipSettings();
         });
     }
+
+    const viralSlider = document.getElementById('minViralScoreRange');
+    const viralDisplay = document.getElementById('viralScoreDisplay');
+    if (viralSlider && viralDisplay) {
+        viralSlider.addEventListener('input', () => {
+            viralDisplay.textContent = `${viralSlider.value}+`;
+            saveClipSettings();
+        });
+    }
 }
 
 function initStep1MetaActions() {
@@ -2458,6 +3057,12 @@ function restoreClipSettings() {
         if (s.caption_color && document.getElementById('captionColor')) {
             document.getElementById('captionColor').value = s.caption_color;
         }
+        if (s.caption_highlight_color && document.getElementById('captionHighlightColor')) {
+            document.getElementById('captionHighlightColor').value = s.caption_highlight_color;
+        }
+        if (s.caption_outline && document.getElementById('captionOutline')) {
+            document.getElementById('captionOutline').value = s.caption_outline;
+        }
         if (s.caption_size && document.getElementById('captionSize')) {
             document.getElementById('captionSize').value = s.caption_size;
         }
@@ -2466,6 +3071,78 @@ function restoreClipSettings() {
             const sceneDisplay = document.getElementById('sceneThresholdDisplay');
             if (sceneDisplay) sceneDisplay.textContent = parseFloat(s.scene_threshold).toFixed(2);
         }
+
+        // Modular AI Engine Toggles
+        if (s.whisper_model && document.getElementById('whisperModel')) {
+            document.getElementById('whisperModel').value = s.whisper_model;
+        }
+        if (s.whisper_enabled !== undefined && document.getElementById('whisperToggle')) {
+            document.getElementById('whisperToggle').checked = s.whisper_enabled;
+        }
+        if (s.gpu_accel !== undefined && document.getElementById('gpuAccelToggle')) {
+            document.getElementById('gpuAccelToggle').checked = s.gpu_accel;
+        }
+        if (s.smart_reframe_enabled !== undefined && document.getElementById('smartReframeToggle')) {
+            document.getElementById('smartReframeToggle').checked = s.smart_reframe_enabled;
+        }
+        if (s.face_tracking && document.getElementById('faceTrackingMode')) {
+            document.getElementById('faceTrackingMode').value = s.face_tracking;
+        }
+        if (s.scene_detection_enabled !== undefined && document.getElementById('sceneDetectionToggle')) {
+            document.getElementById('sceneDetectionToggle').checked = s.scene_detection_enabled;
+        }
+        if (s.scene_merger_enabled !== undefined && document.getElementById('sceneMergerToggle')) {
+            document.getElementById('sceneMergerToggle').checked = s.scene_merger_enabled;
+        }
+        if (s.min_clip_duration && document.getElementById('minClipDuration')) {
+            document.getElementById('minClipDuration').value = s.min_clip_duration;
+        }
+        if (s.target_clip_duration && document.getElementById('targetClipDuration')) {
+            document.getElementById('targetClipDuration').value = s.target_clip_duration;
+        }
+        if (s.max_clip_duration && document.getElementById('maxClipDuration')) {
+            document.getElementById('maxClipDuration').value = s.max_clip_duration;
+        }
+        if (s.silence_trimming_enabled !== undefined && document.getElementById('silenceHandlingToggle')) {
+            document.getElementById('silenceHandlingToggle').checked = s.silence_trimming_enabled;
+        }
+        if (s.silence_threshold_db && document.getElementById('silenceThresholdDb')) {
+            document.getElementById('silenceThresholdDb').value = s.silence_threshold_db;
+        }
+        if (s.min_silence_duration && document.getElementById('minSilenceDuration')) {
+            document.getElementById('minSilenceDuration').value = s.min_silence_duration;
+        }
+        if (s.audio_energy_enabled !== undefined && document.getElementById('audioEnergyToggle')) {
+            document.getElementById('audioEnergyToggle').checked = s.audio_energy_enabled;
+        }
+        if (s.motion_detection_enabled !== undefined && document.getElementById('motionDetectionToggle')) {
+            document.getElementById('motionDetectionToggle').checked = s.motion_detection_enabled;
+        }
+        if (s.emotion_detection_enabled !== undefined && document.getElementById('emotionDetectionToggle')) {
+            document.getElementById('emotionDetectionToggle').checked = s.emotion_detection_enabled;
+        }
+        if (s.viral_ranking_enabled !== undefined && document.getElementById('viralRankingToggle')) {
+            document.getElementById('viralRankingToggle').checked = s.viral_ranking_enabled;
+        }
+        if (s.min_viral_score && document.getElementById('minViralScoreRange')) {
+            document.getElementById('minViralScoreRange').value = s.min_viral_score;
+            const viralDisplay = document.getElementById('viralScoreDisplay');
+            if (viralDisplay) viralDisplay.textContent = `${s.min_viral_score}+`;
+        }
+        if (s.hook_detection_enabled !== undefined && document.getElementById('hookDetectionToggle')) {
+            document.getElementById('hookDetectionToggle').checked = s.hook_detection_enabled;
+        }
+        if (s.keyword_extraction_enabled !== undefined && document.getElementById('keywordExtractionToggle')) {
+            document.getElementById('keywordExtractionToggle').checked = s.keyword_extraction_enabled;
+        }
+        if (s.audio_normalization_enabled !== undefined && document.getElementById('audioNormalizationToggle')) {
+            document.getElementById('audioNormalizationToggle').checked = s.audio_normalization_enabled;
+        }
+
+        // Refresh all switch UI pills and disabled styles
+        ENGINE_SWITCH_CONFIG.forEach(cfg => {
+            updateSwitchUI(cfg.toggle, cfg.status, cfg.subfields);
+        });
     } catch (e) {
         // silent fail
     }
@@ -2473,6 +3150,9 @@ function restoreClipSettings() {
 
 // ---------- Init All ----------
 checkFfmpeg();
+initEngineSwitches();
+initPresetButtons();
+initSubtitleUploadHandlers();
 if (document.querySelector('.wiz-panel')) {
     showStep(1);
     restoreClipSettings();

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Desk | UpClip Studio</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/creator_desk.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -234,6 +236,53 @@
                                 <svg data-lucide="link-2" width="14" height="14"></svg>
                                 <span>Channel Connection</span>
                             </button>
+                        </div>
+
+                        <!-- AI Smart Publishing Advisor & 1-Click Auto-Scheduler Card -->
+                        <div class="desk-card" style="margin-bottom: var(--space-5); border: 1px solid rgba(16, 185, 129, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(20, 24, 33, 0.95) 100%);">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+                                <div style="flex:1; min-width:280px;">
+                                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                                        <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.4); padding:3px 10px; border-radius:100px; color:var(--primary); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
+                                            <svg data-lucide="sparkles" width="12" height="12"></svg> AI Publishing Advisor
+                                        </div>
+                                        <span style="font-size:12px; color:var(--text-muted);">Algorithm-Backed Growth Strategy</span>
+                                    </div>
+                                    <h3 style="font-size:17px; font-weight:800; color:var(--text-primary); margin:0 0 8px 0; display:flex; align-items:center; gap:8px;">
+                                        <span>YouTube Shorts Smart Schedule & Optimization</span>
+                                    </h3>
+                                    <p style="font-size:13px; color:var(--text-secondary); margin:0 0 12px 0; line-height:1.5;">
+                                        Maximize your Shorts reach and audience conversion with automated staggered release windows, peak traffic distribution, and viral keyword tagging.
+                                    </p>
+                                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;" id="smartAdvisorSlots">
+                                        <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                                            <div style="font-size:11px; font-weight:700; color:var(--primary); margin-bottom:2px;">🔥 PRIME PEAK WINDOW</div>
+                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">6:30 PM – 9:30 PM</div>
+                                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Highest evening viewer engagement</div>
+                                        </div>
+                                        <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                                            <div style="font-size:11px; font-weight:700; color:#38bdf8; margin-bottom:2px;">⏱ ALGORITHM SPACING</div>
+                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">4 to 6 Hours Apart</div>
+                                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Prevents self-cannibalizing views</div>
+                                        </div>
+                                        <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                                            <div style="font-size:11px; font-weight:700; color:#fbbf24; margin-bottom:2px;">🎯 TITLE & HASHTAGS</div>
+                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">&lt; 50 Chars + 3 #Tags</div>
+                                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Clean hook + #Shorts #Viral</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:8px; align-self:center;">
+                                    <button class="btn btn-primary" id="btnAutoScheduleClips" style="padding:10px 18px; font-size:13px; font-weight:700; box-shadow:0 4px 14px rgba(16, 185, 129, 0.35);">
+                                        <svg data-lucide="calendar-check" width="16" height="16"></svg>
+                                        <span>1-Click Auto-Schedule All Clips</span>
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" id="btnRefreshAdvisor" style="justify-content:center;">
+                                        <svg data-lucide="refresh-cw" width="13" height="13"></svg>
+                                        <span>Refresh Advice</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Overview Content Grid (Sections 7 & 8) -->
@@ -695,12 +744,18 @@
                          VIEW 4: SCHEDULED (Section 12)
                          ======================================================== -->
                     <div class="desk-view-pane" id="view-scheduled" style="display:none;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4); flex-wrap:wrap; gap:10px;">
                             <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0;">Automated Release Schedule</h3>
-                            <button class="btn btn-primary btn-sm" data-nav="upload" data-mode="schedule">
-                                <svg data-lucide="plus" width="14" height="14"></svg>
-                                <span>Schedule Video</span>
-                            </button>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-secondary btn-sm" id="btnAutoScheduleFromSchedView">
+                                    <svg data-lucide="calendar-check" width="14" height="14"></svg>
+                                    <span>1-Click Auto-Schedule Clips</span>
+                                </button>
+                                <button class="btn btn-primary btn-sm" data-nav="upload" data-mode="schedule">
+                                    <svg data-lucide="plus" width="14" height="14"></svg>
+                                    <span>Schedule Video</span>
+                                </button>
+                            </div>
                         </div>
                         <div id="scheduledItemsList">
                             <!-- Populated dynamically -->

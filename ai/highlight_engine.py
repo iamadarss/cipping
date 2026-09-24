@@ -11,9 +11,10 @@ class HighlightEngine:
     def __init__(self):
         pass
 
-    def detect_highlights(self, video_path, transcript=None, scenes=None, min_duration=8.0, max_duration=60.0):
+    def detect_highlights(self, video_path, transcript=None, scenes=None, min_duration=15.0, max_duration=60.0):
         """
         Generate candidate short-form clips and highlight suggestions.
+        Ensures legitimate, genuine clip durations (minimum 15s).
 
         Returns:
             list of dicts: [{ id, title, start, end, duration, score, reason, category }]
@@ -70,24 +71,29 @@ class HighlightEngine:
                     chunk_text = ""
                     current_chunk_words = []
         else:
-            # Pacing & scene-based segment proposal
-            step = min(15.0, total_duration)
+            # Pacing & scene-based segment proposal with genuine shorts duration (20-40s)
+            step = min(35.0, max(min_duration, total_duration / 2.0))
             t = 0.0
             idx = 1
             while t < total_duration:
                 end_t = min(total_duration, t + step)
-                if end_t - t >= 4.0:
+                seg_dur = end_t - t
+                if seg_dur >= min_duration:
                     highlights.append({
                         "id": f"hl_{idx}",
                         "title": f"Key Moment {idx}",
                         "start": round(t, 2),
                         "end": round(end_t, 2),
-                        "duration": round(end_t - t, 2),
+                        "duration": round(seg_dur, 2),
                         "score": 85 if idx == 1 else 78,
                         "reason": "Strong visual pacing and continuous action",
                         "category": "Highlight" if idx == 1 else "Action"
                     })
                     idx += 1
+                elif highlights:
+                    # Merge trailing short leftover with previous highlight
+                    highlights[-1]["end"] = round(end_t, 2)
+                    highlights[-1]["duration"] = round(end_t - highlights[-1]["start"], 2)
                 t = end_t
 
         # Sort highlights by relevance score descending

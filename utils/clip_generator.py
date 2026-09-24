@@ -15,20 +15,38 @@ class ClipGenerator:
     # Build FFmpeg filter for aspect-ratio smart crop
     # ======================================================
 
-    def _build_crop_filter(self, target_width, target_height):
+    def _build_crop_filter(self, target_width, target_height, reframe_x=None):
         """
         Build an ffmpeg scale + crop filter that does intelligent
-        crop/reframe (center) instead of stretching.
+        crop/reframe (center or subject-aware) instead of stretching.
 
         Returns None if no aspect change needed (original).
         """
         if target_width is None or target_height is None:
             return None
 
-        return (
-            f"scale={target_width}:{target_height}:force_original_aspect_ratio=increase,"
-            f"crop={target_width}:{target_height}"
-        )
+        # Ensure even pixel dimensions for libx264 encoding
+        target_width = (int(target_width) // 2) * 2
+        target_height = (int(target_height) // 2) * 2
+
+        scale_part = f"scale={target_width}:{target_height}:force_original_aspect_ratio=increase"
+
+        # Explicit center crop as reliable default
+        crop_part = f"crop={target_width}:{target_height}:(in_w-{target_width})/2:(in_h-{target_height})/2"
+
+        if reframe_x is not None:
+            try:
+                rx = float(reframe_x)
+                if 0.05 <= rx <= 0.95:
+                    # Subject center as ratio (e.g. 0.5 = center, 0.3 = left, 0.7 = right)
+                    crop_part = f"crop={target_width}:{target_height}:max(0\\,min(in_w-{target_width}\\,in_w*{rx}-{target_width}/2)):(in_h-{target_height})/2"
+                elif abs(rx) > 0.5:
+                    # Pixel/canvas offset from center
+                    crop_part = f"crop={target_width}:{target_height}:max(0\\,min(in_w-{target_width}\\,(in_w-{target_width})/2+({rx}))):(in_h-{target_height})/2"
+            except (ValueError, TypeError):
+                pass
+
+        return f"{scale_part},{crop_part}"
 
     # ======================================================
     # Build FFmpeg scale filter for quality presets
@@ -37,9 +55,9 @@ class ClipGenerator:
     def _build_quality_filter(self, quality_key, target_w, target_h):
         """
         Build a scale filter enforcing a max resolution for the selected
-        quality preset. Combined with the aspect crop filter when needed.
+        quality preset, preserving the target aspect ratio.
 
-        Returns None if original quality (no scaling).
+        Returns None if original quality or already within bounds.
         """
         preset = config.QUALITY_PRESETS.get(
             quality_key,
@@ -49,10 +67,31 @@ class ClipGenerator:
         if max_w is None or max_h is None:
             return None
 
-        # If aspect crop already determines exact dimensions, just cap them.
+        # If aspect crop already determines exact dimensions:
         if target_w and target_h:
-            out_w = min(target_w, max_w)
-            out_h = min(target_h, max_h)
+            # For vertical/portrait formats (target_h > target_w):
+            # The preset dimensions (e.g. 1920x1080 for 1080p, 1280x720 for 720p)
+            # must align with vertical bounds: max vertical width = min(max_w, max_h),
+            # max vertical height = max(max_w, max_h).
+            if target_h > target_w:
+                preset_limit_w = min(max_w, max_h)
+                preset_limit_h = max(max_w, max_h)
+            elif target_w > target_h:
+                preset_limit_w = max(max_w, max_h)
+                preset_limit_h = min(max_w, max_h)
+            else:  # 1:1 square
+                square_limit = min(max_w, max_h)
+                preset_limit_w = square_limit
+                preset_limit_h = square_limit
+
+            # Calculate if scaling down is required
+            scale_factor = min(1.0, preset_limit_w / float(target_w), preset_limit_h / float(target_h))
+            if scale_factor >= 1.0:
+                # Target dimensions already fit within quality preset bounds!
+                return None
+
+            out_w = (int(target_w * scale_factor) // 2) * 2
+            out_h = (int(target_h * scale_factor) // 2) * 2
             return f"scale={out_w}:{out_h}"
 
         # Otherwise scale down to fit within (max_w, max_h), preserving ratio.
@@ -72,6 +111,7 @@ class ClipGenerator:
         aspect_key="original",
         fps=None,
         quality=config.DEFAULT_QUALITY,
+        reframe_x=None,
     ):
         """
         Create one MP4 clip using FFmpeg.
@@ -81,6 +121,7 @@ class ClipGenerator:
         output_file : Path output file
         aspect_key  : config.ASPECT_OPTIONS key (e.g. 'original', '9:16')
         quality     : config.QUALITY_PRESETS key (e.g. 'original', '1080p')
+        reframe_x   : optional horizontal subject offset or center ratio
         """
 
         output_file = Path(output_file)
@@ -104,7 +145,7 @@ class ClipGenerator:
 
         # Build combined video filter: aspect crop + quality scaling
         filters = []
-        crop_filter = self._build_crop_filter(target_w, target_h)
+        crop_filter = self._build_crop_filter(target_w, target_h, reframe_x=reframe_x)
         if crop_filter:
             filters.append(crop_filter)
 
@@ -166,15 +207,15 @@ class ClipGenerator:
         """
         Build a clip filename based on naming mode.
 
-        naming      : config.NAME_SEQUENTIAL or config.NAME_CONTENT
-        transcript  : optional list of {start,end,text} used for content names
+        naming         : config.NAME_SEQUENTIAL or config.NAME_CONTENT
+        transcript     : optional list of {start,end,text} used for content names
         existing_names : optional set of already-used filenames to avoid duplicates
         """
         existing_names = existing_names or set()
         base_name = None
 
-        if naming == config.NAME_CONTENT and transcript:
-            base_name = self._get_content_name(transcript, start_time, index)
+        if naming == config.NAME_CONTENT:
+            base_name = self._get_content_name(transcript, start_time, duration, index)
         elif naming == config.NAME_SEQUENTIAL:
             base_name = f"AI_Spark_Clip_{index:03d}"
 
@@ -196,36 +237,48 @@ class ClipGenerator:
         existing_names.add(final_name)
         return final_name
 
-    def _get_content_name(self, transcript, start_time, index):
-        """Extract a meaningful content-based name from transcript."""
-        if not transcript:
-            return f"AI_Spark_Clip_{index:03d}"
+    def _get_content_name(self, transcript, start_time, duration, index):
+        """Extract a meaningful content-based name from spoken transcript and topic."""
+        clip_end = start_time + max(float(duration or 0), 1.0)
+        collected_texts = []
+        if transcript:
+            for seg in transcript:
+                s_start = float(seg.get("start", 0))
+                s_end = float(seg.get("end", 0))
+                if not (s_end < start_time or s_start > clip_end):
+                    t = (seg.get("text") or "").strip()
+                    if t:
+                        collected_texts.append(t)
 
-        # Find the transcript segment that overlaps the clip start
-        best_seg = None
-        best_score = -1
-        for seg in transcript:
-            seg_start = float(seg.get("start", 0))
-            seg_end = float(seg.get("end", 0))
-            if seg_start <= start_time <= seg_end + 0.5:
-                text = (seg.get("text") or "").strip()
-                score = len(text)
-                if score > best_score:
-                    best_score = score
-                    best_seg = text
+        full_clip_text = " ".join(collected_texts).strip()
 
-        if not best_seg or best_score < 3:
-            return f"AI_Spark_Clip_{index:03d}"
+        stop_words = {
+            "this", "that", "with", "from", "have", "were", "been", "they", "will",
+            "what", "when", "where", "which", "about", "there", "their", "would",
+            "video", "clip", "shorts", "hindi", "kya", "aur", "hota", "hoti", "hote",
+            "kare", "karna", "nahi", "islye", "lekin", "bahut", "raha", "rahe", "gaya",
+            "said", "then", "into", "more", "some", "such", "than", "them", "these",
+            "also", "just", "like", "know", "good", "well", "come", "time", "make"
+        }
 
-        # Extract key words from the transcript text
-        words = re.findall(r"[A-Za-z]{3,}", best_seg)
-        if not words:
-            return f"AI_Spark_Clip_{index:03d}"
+        # Extract words of 3+ alphanumeric chars
+        words = re.findall(r"[A-Za-z0-9]{3,}", full_clip_text)
+        filtered = [w for w in words if w.lower() not in stop_words]
 
-        # Use first few meaningful words
-        key_words = words[:4]
-        slug = "_".join(key_words).lower()
-        return slug[:50] if slug else f"AI_Spark_Clip_{index:03d}"
+        if len(filtered) >= 2:
+            title_slug = "_".join(w.capitalize() for w in filtered[:4])
+            return f"{title_slug}_{index:02d}"
+
+        # Fallback to source video filename topic
+        source_stem = Path(self.video_path).stem
+        source_words = re.findall(r"[A-Za-z0-9]{3,}", source_stem)
+        filtered_source = [w for w in source_words if w.lower() not in stop_words]
+
+        if filtered_source:
+            source_slug = "_".join(w.capitalize() for w in filtered_source[:3])
+            return f"{source_slug}_Clip_{index:02d}"
+
+        return f"Viral_Clip_{index:03d}"
 
     # ======================================================
     # Phase 3 - Split by Fixed Duration
@@ -239,6 +292,7 @@ class ClipGenerator:
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
+        reframe_x=None,
     ):
 
         if clip_duration is None:
@@ -276,6 +330,7 @@ class ClipGenerator:
                 aspect_key=aspect_key,
                 fps=fps,
                 quality=quality,
+                reframe_x=reframe_x,
             )
 
             if clip:
@@ -308,6 +363,7 @@ class ClipGenerator:
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
+        reframe_x=None,
     ):
         """
         Generate clips from detected scenes according to user clipping mode.
@@ -326,6 +382,7 @@ class ClipGenerator:
                 transcript=transcript,
                 fps=fps,
                 quality=quality,
+                reframe_x=reframe_x,
             )
 
         if mode == config.CLIPPING_COUNT:
@@ -337,6 +394,7 @@ class ClipGenerator:
                 transcript=transcript,
                 fps=fps,
                 quality=quality,
+                reframe_x=reframe_x,
             )
 
         # Default: AI mode generates one unique edited clip per scene.
@@ -349,6 +407,7 @@ class ClipGenerator:
             transcript=transcript,
             fps=fps,
             quality=quality,
+            reframe_x=reframe_x,
         )
 
     # ======================================================
@@ -364,6 +423,7 @@ class ClipGenerator:
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
+        reframe_x=None,
     ):
         """Pick `clip_count` best scenes evenly spaced through the video."""
         clips = []
@@ -387,7 +447,8 @@ class ClipGenerator:
             start = scene["start"]
             end = scene["end"]
             duration = end - start
-            if duration < config.MIN_SCENE_DURATION:
+            min_dur = getattr(config, "MIN_DURATION", 60.0)
+            if len(scenes) > 1 and duration < min(min_dur * 0.7, 45.0):
                 continue
 
             filename = self._build_clip_name(
@@ -402,6 +463,7 @@ class ClipGenerator:
                 aspect_key=aspect_key,
                 fps=fps,
                 quality=quality,
+                reframe_x=reframe_x,
             )
 
             if clip:
@@ -427,6 +489,7 @@ class ClipGenerator:
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
+        reframe_x=None,
     ):
 
         clips = []
@@ -444,8 +507,9 @@ class ClipGenerator:
 
             duration = end - start
 
-            # Skip very small scenes
-            if duration < config.MIN_SCENE_DURATION:
+            # Skip very small scenes (must be genuine clip duration floor >= 60s)
+            min_dur = getattr(config, "MIN_DURATION", 60.0)
+            if len(scenes) > 1 and duration < min(min_dur * 0.7, 45.0):
                 continue
 
             # Cap very long scenes to max clip duration
@@ -464,6 +528,7 @@ class ClipGenerator:
                 aspect_key=aspect_key,
                 fps=fps,
                 quality=quality,
+                reframe_x=reframe_x,
             )
 
             if clip:

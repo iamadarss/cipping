@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Clip Studio | UpClip Studio</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -156,19 +158,21 @@
                         
                         <!-- PANEL 1: UPLOAD / IMPORT SOURCE & METADATA PREVIEW -->
                         <div class="wiz-panel active" data-panel="1">
-                            <div class="upload-card" id="uploadZone" style="height: 300px;">
-                                <div class="upload-vector-wrapper">
-                                    <svg class="upload-vector-svg" viewBox="0 0 100 100" width="70" height="70">
-                                        <rect x="20" y="20" width="60" height="60" rx="10" stroke="var(--border-strong)" stroke-width="1.5" fill="none"></rect>
-                                        <circle cx="50" cy="45" r="10" stroke="var(--border-strong)" stroke-width="1.5" fill="none"></circle>
-                                        <path d="M30 75 C 40 60, 45 65, 55 55 C 65 65, 70 70, 70 75" stroke="var(--border-strong)" stroke-width="1.5" fill="none"></path>
-                                        <line x1="50" y1="20" x2="50" y2="10" stroke="var(--primary)" stroke-width="2" stroke-linecap="round"></line>
-                                        <polyline points="45 15 50 10 55 15" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                                    </svg>
+                            <div class="upload-card" id="uploadZone">
+                                <div class="upload-icon-badge">
+                                    <svg data-lucide="cloud-upload" width="30" height="30"></svg>
                                 </div>
-                                <div class="upload-title" style="margin-top: var(--space-3);">Drop your video to import</div>
-                                <div class="upload-sub">Supports MP4, MOV, MKV, WebM up to 1GB</div>
-                                <button class="btn btn-primary btn-sm" id="browseBtn" type="button" style="margin-top: var(--space-3);"><svg data-lucide="folder-open" width="14" height="14"></svg> Browse Files</button>
+                                <div class="upload-title">Drop your video file to start clipping</div>
+                                <div class="upload-sub">Drag and drop your footage here or browse from your computer to generate high-retention shorts.</div>
+                                <button class="btn btn-primary" id="browseBtn" type="button" style="margin-top: 10px; padding: 10px 24px; font-weight: 700; gap: 8px;">
+                                    <svg data-lucide="folder-open" width="16" height="16"></svg>
+                                    <span>Browse Files</span>
+                                </button>
+                                <div class="upload-pills-row">
+                                    <span class="upload-pill"><svg data-lucide="file-video" width="12" height="12"></svg> MP4, MOV, WebM, MKV</span>
+                                    <span class="upload-pill"><svg data-lucide="shield-check" width="12" height="12"></svg> Up to 1 GB</span>
+                                    <span class="upload-pill"><svg data-lucide="zap" width="12" height="12"></svg> Fast GPU Processing</span>
+                                </div>
                                 <input type="file" id="videoInput" accept="video/*" hidden>
                             </div>
 
@@ -254,9 +258,9 @@
                                     <div>
                                         <h2 class="settings-workspace-title">
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
-                                            AI Clip Configuration & Engine Settings
+                                            AI Clip Configuration &amp; Engine Settings
                                         </h2>
-                                        <p class="settings-workspace-sub">Fine-tune target aspect ratio, clipping strategy, spoken & subtitle language, caption aesthetics, and AI sensitivity.</p>
+                                        <p class="settings-workspace-sub">Customize and toggle every single AI function: Whisper speech engine, uploaded subtitles, scene detection, face tracking, viral scoring, and captions.</p>
                                     </div>
                                     <div class="settings-header-actions">
                                         <button type="button" class="btn btn-secondary btn-sm" id="btnToggleAllSettings">
@@ -267,13 +271,30 @@
                                     </div>
                                 </div>
 
+                                <!-- Preset Quick Selection Bar -->
+                                <div class="preset-pills-bar">
+                                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-right: 4px; text-transform: uppercase;">Quick Presets:</span>
+                                    <button type="button" class="preset-pill-btn active" data-preset="all" id="presetBtnAll">
+                                        <svg data-lucide="sparkles" width="13" height="13"></svg> Full AI Pro (All Active)
+                                    </button>
+                                    <button type="button" class="preset-pill-btn" data-preset="fast" id="presetBtnFast">
+                                        <svg data-lucide="zap" width="13" height="13"></svg> Fast &amp; Lightweight (Tiny Model)
+                                    </button>
+                                    <button type="button" class="preset-pill-btn" data-preset="subtitles" id="presetBtnSubtitles">
+                                        <svg data-lucide="file-text" width="13" height="13"></svg> Custom Subtitles (Whisper OFF)
+                                    </button>
+                                    <button type="button" class="preset-pill-btn" data-preset="minimal" id="presetBtnMinimal">
+                                        <svg data-lucide="scissors" width="13" height="13"></svg> Raw Cuts Only
+                                    </button>
+                                </div>
+
                                 <!-- 2-Column Balanced Settings Grid -->
                                 <div class="settings-studio-grid">
                                     
-                                    <!-- LEFT COLUMN: RULES & INTELLIGENCE -->
+                                    <!-- LEFT COLUMN: RULES, CUTTING & FRAMING -->
                                     <div class="settings-studio-col">
                                         
-                                        <!-- SECTION 1: TARGET ASPECT RATIO -->
+                                        <!-- SECTION 1: TARGET ASPECT RATIO & SMART FRAMING -->
                                         <div class="settings-group-card settings-accordion-item open" id="sec-aspect">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
@@ -282,7 +303,7 @@
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
                                                     </div>
                                                     <div>
-                                                        <h4 class="settings-group-title">Target Aspect Ratio</h4>
+                                                        <h4 class="settings-group-title">Target Aspect Ratio &amp; Framing</h4>
                                                         <span class="settings-group-desc">Crop and reframe for your destination platform</span>
                                                     </div>
                                                 </div>
@@ -312,7 +333,7 @@
                                                             <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="1" width="24" height="24" rx="3"/></svg>
                                                         </div>
                                                         <div class="aspect-ratio-label">1:1</div>
-                                                        <div class="aspect-desc-label">Instagram / LinkedIn Feed</div>
+                                                        <div class="aspect-desc-label">Square Feed</div>
                                                     </label>
                                                     <label class="aspect-option-card">
                                                         <input type="radio" name="aspect" value="4:5">
@@ -320,13 +341,37 @@
                                                             <svg width="24" height="30" viewBox="0 0 24 30" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="1" width="22" height="28" rx="3"/></svg>
                                                         </div>
                                                         <div class="aspect-ratio-label">4:5</div>
-                                                        <div class="aspect-desc-label">Facebook / IG Portrait</div>
+                                                        <div class="aspect-desc-label">Portrait Feed</div>
                                                     </label>
+                                                </div>
+
+                                                <!-- Smart Reframing & Face Tracking Toggle -->
+                                                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
+                                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                        <div>
+                                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Smart Subject Reframe &amp; Face Tracking</div>
+                                                            <div style="font-size:11px; color:var(--text-muted);">Dynamically keeps speaking faces centered in 9:16 vertical view</div>
+                                                        </div>
+                                                        <label class="switch-control">
+                                                            <input type="checkbox" id="smartReframeToggle" checked>
+                                                            <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                            <span class="switch-status-pill active" id="smartReframeStatus">ON</span>
+                                                        </label>
+                                                    </div>
+                                                    <div id="smartReframeOptions" class="engine-subfields-wrapper" style="margin-top:10px;">
+                                                        <div class="form-group">
+                                                            <label>Framing Strategy</label>
+                                                            <select id="faceTrackingMode" class="form-control">
+                                                                <option value="smart" selected>Smart Subject Centering (CV Face Tracking)</option>
+                                                                <option value="center">Static Center Crop (No Dynamic Panning)</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 2: CLIPPING STRATEGY -->
+                                        <!-- SECTION 2: SCENE DETECTION & CLIPPING STRATEGY -->
                                         <div class="settings-group-card settings-accordion-item open" id="sec-clipmode">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
@@ -335,143 +380,191 @@
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
                                                     </div>
                                                     <div>
-                                                        <h4 class="settings-group-title">Clipping Strategy</h4>
-                                                        <span class="settings-group-desc">Define how AI cuts and selects moments</span>
+                                                        <h4 class="settings-group-title">Scene Detection &amp; Clipping Mode</h4>
+                                                        <span class="settings-group-desc">Intelligent camera cut detection &amp; selection strategy</span>
                                                     </div>
                                                 </div>
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="sceneDetectionToggle" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="sceneDetectionStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
                                             </div>
                                             <div class="settings-accordion-content" style="display:block;">
-                                                <div class="option-grid vertical" style="margin-top: var(--space-2);">
-                                                    <label class="option-card">
-                                                        <input type="radio" name="clipmode" value="ai" checked>
-                                                        <div class="option-label">
-                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
-                                                            AI Auto Decisions (Recommended)
+                                                <div id="sceneDetectionSubfields" class="engine-subfields-wrapper">
+                                                    <!-- Sensitivity Range Slider -->
+                                                    <div class="form-group" style="margin-top: var(--space-2);">
+                                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                                                            <label style="margin:0;">Scene Cut Sensitivity (Threshold)</label>
+                                                            <span class="slider-badge" id="sceneThresholdDisplay">27.00</span>
                                                         </div>
-                                                        <div class="option-sub">AI analyzes audio dynamics, speech density & scene cuts to automatically pick the most engaging highlights.</div>
-                                                    </label>
-                                                    <label class="option-card">
-                                                        <input type="radio" name="clipmode" value="duration">
-                                                        <div class="option-label">
-                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                                            Fixed Clip Duration
+                                                        <input type="range" id="sceneThresholdRange" min="15" max="45" value="27" step="0.5" class="slider-input">
+                                                        <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:2px;">
+                                                            <span>More Cuts (Sensitive - 15)</span>
+                                                            <span>Fewer Cuts (Conservative - 45)</span>
                                                         </div>
-                                                        <div class="option-sub">Specify exact target seconds for each generated clip (e.g. 30s, 60s).</div>
-                                                    </label>
-                                                    <label class="option-card">
-                                                        <input type="radio" name="clipmode" value="count">
-                                                        <div class="option-label">
-                                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
-                                                            Target Clip Count
-                                                        </div>
-                                                        <div class="option-sub">Extract a specific target number of clips from the video.</div>
-                                                    </label>
-                                                </div>
+                                                    </div>
 
-                                                <!-- Conditional Duration Fields -->
-                                                <div id="durationSettings" class="conditional" hidden style="margin-top: var(--space-3);">
-                                                    <div class="form-row">
+                                                    <div class="option-grid vertical" style="margin-top: var(--space-3);">
+                                                        <label class="option-card">
+                                                            <input type="radio" name="clipmode" value="ai" checked>
+                                                            <div class="option-label">
+                                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+                                                                AI Auto Decisions (Recommended)
+                                                            </div>
+                                                            <div class="option-sub">AI analyzes audio dynamics, speech density &amp; scene cuts to automatically pick the most engaging highlights.</div>
+                                                        </label>
+                                                        <label class="option-card">
+                                                            <input type="radio" name="clipmode" value="duration">
+                                                            <div class="option-label">
+                                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                                Fixed Clip Duration
+                                                            </div>
+                                                            <div class="option-sub">Specify exact target seconds for each generated clip (e.g. 30s, 60s).</div>
+                                                        </label>
+                                                        <label class="option-card">
+                                                            <input type="radio" name="clipmode" value="count">
+                                                            <div class="option-label">
+                                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
+                                                                Target Clip Count
+                                                            </div>
+                                                            <div class="option-sub">Extract a specific target number of clips from the video.</div>
+                                                        </label>
+                                                    </div>
+
+                                                    <!-- Conditional Duration Fields -->
+                                                    <div id="durationSettings" class="conditional" hidden style="margin-top: var(--space-3);">
+                                                        <div class="form-row">
+                                                            <div class="form-group">
+                                                                <label>Clip Duration (seconds)</label>
+                                                                <input type="number" id="clipDuration" min="5" max="300" value="30" class="form-control">
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label>Clip Count</label>
+                                                                <select id="clipCountMode" class="form-control">
+                                                                    <option value="all">All possible clips</option>
+                                                                    <option value="custom">Custom count</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group" id="customCountWrap" hidden style="margin-top: 10px;">
+                                                            <label>Number of clips</label>
+                                                            <input type="number" id="customCount" min="1" max="100" value="5" class="form-control">
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Conditional Count Fields -->
+                                                    <div id="countSettings" class="conditional" hidden style="margin-top: var(--space-3);">
                                                         <div class="form-group">
-                                                            <label>Clip Duration (seconds)</label>
-                                                            <input type="number" id="clipDuration" min="5" max="300" value="30" class="form-control">
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label>Clip Count</label>
-                                                            <select id="clipCountMode" class="form-control">
-                                                                <option value="all">All possible clips</option>
-                                                                <option value="custom">Custom count</option>
-                                                            </select>
+                                                            <label>How many clips do you want?</label>
+                                                            <input type="number" id="clipCount" min="1" max="100" value="5" class="form-control">
                                                         </div>
                                                     </div>
-                                                    <div class="form-group" id="customCountWrap" hidden style="margin-top: 10px;">
-                                                        <label>Number of clips</label>
-                                                        <input type="number" id="customCount" min="1" max="100" value="5" class="form-control">
-                                                    </div>
-                                                </div>
-
-                                                <!-- Conditional Count Fields -->
-                                                <div id="countSettings" class="conditional" hidden style="margin-top: var(--space-3);">
-                                                    <div class="form-group">
-                                                        <label>How many clips do you want?</label>
-                                                        <input type="number" id="clipCount" min="1" max="100" value="5" class="form-control">
-                                                    </div>
-                                                </div>
-
-                                                <div style="margin-top: var(--space-3); display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border);">
-                                                    <label class="checkbox-label">
-                                                        <input type="checkbox" id="hookDetection" checked> Intelligent hook detection (optimizes first 3 seconds)
-                                                    </label>
-                                                    <label class="checkbox-label">
-                                                        <input type="checkbox" id="silenceHandling" checked> Auto-trim dead air & silent pauses
-                                                    </label>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 3: LANGUAGE & TRANSLATION -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-lang">
+                                        <!-- SECTION 3: SCENE MERGER & ANTI-MICRO-CLIP -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-merger">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">3</span>
                                                     <div class="settings-icon-bubble">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
                                                     </div>
                                                     <div>
-                                                        <h4 class="settings-group-title">Language & Translation</h4>
-                                                        <span class="settings-group-desc">Spoken audio transcription and subtitle language</span>
+                                                        <h4 class="settings-group-title">Anti-Micro-Clip Scene Merger</h4>
+                                                        <span class="settings-group-desc">Eliminates 2-5s micro fragments &amp; enforces Shorts duration floor</span>
                                                     </div>
                                                 </div>
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="sceneMergerToggle" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="sceneMergerStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
                                             </div>
                                             <div class="settings-accordion-content" style="display:block;">
-                                                <div class="form-row" style="margin-top: var(--space-2);">
-                                                    <div class="form-group">
-                                                        <label>Spoken Audio Language</label>
-                                                        <select id="langTranscript" class="form-control">
-                                                            <option value="auto" selected>Auto Detect</option>
-                                                            <option value="en">English</option>
-                                                            <option value="hi">Hindi</option>
-                                                            <option value="hinglish">Hinglish (Hindi + English)</option>
-                                                            <option value="bn">Bengali</option>
-                                                            <option value="ta">Tamil</option>
-                                                            <option value="te">Telugu</option>
-                                                            <option value="mr">Marathi</option>
-                                                            <option value="es">Spanish</option>
-                                                            <option value="fr">French</option>
-                                                            <option value="de">German</option>
-                                                            <option value="ar">Arabic</option>
-                                                            <option value="ur">Urdu</option>
-                                                            <option value="gu">Gujarati</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label>Translate Subtitles Into</label>
-                                                        <select id="langSubtitle" class="form-control">
-                                                            <option value="auto" selected>None (Keep original spoken)</option>
-                                                            <option value="en">English</option>
-                                                            <option value="hi">Hindi</option>
-                                                            <option value="es">Spanish</option>
-                                                            <option value="fr">French</option>
-                                                            <option value="de">German</option>
-                                                            <option value="ar">Arabic</option>
-                                                        </select>
+                                                <div id="sceneMergerSubfields" class="engine-subfields-wrapper">
+                                                    <div class="form-row" style="margin-top: var(--space-2);">
+                                                        <div class="form-group">
+                                                            <label>Min Duration Floor (sec)</label>
+                                                            <input type="number" id="minClipDuration" min="60" max="300" value="60" class="form-control">
+                                                            <span style="font-size:10px; color:var(--text-muted); margin-top:2px;">Enforces 1 min+ length (no short clips)</span>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Target Duration (sec)</label>
+                                                            <input type="number" id="targetClipDuration" min="60" max="300" value="75" class="form-control">
+                                                            <span style="font-size:10px; color:var(--text-muted); margin-top:2px;">Optimal length for Shorts/Reels (60-90s)</span>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Max Duration (sec)</label>
+                                                            <input type="number" id="maxClipDuration" min="60" max="600" value="120" class="form-control">
+                                                            <span style="font-size:10px; color:var(--text-muted); margin-top:2px;">Upper ceiling for a single clip</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 4: CLIP NAMING & PREFIX -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-naming">
+                                        <!-- SECTION 4: SILENCE & DEAD-AIR DETECTION -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-silence">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">4</span>
                                                     <div class="settings-icon-bubble">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="settings-group-title">Silence &amp; Dead-Air Detection</h4>
+                                                        <span class="settings-group-desc">Detects awkward pauses &amp; hesitation for tight pacing</span>
+                                                    </div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="silenceHandlingToggle" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="silenceHandlingStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
+                                            </div>
+                                            <div class="settings-accordion-content" style="display:block;">
+                                                <div id="silenceSubfields" class="engine-subfields-wrapper">
+                                                    <div class="form-row" style="margin-top: var(--space-2);">
+                                                        <div class="form-group">
+                                                            <label>Noise Floor Threshold</label>
+                                                            <select id="silenceThresholdDb" class="form-control">
+                                                                <option value="-35">-35 dB (Aggressive, detects faint pause)</option>
+                                                                <option value="-30" selected>-30 dB (Standard Speech Pauses)</option>
+                                                                <option value="-25">-25 dB (Conservative, quiet rooms)</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Min Pause Duration (sec)</label>
+                                                            <input type="number" id="minSilenceDuration" min="0.2" max="3.0" step="0.1" value="0.5" class="form-control">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION 5: CLIP NAMING & PREFIX -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-naming">
+                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
+                                                <div class="settings-title-left">
+                                                    <span class="settings-sec-num">5</span>
+                                                    <div class="settings-icon-bubble">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                                     </div>
                                                     <div>
-                                                        <h4 class="settings-group-title">Clip Naming</h4>
-                                                        <span class="settings-group-desc">File naming conventions for exported clips</span>
+                                                        <h4 class="settings-group-title">Clip Naming &amp; Prefix</h4>
+                                                        <span class="settings-group-desc">Conventions for saved files and export naming</span>
                                                     </div>
                                                 </div>
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -514,80 +607,343 @@
 
                                     </div>
 
-                                    <!-- RIGHT COLUMN: VISUALS, CAPTIONS & ENGINE -->
+                                    <!-- RIGHT COLUMN: SPEECH, AI ENGINES & CAPTIONS -->
                                     <div class="settings-studio-col">
                                         
-                                        <!-- SECTION 5: SUBTITLES & BURN-IN -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-subtitles">
+                                        <!-- SECTION 6: SPEECH-TO-TEXT & WHISPER AI -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-whisper">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
-                                                    <span class="settings-sec-num">5</span>
+                                                    <span class="settings-sec-num">6</span>
                                                     <div class="settings-icon-bubble">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M10 10H7a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"></path><path d="M19 10h-3a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"></path></svg>
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                                                     </div>
                                                     <div>
-                                                        <h4 class="settings-group-title">Subtitles</h4>
-                                                        <span class="settings-group-desc">Burn subtitles directly into video pixels</span>
+                                                        <h4 class="settings-group-title">Whisper AI Speech-to-Text</h4>
+                                                        <span class="settings-group-desc">OpenAI Whisper multi-language speech transcription</span>
                                                     </div>
                                                 </div>
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="whisperToggle" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="whisperStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
                                             </div>
                                             <div class="settings-accordion-content" style="display:block;">
-                                                <div class="form-group" style="margin-top: var(--space-2);">
-                                                    <label class="checkbox-label" style="font-weight:600;">
-                                                        <input type="checkbox" id="subtitleEnabled" checked> Burn subtitles into final video
-                                                    </label>
-                                                </div>
-                                                <div class="form-row" style="margin-top: 10px;">
-                                                    <div class="form-group">
-                                                        <label>Subtitle Style</label>
-                                                        <select id="subtitleStyle" class="form-control">
-                                                            <option value="youtube">YouTube Standard</option>
-                                                            <option value="tiktok">TikTok High Contrast</option>
-                                                            <option value="netflix">Netflix Cinematic</option>
-                                                            <option value="minimal">Minimal Clean</option>
-                                                            <option value="bold">Creator Bold</option>
+                                                <div id="whisperSubfields" class="engine-subfields-wrapper">
+                                                    <div class="form-group" style="margin-top: var(--space-2);">
+                                                        <label>Whisper AI Model</label>
+                                                        <select id="whisperModel" class="form-control">
+                                                            <option value="tiny">tiny — Superfast (~39 MB RAM, lightweight)</option>
+                                                            <option value="base" selected>base — Balanced (~74 MB RAM, recommended)</option>
+                                                            <option value="small">small — High Quality (~244 MB RAM, accurate for Hindi &amp; accents)</option>
+                                                            <option value="medium">medium — Professional Quality (~769 MB RAM, high accuracy)</option>
+                                                            <option value="large-v3">large-v3 — Maximum Accuracy (~1550 MB RAM, multi-speaker pro)</option>
+                                                            <option value="turbo">turbo — Turbo Large (~800 MB RAM, fast high accuracy)</option>
                                                         </select>
                                                     </div>
-                                                    <div class="form-group">
-                                                        <label>Subtitle Position</label>
-                                                        <select id="subtitlePosition" class="form-control">
-                                                            <option value="bottom">Bottom Safe Zone</option>
-                                                            <option value="middle">Middle / Center</option>
-                                                            <option value="top">Top</option>
-                                                        </select>
+
+                                                    <div class="form-row" style="margin-top: 10px;">
+                                                        <div class="form-group">
+                                                            <label>Spoken Audio Language</label>
+                                                            <select id="langTranscript" class="form-control">
+                                                                <option value="auto" selected>Auto Detect</option>
+                                                                <option value="en">English</option>
+                                                                <option value="hi">Hindi</option>
+                                                                <option value="hinglish">Hinglish (Hindi + English)</option>
+                                                                <option value="bn">Bengali</option>
+                                                                <option value="ta">Tamil</option>
+                                                                <option value="te">Telugu</option>
+                                                                <option value="mr">Marathi</option>
+                                                                <option value="es">Spanish</option>
+                                                                <option value="fr">French</option>
+                                                                <option value="de">German</option>
+                                                                <option value="ar">Arabic</option>
+                                                                <option value="ur">Urdu</option>
+                                                                <option value="gu">Gujarati</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Translate Subtitles Into</label>
+                                                            <select id="langSubtitle" class="form-control">
+                                                                <option value="auto" selected>None (Keep original spoken)</option>
+                                                                <option value="en">English</option>
+                                                                <option value="hi">Hindi</option>
+                                                                <option value="es">Spanish</option>
+                                                                <option value="fr">French</option>
+                                                                <option value="de">German</option>
+                                                                <option value="ar">Arabic</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border);">
+                                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                            <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">Hardware GPU Acceleration (CUDA / DirectML)</span>
+                                                            <label class="switch-control">
+                                                                <input type="checkbox" id="gpuAccelToggle" checked>
+                                                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                                <span class="switch-status-pill active" id="gpuAccelStatus">ON</span>
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 6: ANIMATED CAPTIONS -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-captions">
+                                        <!-- SECTION 7: CUSTOM TRANSCRIPT / SUBTITLE SOURCE -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-custom-sub">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
-                                                    <span class="settings-sec-num">6</span>
+                                                    <span class="settings-sec-num">7</span>
                                                     <div class="settings-icon-bubble">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
                                                     </div>
                                                     <div>
-                                                        <h4 class="settings-group-title">Animated Captions</h4>
-                                                        <span class="settings-group-desc">Dynamic TikTok / Reels word-by-word motion captions</span>
+                                                        <h4 class="settings-group-title">Custom Subtitles &amp; Transcript Source</h4>
+                                                        <span class="settings-group-desc">Upload external SRT / VTT to bypass Whisper AI</span>
+                                                    </div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="useUploadedSubtitlesToggle">
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill" id="useUploadedSubtitlesStatus">OFF</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
+                                            </div>
+                                            <div class="settings-accordion-content" style="display:block;">
+                                                <div id="customSubSubfields" class="engine-subfields-wrapper engine-disabled">
+                                                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">
+                                                        Use uploaded subtitle file from Step 1 or upload a new one directly here:
+                                                    </div>
+                                                    <div class="subtitle-upload-box" id="settingsSubDropBox">
+                                                        <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                                            <svg data-lucide="file-up" width="16" height="16" style="color:var(--primary);"></svg>
+                                                            <span style="font-size:12px; font-weight:600;" id="settingsSubStatusText">Drop .SRT, .VTT, .JSON here or click to browse</span>
+                                                        </div>
+                                                        <input type="file" id="settingsSubFileInput" accept=".srt,.vtt,.json,.txt" hidden>
+                                                    </div>
+                                                    <div id="settingsLoadedSubCard" class="subtitle-loaded-card" hidden style="margin-top:10px;">
+                                                        <div style="min-width:0;">
+                                                            <div style="font-weight:700; font-size:12px;" id="settingsSubFilename">-</div>
+                                                            <div class="sub-meta" style="margin-top:2px;">
+                                                                <span class="subtitle-chip" id="settingsSubSegs">0 segs</span>
+                                                                <span id="settingsSubDur">0:00</span>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" class="btn btn-secondary btn-sm danger" id="settingsSubRemoveBtn" style="padding:3px 8px; font-size:11px;">Remove</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION 8: MULTI-MODAL AI INTELLIGENCE SUITE -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-ai-suite">
+                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
+                                                <div class="settings-title-left">
+                                                    <span class="settings-sec-num">8</span>
+                                                    <div class="settings-icon-bubble">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="settings-group-title">Multi-Modal AI Intelligence Engines</h4>
+                                                        <span class="settings-group-desc">Audio energy, motion dynamics &amp; emotion tone detection</span>
                                                     </div>
                                                 </div>
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                             </div>
                                             <div class="settings-accordion-content" style="display:block;">
-                                                <div class="form-group" style="margin-top: var(--space-2);">
-                                                    <label class="checkbox-label" style="font-weight:600;">
-                                                        <input type="checkbox" id="captionEnabled"> Enable dynamic animated captions
-                                                    </label>
+                                                <div style="display:flex; flex-direction:column; gap:12px; margin-top:var(--space-2);">
+                                                    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border);">
+                                                        <div>
+                                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Audio Energy &amp; Reaction Peak Boost</div>
+                                                            <div style="font-size:11px; color:var(--text-muted);">Scores applause, volume spikes, laughter &amp; crowd reactions</div>
+                                                        </div>
+                                                        <label class="switch-control">
+                                                            <input type="checkbox" id="audioEnergyToggle" checked>
+                                                            <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                            <span class="switch-status-pill active" id="audioEnergyStatus">ON</span>
+                                                        </label>
+                                                    </div>
+
+                                                    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border);">
+                                                        <div>
+                                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Visual Motion Dynamics &amp; Pixel Velocity</div>
+                                                            <div style="font-size:11px; color:var(--text-muted);">Detects high-action frames vs static boring segments</div>
+                                                        </div>
+                                                        <label class="switch-control">
+                                                            <input type="checkbox" id="motionDetectionToggle" checked>
+                                                            <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                            <span class="switch-status-pill active" id="motionDetectionStatus">ON</span>
+                                                        </label>
+                                                    </div>
+
+                                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                        <div>
+                                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Emotion &amp; Sentiment Hook Classifier</div>
+                                                            <div style="font-size:11px; color:var(--text-muted);">Detects Excitement, Surprise, Curiosity &amp; Urgency in speech</div>
+                                                        </div>
+                                                        <label class="switch-control">
+                                                            <input type="checkbox" id="emotionDetectionToggle" checked>
+                                                            <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                            <span class="switch-status-pill active" id="emotionDetectionStatus">ON</span>
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                                
-                                                <div id="captionOptions" class="caption-options" hidden style="margin-top: 10px;">
-                                                    <div class="form-group" style="margin-bottom: 10px;">
-                                                        <label>Animation Preset</label>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION 9: AI VIRAL SCORING & CLIP RANKING -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-viral">
+                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
+                                                <div class="settings-title-left">
+                                                    <span class="settings-sec-num">9</span>
+                                                    <div class="settings-icon-bubble">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="settings-group-title">AI Viral Scoring &amp; Clip Ranking</h4>
+                                                        <span class="settings-group-desc">5-pillar retention predictor with A+/A ranking badges</span>
+                                                    </div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="viralRankingToggle" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="viralRankingStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
+                                            </div>
+                                            <div class="settings-accordion-content" style="display:block;">
+                                                <div id="viralRankingSubfields" class="engine-subfields-wrapper">
+                                                    <div class="form-group" style="margin-top: var(--space-2);">
+                                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                                                            <label style="margin:0;">Min Viral Score Filter</label>
+                                                            <span class="slider-badge" id="viralScoreDisplay">50+</span>
+                                                        </div>
+                                                        <input type="range" id="minViralScoreRange" min="40" max="85" value="50" step="5" class="slider-input">
+                                                        <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:2px;">
+                                                            <span>Accept All (40)</span>
+                                                            <span>Strict Viral Only (85+)</span>
+                                                        </div>
+                                                    </div>
+                                                    <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px; padding-top:8px; border-top:1px solid var(--border);">
+                                                        <label class="checkbox-label">
+                                                            <input type="checkbox" id="hookDetectionToggle" checked> Prioritize 3-second opening hook strength
+                                                        </label>
+                                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                                                            <div>
+                                                                <div style="font-size:12px; font-weight:700; color:var(--text-primary);">Viral Keyword &amp; Hashtag Generator</div>
+                                                                <div style="font-size:11px; color:var(--text-muted);">Generates hashtags (#Shorts, #Viral) and SEO tags</div>
+                                                            </div>
+                                                            <label class="switch-control">
+                                                                <input type="checkbox" id="keywordExtractionToggle" checked>
+                                                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                                <span class="switch-status-pill active" id="keywordExtractionStatus">ON</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION 10: SUBTITLES & BURN-IN -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-subtitles">
+                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
+                                                <div class="settings-title-left">
+                                                    <span class="settings-sec-num">10</span>
+                                                    <div class="settings-icon-bubble">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M10 10H7a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"></path><path d="M19 10h-3a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"></path></svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="settings-group-title">Subtitles Burn-In &amp; Styling</h4>
+                                                        <span class="settings-group-desc">Burn standard subtitles directly into video pixels</span>
+                                                    </div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="subtitleEnabled" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="subtitleEnabledStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
+                                            </div>
+                                            <div class="settings-accordion-content" style="display:block;">
+                                                <div id="subtitleSubfields" class="engine-subfields-wrapper">
+                                                    <div class="form-row" style="margin-top: var(--space-2);">
+                                                        <div class="form-group">
+                                                            <label>Subtitle Style</label>
+                                                            <select id="subtitleStyle" class="form-control">
+                                                                <option value="youtube">YouTube Standard</option>
+                                                                <option value="tiktok">TikTok High Contrast</option>
+                                                                <option value="netflix">Netflix Cinematic</option>
+                                                                <option value="minimal">Minimal Clean</option>
+                                                                <option value="bold">Creator Bold</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Subtitle Position</label>
+                                                            <select id="subtitlePosition" class="form-control">
+                                                                <option value="bottom">Bottom Safe Zone</option>
+                                                                <option value="middle">Middle / Center</option>
+                                                                <option value="top">Top</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION 11: DYNAMIC ANIMATED CAPTIONS -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-captions">
+                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
+                                                <div class="settings-title-left">
+                                                    <span class="settings-sec-num">11</span>
+                                                    <div class="settings-icon-bubble">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="settings-group-title">Dynamic Animated Captions</h4>
+                                                        <span class="settings-group-desc">TikTok / Reels kinetic word-by-word motion highlight</span>
+                                                    </div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="captionEnabled">
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill" id="captionEnabledStatus">OFF</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
+                                            </div>
+                                            <div class="settings-accordion-content" style="display:block;">
+                                                    <div class="form-group" style="margin-top: var(--space-2);">
+                                                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                                                            <span>Trending Viral Preset</span>
+                                                            <span style="font-size:11px; color:var(--primary); font-weight:700;">★ 2026 Viral Pack</span>
+                                                        </label>
+                                                        <select id="captionTemplate" class="form-control" style="font-weight:700;">
+                                                            <option value="hormozi_pop" selected>🔥 Hormozi Pop (Bold Yellow Punch + High-Energy Pop)</option>
+                                                            <option value="beast_glow">⚡ MrBeast Glow (Electric Lime Neon + Bounce)</option>
+                                                            <option value="red_punch">💥 Red Punch (High Drama / Breaking News Fiery)</option>
+                                                            <option value="clean_gold">✨ Clean Gold (Luxury Minimal Podcast Amber)</option>
+                                                            <option value="neon_cyber">🟣 Cyberpunk Neon (Vibrant Fuchsia Glow)</option>
+                                                            <option value="karaoke_pill">💊 Karaoke Pill (Translucent Pill Container + Cyan Wipes)</option>
+                                                            <option value="classic">Standard White Outline</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="form-group" style="margin-top: 10px;">
+                                                        <label>Animation Motion</label>
                                                         <select id="captionAnimation" class="form-control">
-                                                            <option value="pop">Pop (Dynamic scale punch)</option>
+                                                            <option value="pop" selected>Pop (Dynamic scale punch)</option>
                                                             <option value="bounce">Bounce (Playful spring)</option>
                                                             <option value="highlight">Word-by-word Highlight</option>
                                                             <option value="karaoke">Karaoke Glow</option>
@@ -596,11 +952,11 @@
                                                         </select>
                                                     </div>
 
-                                                    <div class="form-row">
+                                                    <div class="form-row" style="margin-top: 10px;">
                                                         <div class="form-group">
                                                             <label>Font Family</label>
                                                             <select id="captionFont" class="form-control">
-                                                                <option value="Arial Black">Arial Black</option>
+                                                                <option value="Arial Black" selected>Arial Black</option>
                                                                 <option value="Inter">Inter</option>
                                                                 <option value="Manrope">Manrope</option>
                                                                 <option value="Poppins">Poppins</option>
@@ -625,13 +981,13 @@
                                                     </div>
                                                     <div class="form-row" style="margin-top: 10px;">
                                                         <div class="form-group">
-                                                            <label>Outline Stroke Width</label>
+                                                            <label>Outline Stroke</label>
                                                             <input type="number" id="captionOutline" min="0" max="10" value="3" class="form-control">
                                                         </div>
                                                         <div class="form-group">
                                                             <label>Vertical Position</label>
                                                             <select id="captionPosition" class="form-control">
-                                                                <option value="bottom">Bottom Safe Zone</option>
+                                                                <option value="bottom" selected>Bottom Safe Zone</option>
                                                                 <option value="middle">Center Screen</option>
                                                                 <option value="top">Top</option>
                                                             </select>
@@ -641,40 +997,31 @@
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 7: ADVANCED ENGINE SETTINGS -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-engine">
+                                        <!-- SECTION 12: AUDIO NORMALIZATION -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-audio-norm">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
-                                                    <span class="settings-sec-num">7</span>
+                                                    <span class="settings-sec-num">12</span>
                                                     <div class="settings-icon-bubble">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                                                     </div>
                                                     <div>
-                                                        <h4 class="settings-group-title">Advanced Engine Settings</h4>
-                                                        <span class="settings-group-desc">Thresholds, speech analysis & hardware acceleration</span>
+                                                        <h4 class="settings-group-title">Audio Loudness Normalization</h4>
+                                                        <span class="settings-group-desc">EBU R128 / YouTube standard (-14 LUFS) volume leveling</span>
                                                     </div>
                                                 </div>
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="audioNormalizationToggle" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="audioNormalizationStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
                                             </div>
                                             <div class="settings-accordion-content" style="display:block;">
-                                                <div class="form-group" style="margin-top: var(--space-2);">
-                                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                                                        <label style="margin:0;">Scene Cut Sensitivity (Threshold)</label>
-                                                        <span class="slider-badge" id="sceneThresholdDisplay">27.00</span>
-                                                    </div>
-                                                    <input type="range" id="sceneThresholdRange" min="15" max="45" value="27" step="0.5" class="slider-input">
-                                                    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:2px;">
-                                                        <span>More Cuts (Sensitive - 15)</span>
-                                                        <span>Fewer Cuts (Conservative - 45)</span>
-                                                    </div>
-                                                </div>
-                                                <div style="margin-top: 12px; display:flex; flex-direction:column; gap:8px; padding-top: 10px; border-top: 1px solid var(--border);">
-                                                    <label class="checkbox-label">
-                                                        <input type="checkbox" id="speakerDetectionToggle" checked> Multi-speaker detection & focus
-                                                    </label>
-                                                    <label class="checkbox-label">
-                                                        <input type="checkbox" id="gpuAccelToggle" checked> Hardware GPU acceleration (DirectML / CUDA)
-                                                    </label>
+                                                <div style="font-size:12px; color:var(--text-muted); margin-top:var(--space-2);">
+                                                    Levels audio peaks and balances speech intelligibility so clips don't blow out or sound too quiet on mobile devices.
                                                 </div>
                                             </div>
                                         </div>
@@ -722,16 +1069,19 @@
                             <div class="steps" id="stepsContainer">
                                 <div class="step" data-step="1"><div class="step-num">1</div><span>FFmpeg</span></div>
                                 <div class="step" data-step="2"><div class="step-num">2</div><span>Load</span></div>
-                                <div class="step" data-step="3"><div class="step-num">3</div><span>Scenes</span></div>
-                                <div class="step" data-step="4"><div class="step-num">4</div><span>Merge</span></div>
-                                <div class="step" data-step="5"><div class="step-num">5</div><span>Clips</span></div>
-                                <div class="step" data-step="6"><div class="step-num">6</div><span>Whisper</span></div>
-                                <div class="step" data-step="7"><div class="step-num">7</div><span>Subs</span></div>
+                                <div class="step" data-step="3"><div class="step-num">3</div><span>Speech/Subs</span></div>
+                                <div class="step" data-step="4"><div class="step-num">4</div><span>Scenes</span></div>
+                                <div class="step" data-step="5"><div class="step-num">5</div><span>Merge</span></div>
+                                <div class="step" data-step="6"><div class="step-num">6</div><span>Clips</span></div>
+                                <div class="step" data-step="7"><div class="step-num">7</div><span>AI Rank</span></div>
                                 <div class="step" data-step="8"><div class="step-num">8</div><span>Render</span></div>
                             </div>
 
                             <div class="log-container">
-                                <div class="log-header">Pipeline Execution Log</div>
+                                <div class="log-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>Pipeline Execution Log</span>
+                                    <button class="btn btn-secondary btn-xs" id="retryPipelineBtn" style="padding: 2px 8px; font-size: 11px;" type="button">▶ Start / Retry</button>
+                                </div>
                                 <div class="log-body" id="logBody">
                                     <div class="log-line muted">Waiting for pipeline execution...</div>
                                 </div>
@@ -862,15 +1212,15 @@
         </div>
     </div>
 
-    <!-- Clip Preview Modal (New in Phase 3) -->
+    <!-- Clip Preview Modal (Constrained creator player) -->
     <div class="modal-overlay" id="clipPreviewModal" hidden>
-        <div class="modal" style="max-width: 500px; padding: var(--space-4);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3);">
-                <h3 id="clipPreviewTitle" style="font-size:15px; font-weight:700;">Preview Clip</h3>
-                <button class="modal-close-btn" id="clipPreviewClose" style="font-size:16px; cursor:pointer;" type="button">✕</button>
+        <div class="modal" style="max-width: 400px; max-height: 85vh; padding: 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: 0 16px 48px rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; width: 100%; margin-bottom: 10px;">
+                <h3 id="clipPreviewTitle" style="font-size:13px; font-weight:700; color:var(--text-primary); margin:0; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:85%;">Preview Clip</h3>
+                <button class="modal-close-btn" id="clipPreviewClose" style="background:transparent; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:4px 8px; border-radius:4px;" type="button">✕</button>
             </div>
-            <div style="background:var(--surface-0); border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); aspect-ratio:9/16; display:flex; align-items:center; justify-content:center;">
-                <video id="clipPreviewVideo" src="" controls style="max-width:100%; max-height:100%; object-fit:contain;" autoplay></video>
+            <div id="clipPreviewContainer" style="background:#000; border-radius:8px; overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; max-height:70vh; max-width:100%;">
+                <video id="clipPreviewVideo" src="" controls style="max-width:100%; max-height:70vh; object-fit:contain; border-radius:8px;" autoplay></video>
             </div>
         </div>
     </div>

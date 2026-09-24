@@ -2,440 +2,194 @@
 
 # 🎬 UpClip Studio
 
-**AI-Powered Shorts Generator + YouTube Downloader**
+**Next-Gen AI Shorts Studio, Intelligent Video Clipper & YouTube Automation Platform**
 
-Turn any video into viral shorts automatically — scene detection, smart clipping, AI subtitles, animated captions, translation, and professional rendering — all in one place. Includes a built-in YouTube downloader.
+Turn any long-form video or YouTube link into viral short-form clips (9:16) automatically. Powered by content-aware scene detection, multi-modal AI ranking, OpenAI Whisper, kinetic animated subtitle rendering, and native YouTube publishing.
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat&logo=python&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-3.1-blue?style=flat&logo=flask&logoColor=white)
-![OpenAI Whisper](https://img.shields.io/badge/Whisper-AI-4B32C3?style=flat)
-![OpenCV](https://img.shields.io/badge/OpenCV-5.0-green?style=flat&logo=opencv&logoColor=white)
-![FFmpeg](https://img.shields.io/badge/FFmpeg-Required-007808?style=flat&logo=ffmpeg&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=flat)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![OpenAI Whisper](https://img.shields.io/badge/OpenAI_Whisper-Transcribe-4B32C3?style=for-the-badge&logo=openai&logoColor=white)](https://github.com/openai/whisper)
+[![OpenCV](https://img.shields.io/badge/OpenCV-Computer_Vision-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
+[![FFmpeg](https://img.shields.io/badge/FFmpeg-Fast_Seek_%2B_CRF-007808?style=for-the-badge&logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 </div>
 
 ---
 
-## ✨ Features
+## 🌟 Key Highlights & Innovations
 
-### 🎯 Smart Scene Detection
-- AI automatically finds the most engaging moments in your video
-- Detects scene changes using content-aware thresholds
-- Merges small scenes into meaningful clips
-- Highlights the best moments using emotion, motion, keyword, and viral scoring engines
-
-### ✂️ Intelligent Clipping
-- **AI mode** — AI decides clip count & duration automatically
-- **Duration mode** — you set the exact clip length
-- **Count mode** — you choose how many clips to generate
-- Smart aspect-ratio cropping (no stretching) for 9:16, 16:9, 1:1, or original
-- Clip review with rename/delete/download
-
-### 💬 AI Subtitles & Captions
-- **OpenAI Whisper** speech-to-text transcription with caching
-- Generates **SRT** and **VTT** subtitle files
-- Burn subtitles directly into the video with custom fonts, colors, outlines & shadows
-- Multiple style presets: `youtube`, `tiktok`, `instagram`, `netflix`
-
-### ✍️ Caption Studio Editor
-- Standalone caption editor with word-by-word editing
-- Auto-caption from Whisper (20+ languages, auto-detection)
-- Caption timeline with drag & drop positioning
-- Split, merge, duplicate, and delete caption segments
-- Search & Replace across all captions (case-sensitive option)
-- Auto-split long captions for better readability
-- Export captions as SRT/VTT without video rendering
-- Send directly to YouTube Desk for upload
-- Style inheritance from Clip Cutter projects
-
-### 🎞️ Animated Captions
-- Word-by-word progressive highlight (karaoke-style)
-- Multiple animation styles: `pop`, `fade`, `bounce`, `slide`, `zoom`, `scale`, `none`
-- Position controls: `bottom`, `top`, `middle`
-- Custom font, size, color, background, outline, and margin controls
-- Rendered directly into each generated clip using ASS overlays
-
-### 🌐 Multi-Language Translation
-- Transcribe in 20+ languages with auto-detection
-- Translate subtitles into Hindi, English, Tamil, Telugu, Spanish, French, German, Arabic, Japanese, Chinese, and more
-
-### 📺 YouTube Downloader
-- Built-in YouTube video downloader with tabbed interface (Video, Audio, Batch/Playlist)
-- Download videos and turn them directly into shorts
-- Separate audio extraction (MP3, M4A, WAV, FLAC)
-- Batch/playlist download with configurable limits
-- Send downloaded files to Clip Cutter, Caption Studio, or YouTube Desk
-
-### 📺 YouTube Desk (Automation)
-- Upload final videos directly to your YouTube channel with OAuth
-- Manage video metadata: title, description, tags, category, visibility
-- Schedule uploads for later
-- Track upload history, queue, and errors
-- Auto-scan for videos across input/clips/final directories
-- Connect your Google account securely via OAuth 2.0
-- View channel info, connection status, and upload statistics
-- Drag & drop or pick from existing files to queue uploads
-- Upload progress polling with retry support
-
-### 📱 Professional User Guide
-- Step-by-step interactive guide for first-time users
-- Covers upload, analysis, scene selection, captioning, customization, preview, and download
-
-### ⚡ Optimized Performance
-- **Fast FFmpeg encoding** (`veryfast` preset + CRF) for clip generation & subtitle rendering
-- **GPU-accelerated Whisper** (fp16) when available
-- **Transcript caching** — skips re-transcription if already processed
-- Singleton model loading for faster repeated runs
-
-### 🔐 User Accounts
-- Secure registration & login (PBKDF2 password hashing)
-- Session-based authentication
-- Protected dashboard and studio routes
-
-### 📲 Responsive UI
-- Fully responsive across **mobile, tablet, laptop, and PC**
-- Dark/light theme toggle
-- Live pipeline progress bar with step-by-step tracking
-- Export final video, subtitles, and transcripts
+- **🛡️ 60s+ Floor & Sentence Boundary Snapping**: Strict minimum clip duration floor (60s–90s+) preventing premature cuts. Snaps clip start and end timestamps to natural sentence punctuation (`.`, `?`, `!`, `।`) and speech pauses (gap >= 0.35s) so spoken thoughts are never cut off mid-sentence.
+- **📐 True Framing & Aspect Ratio Cropping (4:5 / 9:16 / 1:1)**: Full-frame landscape distortion eliminated. True center and face-aware cropping (`1080x1350` for 4:5 Instagram feed, `1080x1920` for 9:16 Shorts/Reels, `1080x1080` for 1:1 square).
+- **🎞️ Non-Overlapping Kinetic Captions & 6 Trending Creator Presets**: 3–4 word bite-sized lines with strict sequential timing (Line 1 vanishes completely before Line 2 begins). Word-by-word karaoke highlight synchronized to speech. Includes 6 creator presets: **Hormozi Pop**, **MrBeast Glow**, **Red Punch**, **Clean Gold**, **Neon Cyber**, and **Karaoke Pill**.
+- **🏷️ AI Content-Based Topic Naming**: Spoken transcript multi-word extraction replaces generic names with meaningful slugs (e.g. `Election_Commission_Controversy_01.mp4`).
+- **📅 YouTube Smart Publishing Advisor & 1-Click Auto-Scheduler**: Algorithm-backed distribution across prime evening slots (6:30 PM–9:30 PM), automatic 4–6 hour inter-Shorts spacing, title character capping, and 1-click bulk scheduling.
+- **⚡ Co-Located Subtitle Auto-Detection**: Instant loading of matching `.srt` in `input/` directory to skip redundant Whisper passes.
+- **📱 Compact Review Grid & Adaptive Preview**: Dense, high-visibility 185px responsive grid cards and viewport-constrained aspect-adaptive preview player.
 
 ---
 
-## 🧱 Tech Stack
+## 🧠 Comprehensive AI Engine Suite
 
-| Layer       | Technology                                  |
-|-------------|---------------------------------------------|
-| Backend     | Python, Flask, SQLAlchemy, SQLite           |
-| AI / ML     | OpenAI Whisper, OpenCV, Torch, scikit-learn |
-| Video/Audio | FFmpeg, PIL Vector Engine, MoviePy          |
-| Architecture| Multi-track Timeline, Motion Graphics Studio|
-| Frontend    | HTML5, CSS Custom Properties, Vanilla JS    |
-| Translation | deep-translator (Google Translate backend)  |
-| YouTube     | yt-dlp (downloads), Google API (uploads)   |
-| OAuth       | google-auth, google-api-python-client      |
+UpClip Studio features a modular, enterprise-grade AI intelligence layer located in [`ai/`](ai/):
+
+| Module | Class | Primary Functionality |
+| :--- | :--- | :--- |
+| [`ai/scene_detector.py`](ai/scene_detector.py) | `SceneDetector` | Detects visual camera cuts & natural pacing boundaries while enforcing a strict 15s–20s minimum duration floor. |
+| [`ai/audio_energy.py`](ai/audio_energy.py) | `AudioEnergyDetector` | Computes RMS audio energy across time windows to detect volume peaks, audience applause, laughter, and punchlines. |
+| [`ai/motion_detector.py`](ai/motion_detector.py) | `MotionDetector` | Frame-differencing computer vision engine measuring pixel velocity and visual activity (0–100 score). |
+| [`ai/face_detector.py`](ai/face_detector.py) | `FaceDetector` | OpenCV Haar & DNN face detection measuring speaker prominence, bounding boxes, and center of mass. |
+| [`ai/emotion_detector.py`](ai/emotion_detector.py) | `EmotionDetector` | Classifies sentiment tones (Excitement, Surprise, Curiosity, Urgency) from transcript linguistics and audio energy. |
+| [`ai/keyword_extractor.py`](ai/keyword_extractor.py) | `KeywordExtractor` | Extracts viral keywords, high-converting n-gram phrases, and automatically generates hashtags (`#Shorts`, `#Viral`). |
+| [`ai/viral_score.py`](ai/viral_score.py) | `ViralScoreCalculator` | 5-pillar viral predictor (Hook, Pacing, Audio, Visual, Duration) returning 0–100 scores and actionable tips. |
+| [`ai/clip_ranker.py`](ai/clip_ranker.py) | `ClipRanker` | Multi-criteria clip sorter assigning ordinal ranks (`Rank 1`, `Top Pick`), grades (`A+`, `A`), and viral badges. |
+| [`ai/highlight_ranker.py`](ai/highlight_ranker.py) | `HighlightRanker` | Ranks raw candidate highlights prioritizing narrative completion and audience hook strength. |
+| [`ai/transcript.py`](ai/transcript.py) | `TranscriptManager` | Full-text keyword search with timestamps, clip-accurate word slicing `slice(start, end)`, and filler-word cleaning. |
+| [`ai/smart_reframe.py`](ai/smart_reframe.py) | `SmartReframer` | Intelligent 16:9 to 9:16 vertical reframer keeping subjects dynamically centered using face tracking keyframes. |
+| [`ai/silence_detector.py`](ai/silence_detector.py) | `SilenceDetector` | Identifies pauses, hesitation, and dead air to tighten clip pacing for maximum viewer retention. |
 
 ---
 
-## 📁 Project Structure
+## 🎨 Studio Modules & Architecture
+
+```mermaid
+graph TD
+    Dashboard["🎬 UpClip Studio Dashboard"]
+    Dashboard --> Clipper["✂️ AI Clipper Studio<br/>• AI Mode / Count / Duration<br/>• 9:16 Reframe & Cuts"]
+    Dashboard --> Downloader["⚡ YT Downloader<br/>• 1080p/720p Video<br/>• MP3 / WAV Audio<br/>• Fast SRT/VTT Subtitles"]
+    Dashboard --> Captions["✍️ Caption Studio<br/>• Word-by-Word Timeline<br/>• Kinetic Animations<br/>• SRT / VTT Export"]
+    Dashboard --> Desk["🚀 YouTube Desk<br/>• Google OAuth 2.0<br/>• Auto Metadata & Tags<br/>• Direct Publishing"]
+```
+
+### 1. AI Clipping Studio (`/` & `/process`)
+- Upload or select videos from your media library.
+- Choose between **AI Mode** (AI decides best scenes and lengths), **Duration Mode** (fixed length clips), or **Count Mode** (selects top N moments).
+- Select target aspect ratio: **9:16 Vertical Shorts**, **16:9 Landscape**, **1:1 Square**, or **Original**.
+- Live multi-step pipeline tracking with real-time percentage, cut counters, and ETA estimates.
+
+### 2. Caption Studio (`/caption-studio`)
+- Full-featured standalone caption workstation.
+- Transcribe audio with OpenAI Whisper (20+ languages with auto-detection).
+- Word-by-word timeline with interactive drag-and-drop handles.
+- Split, merge, duplicate, search & replace, and export `.SRT` or `.VTT` without re-rendering.
+- Direct export into YouTube Desk for instant metadata matching.
+
+### 3. YouTube Downloader (`/yt-downloader`)
+- Ingest any YouTube video, short, or playlist link.
+- **Caption Extraction (`.SRT` / `.VTT`)**: Check the caption download box to pull official and auto-generated subtitle tracks with language selection.
+- **⚡ Download Captions Only (Fast)**: Grab the `.SRT` subtitle file in 2 seconds without downloading video streams.
+- One-click routing to Clip Cutter, Caption Studio, or YouTube Desk.
+
+### 4. YouTube Desk Automation (`/youtube-desk`)
+- Connect your YouTube channel securely with Google OAuth 2.0.
+- Manage titles, descriptions, SEO tags, categories, and privacy status.
+- Schedule video releases or publish instantly.
+- Upload queue monitoring with background worker execution and retry support.
+
+---
+
+## 📁 Project Architecture
 
 ```
 UpClipStudio/
-├── app.py                  # Flask app entry point
-├── config.py               # All configuration & paths
-├── requirements.txt        # Python dependencies
-├── ai/
-│   ├── whisper_engine.py   # Whisper transcription (GPU + cache)
-│   ├── subtitle_builder.py # SRT/VTT subtitle generation
-│   ├── subtitle_renderer.py# Burn subtitles into video (FFmpeg)
-│   ├── subtitle_styles.py  # Subtitle style presets
-│   ├── animated_caption_renderer.py # Animated captions (ASS)
-│   ├── ass_builder.py      # Advanced subtitle styling
-│   ├── ass_animation.py    # Animation effects for captions
-│   ├── translation.py      # Multi-language translation service
-│   ├── scene_detector.py   # AI scene detection
-│   ├── clip_ranker.py      # Clip scoring/ranking
-│   ├── emotion_detector.py # Emotion-based scoring
-│   ├── motion_detector.py  # Motion-based scoring
-│   ├── highlight_engine.py # Highlight detection
-│   ├── highlight_ranker.py # Highlight ranking
-│   ├── keyword_detector.py # Keyword extraction
-│   ├── keyword_extractor.py# Keyword extraction
-│   ├── face_detector.py    # Face detection for framing
-│   ├── silence_detector.py # Silence detection
-│   ├── viral_score.py      # Viral potential scoring
-│   └── ...                 # Additional AI engines
-├── utils/
-│   ├── clip_generator.py   # FFmpeg clip generation
-│   ├── video_utils.py      # Video metadata, thumbnails, frames
-│   ├── scene_detector.py   # Scene detection wrapper
-│   ├── scene_merger.py     # Scene merging logic
-│   ├── ffmpeg_utils.py     # FFmpeg availability check
-│   ├── audio_utils.py      # Audio processing utilities
-│   ├── silence_detector.py # Silence detection utilities
-│   ├── logger.py           # Logging utilities
-│   └── ...
-├── routes/
-│   ├── home.py             # Marketing home + dashboard + guide
-│   ├── auth.py             # Login/register/logout
-│   ├── upload.py           # Video upload endpoint
-│   ├── process.py          # Full AI pipeline (async jobs)
-│   ├── download.py         # Download clips/subtitles/transcripts
-│   ├── youtube.py          # YouTube Automation API (upload, schedule, metadata)
-│   ├── caption_studio.py   # Caption Studio API (auto-caption, import, export)
-│   ├── studio_navigation.py # Cross-module navigation & media passing
-│   └── __init__.py         # Blueprint initialization
-├── templates/              # Jinja2 HTML templates
-│   ├── home.html           # Marketing home page
-│   ├── index.html          # Dashboard/studio wizard
-│   ├── guide.html          # Professional user guide
-│   ├── yt_downloader.html  # YouTube downloader (tabs: video/audio/batch)
-│   ├── youtube_desk.html   # YouTube Desk automation UI
-│   ├── caption_studio.html # Caption Studio (React SPA)
-│   ├── studio_hub.html     # Unified module navigation
-│   ├── login.html          # Sign in page
-│   └── register.html       # Sign up page
-├── static/
-│   ├── css/style.css       # Responsive glassmorphism styling + themes
-│   ├── js/main.js          # Wizard UI + pipeline polling
-│   └── js/youtube-desk.js  # YouTube Desk frontend logic
-├── caption_studio/         # React app for Caption Studio
-│   ├── src/
-│   │   ├── App.tsx         # React router + preload router
-│   │   ├── pages/
-│   │   │   ├── Editor.tsx  # Main caption editor
-│   │   │   ├── Landing.tsx # Landing page with upload
-│   │   │   ├── YouTubeDashboard.tsx
-│   │   │   ├── ConnectYouTube.tsx
-│   │   │   ├── MetadataEditor.tsx
-│   │   │   ├── UploadQueue.tsx
-│   │   │   ├── Scheduler.tsx
-│   │   │   ├── History.tsx
-│   │   │   └── Settings.tsx
-│   │   ├── store/
-│   │   │   └── editorStore.ts  # Zustand state management
-│   │   └── types/
-│   │       └── index.ts
-│   ├── index.css           # CSS for React app (glassmorphism)
-│   └── vite.config.ts
-├── captions/               # Generated caption files (gitignored)
-├── input/                  # Uploaded videos (gitignored)
-├── output/                 # Generated clips/final/subtitles (gitignored)
-├── assets/                 # Fonts and overlays (gitignored)
-├── models/                 # AI model weights (gitignored)
-├── data/                   # User data (gitignored)
-└── tests/                  # Test suite
+├── app.py                       # Flask application factory & route registration
+├── config.py                    # Centralized configuration, paths & constants
+├── requirements.txt             # Python dependencies
+├── ai/                          # Multi-modal AI & Computer Vision engines
+│   ├── whisper_engine.py        # Whisper speech-to-text with model caching
+│   ├── scene_detector.py        # Anti-micro-clip scene detection engine
+│   ├── audio_energy.py          # RMS volume & reaction peak detector
+│   ├── motion_detector.py       # OpenCV visual dynamics detector
+│   ├── face_detector.py         # Face tracking & prominence scorer
+│   ├── emotion_detector.py      # Sentiment & linguistic tone classifier
+│   ├── keyword_extractor.py     # Viral keyword & hashtag extractor
+│   ├── viral_score.py           # 5-pillar viral prediction engine
+│   ├── clip_ranker.py           # Multi-criteria clip scoring & ranking
+│   ├── highlight_ranker.py      # Highlight candidate narrative ranker
+│   ├── transcript.py            # Unified transcript manager & slicer
+│   ├── smart_reframe.py         # 9:16 vertical reframing with face tracking
+│   ├── silence_detector.py      # Dead-air and hesitation detector
+│   ├── subtitle_builder.py      # SRT & VTT generator
+│   ├── subtitle_renderer.py     # FFmpeg burned-in subtitle renderer
+│   ├── animated_caption_renderer.py  # Kinetic word-by-word ASS renderer
+│   ├── ass_builder.py           # ASS script styling & layout generator
+│   └── translation.py           # Multi-language translation engine
+├── utils/                       # Production video & system utilities
+│   ├── clip_generator.py        # FFmpeg fast-seek clip cutter & encoder
+│   ├── scene_detector.py        # PySceneDetect with live progress & frame-skip
+│   ├── scene_merger.py          # Scene merger with micro-clip elimination
+│   ├── video_utils.py           # VideoLoader, metadata & thumbnail extractors
+│   ├── audio_utils.py           # Audio extraction and normalization
+│   └── ffmpeg_utils.py          # FFmpeg validation & path checks
+├── routes/                      # Modular Flask Blueprints
+│   ├── home.py                  # Landing page & dashboard
+│   ├── process.py               # Full AI pipeline async job runner
+│   ├── download.py              # Video, audio, subtitle & batch downloader
+│   ├── editor.py                # Video editor & timeline endpoints
+│   ├── caption_studio.py        # Caption Studio backend API
+│   ├── youtube.py               # YouTube OAuth & upload endpoints
+│   └── auth.py                  # PBKDF2 user authentication
+├── templates/                   # Glassmorphic Jinja2 HTML5 UI templates
+├── static/                      # Styling (CSS Custom Properties) & Vanilla JS
+├── caption_studio/              # React + Vite Caption Studio SPA
+├── assets/                      # Reusable creative assets & templates
+└── tests/                       # Pytest automated test suite
 ```
 
 ---
 
-## 🚀 Installation
+## ⚡ Quick Start & Installation
 
-### Prerequisites
+### 1. Prerequisites
 - **Python 3.9+**
-- **FFmpeg** (bundled path configured in `config.py`)
-- **Git** (optional, for cloning)
+- **FFmpeg**: Ensure FFmpeg is installed and accessible on your system PATH or configured in `config.py`.
 
-### 1. Clone the repository
-
+### 2. Setup Environment
 ```bash
+# Clone the repository
 git clone https://github.com/adarsh-351/UpClipStudio.git
 cd UpClipStudio
-```
 
-### 2. Create a virtual environment
-
-```bash
-# Windows
+# Create and activate virtual environment
 python -m venv .venv
+
+# Windows
 .venv\Scripts\activate
 
 # macOS / Linux
-python3 -m venv .venv
 source .venv/bin/activate
-```
 
-### 3. Install dependencies
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-> **Note:** The first Whisper run downloads the model weights automatically. If you have a GPU, install a CUDA-enabled PyTorch build for faster transcription.
-
-### 4. Configure FFmpeg
-
-Edit `config.py` and set `FFMPEG_PATH` to your FFmpeg executable, for example:
-
-```python
-FFMPEG_PATH = r"C:\path\to\ffmpeg.exe"
-```
-
-The app also expects FFmpeg to be on `PATH` for Whisper.
-
-### 5. Run the app
-
+### 3. Launch UpClip Studio
 ```bash
 python app.py
 ```
-
-Open your browser and visit 👉 **http://127.0.0.1:5000**
-
----
-
-## 🎮 How to Use
-
-1. **Sign up / Log in** — create a free account
-2. **Upload a video** — drag & drop an MP4, MOV, or AVI, or use the built-in YouTube Downloader (supports Video, Audio, and Batch/Playlist downloads)
-3. **Configure** — choose:
-   - Transcript & subtitle language
-   - Aspect ratio (9:16, 16:9, 1:1, original)
-   - Clipping mode (AI / duration / count)
-   - Animated captions (enable/disable, style, position, font, color)
-   - Clip naming (content-based or sequential)
-4. **Generate** — watch the live pipeline progress (FFmpeg → scenes → clips → Whisper → subtitles → render)
-5. **Review clips** — preview, rename, or delete before exporting
-6. **Export** — download the final clips, SRT/VTT subtitles, and transcript JSON
-
-### Using Caption Studio
-
-Caption Studio is a standalone editor for adding and editing captions on any video:
-
-1. **Open Caption Studio** from the Studio Hub, or use the "Open in Caption Studio" button from the YT Downloader or Clip Cutter
-2. **Load a video** — upload directly, use the demo, or open with a source file passed from another module (the video auto-loads)
-3. **Add captions** — click on the timeline to add caption points, or use **Auto Captions** (Whisper speech-to-text)
-4. **Edit captions** — double-click any caption segment to edit text. Use the toolbar buttons:
-   - **Split** — Split the selected caption at the current playhead position
-   - **Merge** — Merge the selected caption with the next one
-   - **Duplicate** — Create a copy of the selected caption
-   - **Delete** — Remove the selected caption
-5. **Search & Replace** (🔍) — Find and replace text across all captions, with optional case sensitivity
-6. **Auto-Split** (✂️) — Automatically split captions longer than a specified duration for better readability
-7. **Style captions** — choose from preset styles or customize font, color, outline, shadow, animation, and position
-8. **Export** — choose:
-   - **Export Video** — Burn captions into the video and download the final MP4
-   - **Export Captions Only** — Download SRT/VTT files without re-rendering the video
-9. **Send to YouTube** — If connected, directly send your project to YouTube Desk for upload
-
-### Using YouTube Desk (Automation)
-
-YouTube Desk lets you upload processed videos directly to your YouTube channel:
-
-1. **Connect YouTube** — Click "Connect YouTube" in the sidebar and authorize with your Google account
-2. **Select a video** — Drag & drop a video, or click "Use Existing" to pick from files already in your input/clips/final folders
-3. **Edit metadata** — Set title, description, tags, category, and visibility (public/unlisted/private)
-4. **Schedule or upload** — Upload immediately or schedule for a future date/time
-5. **Monitor** — View upload status, errors, and history in the sidebar panels
-6. **Send from other modules** — Use "Send to YouTube" from Clip Cutter or Caption Studio to open the file directly in YouTube Desk
+Open your browser and navigate to 👉 **`http://127.0.0.1:5000`**
 
 ---
 
-## 🔧 Configuration (`config.py`)
+## 🧪 Testing & Verification
 
-| Setting              | Description                                  | Default      |
-|----------------------|----------------------------------------------|--------------|
-| `WHISPER_MODEL`      | Whisper model size (`tiny`/`base`/`small`/`medium`/`large`) | `base` |
-| `USE_GPU`            | Enable GPU acceleration for Whisper          | `True`       |
-| `SUBTITLE_STYLE`     | Subtitle preset (`youtube`/`tiktok`/`instagram`/`netflix`) | `youtube` |
-| `CLIP_DURATION`      | Default clip length (seconds)                | `30`         |
-| `MAX_CLIP_DURATION`  | Max clip length (seconds)                    | `60`         |
-| `SCENE_THRESHOLD`    | Scene-change detection sensitivity           | `27.0`       |
-| `FPS`                | Output frame rate                            | `30`         |
-| `VIDEO_CODEC`        | Video codec                                  | `libx264`    |
-| `AUDIO_CODEC`        | Audio codec                                  | `aac`         |
-| `CAPTION_ENABLED`    | Enable animated captions                     | `False`      |
-| `CAPTION_ANIMATION`  | Caption animation (`pop`/`fade`/`bounce`/`slide`/`zoom`/`none`) | `pop` |
-| `CAPTION_POSITION`   | Caption position (`bottom`/`top`/`middle`)   | `bottom`     |
-| `CAPTION_FONT`       | Caption font                                 | `Arial Black`|
-| `CAPTION_FONT_SIZE`  | Caption font size                            | `34`         |
-| `CAPTION_COLOR`      | Caption text color (hex)                     | `#FFFFFF`    |
-| `CAPTION_BACKGROUND` | Caption background/outline color (hex)       | `#000000`    |
-| `CAPTION_OUTLINE`    | Caption outline thickness                    | `3`          |
+Run the full automated test suite:
+```powershell
+# Run all unit tests
+python -m pytest -s -p no:qt tests/
 
----
+# Test AI engine suite and anti-micro-clip rules
+python -m pytest -s -p no:qt tests/test_ai_suite.py
 
-## 🧠 How the AI Pipeline Works
-
+# Test YouTube video and caption downloader
+python -m pytest -s -p no:qt tests/test_youtube_download.py
 ```
-Upload Video
-    │
-    ▼
-┌─────────────────┐
-│ 1. FFmpeg Check │
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 2. Extract      │  Metadata (resolution, fps, duration)
-│    Metadata     │  + thumbnail
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 3. Extract      │  Sample frames every N frames
-│    Frames       │
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 4. Scene Detect │  Content-aware scene boundaries
-│    + Score      │  (emotion, motion, keywords, highlights)
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 5. Merge Scenes │  Merge tiny scenes into meaningful clips
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 6. Clip         │  FFmpeg fast-seek + veryfast encode
-│    Generation   │
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 7. Whisper      │  GPU-accelerated transcription
-│    Transcribe   │  (cached to disk)
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 8. Subtitles    │  SRT + VTT + optional translation
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 9. Animated     │  Optional word-by-word karaoke captions
-│    Captions     │  rendered into each clip
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│ 10. Review &    │  Preview, rename, delete clips
-│     Export      │  Download final outputs
-└─────────────────┘
-```
-
----
-
-## ⚡ Performance Tips
-
-- **Use a GPU** — Whisper runs 2-3x faster with CUDA.
-- **Smaller Whisper model** — set `WHISPER_MODEL = "tiny"` or `"base"` for faster transcription (slightly lower accuracy).
-- **Transcript caching** — already-transcribed videos are skipped automatically.
-- **Fast encoding** — clips and final render use `veryfast` preset + CRF 23 for speed without much quality loss.
-
----
-
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-python -m pytest tests/ -v
-```
-
----
-
-## 📚 Documentation
-
-- [Architecture](docs/architecture.md)
-- [API Reference](docs/api.md)
-- [Roadmap](docs/roadmap.md)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push (`git push origin feature/amazing`)
-5. Open a Pull Request
 
 ---
 
 ## 📄 License
-
-Distributed under the **MIT License**. See `LICENSE` for more information.
-
----
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 <div align="center">
-  <sub>Built with ❤️ for content creators</sub>
+  <sub>Engineered with precision for content creators & developers worldwide.</sub>
 </div>
-#   c i p p i n g  
- 

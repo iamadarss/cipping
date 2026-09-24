@@ -78,14 +78,14 @@ AUDIO_CODEC = "aac"
 # SHORTS SETTINGS
 # ==========================================================
 
-MIN_DURATION = 15
-MAX_DURATION = 60
+MIN_DURATION = 60
+MAX_DURATION = 120
 
-CLIP_DURATION = 30
+CLIP_DURATION = 75
 
-MIN_CLIP_DURATION = 20
-TARGET_CLIP_DURATION = 30
-MAX_CLIP_DURATION = 60
+MIN_CLIP_DURATION = 60
+TARGET_CLIP_DURATION = 75
+MAX_CLIP_DURATION = 120
 
 # ==========================================================
 # SCENE DETECTION
@@ -148,6 +148,7 @@ ASPECT_OPTIONS = {
     "9:16":     ("9:16 - Shorts/Reels", 1080, 1920),
     "16:9":     ("16:9 - YouTube/Landscape", 1920, 1080),
     "1:1":      ("1:1 - Square", 1080, 1080),
+    "4:5":      ("4:5 - Portrait Feed", 1080, 1350),
 }
 
 # ==========================================================
