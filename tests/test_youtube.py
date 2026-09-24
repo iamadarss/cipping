@@ -58,3 +58,31 @@ def test_youtube_history():
     assert data["success"] is True
     assert "history" in data
     assert isinstance(data["history"], list)
+
+
+def test_youtube_status_expired_handling(monkeypatch):
+    """Ensure /youtube/status accurately reports expired=True and connected=False when refresh fails."""
+    app = create_app()
+    client = app.test_client()
+
+    from routes import youtube
+
+    class MockExpiredCreds:
+        token = "expired_token_mock"
+        refresh_token = "mock_refresh"
+        expired = True
+        valid = False
+
+        def refresh(self, req):
+            from google.auth.exceptions import RefreshError
+            raise RefreshError("invalid_grant: Token has been expired or revoked.")
+
+    monkeypatch.setattr(youtube, "dict_to_credentials", lambda d: MockExpiredCreds())
+
+    response = client.get("/youtube/status")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["connected"] is False
+    assert data["expired"] is True
+    assert "reconnect" in data["error"].lower()
+

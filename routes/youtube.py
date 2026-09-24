@@ -151,6 +151,7 @@ def get_db():
             timezone TEXT DEFAULT "UTC",
             status DEFAULT "scheduled",
             created_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER)),
+            updated_at INTEGER DEFAULT (CAST(strftime('%s', 'now') AS INTEGER)),
             FOREIGN KEY (video_id) REFERENCES videos (id)
         )
     """)
@@ -263,6 +264,12 @@ def get_db():
     except Exception:
         pass
 
+    # Ensure updated_at column exists in schedules
+    try:
+        conn.execute("ALTER TABLE schedules ADD COLUMN updated_at INTEGER DEFAULT 0")
+    except Exception:
+        pass
+
     conn.commit()
     return conn
 
@@ -369,6 +376,13 @@ def credentials_to_dict(credentials: Credentials) -> Dict[str, Any]:
 def dict_to_credentials(d: Dict[str, Any]) -> Credentials:
     """Convert stored database credentials to Google Credentials using environment config."""
     cfg = get_oauth_config()
+    expiry = None
+    if d.get("expires_at"):
+        try:
+            from datetime import datetime, timezone
+            expiry = datetime.fromtimestamp(float(d["expires_at"]), tz=timezone.utc).replace(tzinfo=None)
+        except Exception:
+            pass
     return Credentials(
         token=d["access_token"],
         refresh_token=d.get("refresh_token"),
@@ -376,6 +390,7 @@ def dict_to_credentials(d: Dict[str, Any]) -> Credentials:
         client_id=cfg["client_id"],
         client_secret=cfg["client_secret"],
         scopes=YOUTUBE_SCOPES,
+        expiry=expiry,
     )
 
 
@@ -403,11 +418,17 @@ def get_credentials() -> Optional[Credentials]:
 def save_credentials(credentials: Credentials, channel_info: Optional[Dict[str, Any]] = None):
     """Save or update credentials and channel metadata in the database."""
     conn = get_db()
-    access_expires = (
-        int(credentials.expiry.timestamp())
-        if getattr(credentials, "expiry", None)
-        else int(time.time()) + 3600
-    )
+    access_expires = int(time.time()) + 3600
+    if getattr(credentials, "expiry", None):
+        try:
+            from datetime import timezone
+            if credentials.expiry.tzinfo is None:
+                access_expires = int(credentials.expiry.replace(tzinfo=timezone.utc).timestamp())
+            else:
+                access_expires = int(credentials.expiry.timestamp())
+        except Exception:
+            access_expires = int(time.time()) + 3600
+
 
     row = conn.execute(
         "SELECT * FROM tokens WHERE user_id = 'default' ORDER BY id DESC LIMIT 1"
@@ -489,15 +510,16 @@ def get_youtube_service():
     if not credentials:
         raise RuntimeError("No YouTube credentials found. Connect your channel first.")
 
-    # Automatically refresh if expired
-    if credentials.expired and credentials.refresh_token:
+    # Automatically refresh if expired or about to expire
+    if credentials.refresh_token:
         from google.auth.transport.requests import Request
         try:
-            credentials.refresh(Request())
-            save_credentials(credentials)
+            if credentials.expired or not credentials.valid:
+                credentials.refresh(Request())
+                save_credentials(credentials)
         except Exception as e:
             logger.warning("YouTube OAuth token refresh failed: %s", type(e).__name__)
-            raise RuntimeError("Your YouTube connection needs to be reauthorized. Please reconnect.")
+            raise RuntimeError("YouTube authorization expired. Please reconnect in YouTube Connection tab.")
 
     return build(
         YOUTUBE_API_SERVICE_NAME,
@@ -711,7 +733,7 @@ def fetch_and_update_channel_info(credentials: Optional[Credentials] = None) -> 
 
 @youtube_bp.route("/status", methods=["GET"])
 def status():
-    """Check YouTube connection status with live refresh support."""
+    """Check YouTube connection status with live refresh support and expiry detection."""
     conn = get_db()
     row = conn.execute(
         "SELECT * FROM tokens WHERE user_id = 'default' ORDER BY id DESC LIMIT 1"
@@ -721,15 +743,61 @@ def status():
     if not row or not row["access_token"]:
         return jsonify({
             "connected": False,
+            "expired": False,
             "channel": None
         })
 
     row_dict = dict(row)
     force_refresh = request.args.get("refresh") in ("1", "true", "True")
 
+    # Check credentials validity and auto-refresh if expired
+    credentials = None
+    try:
+        credentials = dict_to_credentials(row_dict)
+    except Exception as e:
+        logger.warning("Failed to construct credentials in /status: %s", type(e).__name__)
+
+    if not credentials or not credentials.token:
+        return jsonify({
+            "connected": False,
+            "expired": False,
+            "channel": None
+        })
+
+    # Validate or auto-refresh if expired
+    if credentials.expired or not credentials.valid:
+        if credentials.refresh_token:
+            from google.auth.transport.requests import Request
+            try:
+                credentials.refresh(Request())
+                save_credentials(credentials)
+            except Exception as ref_err:
+                logger.warning("Status check detected expired/revoked YouTube token: %s", type(ref_err).__name__)
+                return jsonify({
+                    "connected": False,
+                    "expired": True,
+                    "error": "YouTube authorization expired. Please reconnect in YouTube Connection tab.",
+                    "channel": {
+                        "id": row_dict.get("channel_id") or "",
+                        "title": row_dict.get("channel_name") or "Connected YouTube Channel",
+                        "handle": row_dict.get("channel_handle") or "",
+                        "avatar": row_dict.get("channel_avatar") or "",
+                        "thumbnail": row_dict.get("channel_avatar") or "",
+                        "subscribers": str(row_dict.get("channel_subscribers") or "0"),
+                        "video_count": str(row_dict.get("channel_video_count") or "0"),
+                    }
+                })
+        else:
+            return jsonify({
+                "connected": False,
+                "expired": True,
+                "error": "YouTube authorization expired. Please reconnect in YouTube Connection tab.",
+                "channel": None
+            })
+
     # Auto-refresh live stats if requested or if current metrics are placeholder '0' / None
     if force_refresh or row_dict.get("channel_subscribers") in (None, "0", ""):
-        live_info = fetch_and_update_channel_info()
+        live_info = fetch_and_update_channel_info(credentials)
         if live_info:
             return jsonify({
                 "connected": True,

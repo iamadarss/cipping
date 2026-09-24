@@ -12,6 +12,7 @@
     const state = {
         currentView: window.INITIAL_SECTION || 'overview',
         connected: false,
+        expired: false,
         channel: null,
         playlists: [],
         presets: [],
@@ -385,7 +386,8 @@
                 fetch('/youtube/errors').then(r => r.json()).catch(() => ({ errors: [] })),
             ]);
 
-            state.connected = statusRes.connected;
+            state.connected = !!statusRes.connected;
+            state.expired = !!statusRes.expired;
             state.channel = statusRes.channel;
             state.queue = queueRes.items || [];
             state.schedules = schedRes.schedules || [];
@@ -442,14 +444,22 @@
     }
 
     function updateConnectionUI() {
-        if (state.connected && state.channel) {
+        if (state.expired) {
+            dom.topbarStatusPill.className = 'status-pill warning';
+            dom.topbarStatusPill.innerHTML = '<span class="dot" style="background:#f59e0b;"></span><span>Auth Expired</span>';
+            dom.topbarStatusPill.title = 'YouTube authorization expired. Click to reconnect.';
+            dom.deskConnectionBadge.className = 'status-pill warning';
+            dom.deskConnectionBadge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span><span>Auth Expired</span>';
+        } else if (state.connected && state.channel) {
             dom.topbarStatusPill.className = 'status-pill connected';
             dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Connected</span>';
+            dom.topbarStatusPill.title = state.channel.title || 'Connected YouTube Channel';
             dom.deskConnectionBadge.className = 'status-pill connected';
             dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Connected</span>';
         } else {
             dom.topbarStatusPill.className = 'status-pill disconnected';
             dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
+            dom.topbarStatusPill.title = 'No YouTube channel connected';
             dom.deskConnectionBadge.className = 'status-pill disconnected';
             dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
         }
@@ -1057,6 +1067,75 @@
         }
     });
 
+    // Helper to persist wizard state before navigating to reconnect
+    function saveWizardDraftToSession() {
+        if (!state.wizard || !state.wizard.videoId) return;
+        const draft = {
+            videoId: state.wizard.videoId,
+            filename: state.wizard.filename,
+            title: state.wizard.title,
+            description: state.wizard.description,
+            tags: state.wizard.tags,
+            categoryId: state.wizard.categoryId,
+            playlistId: state.wizard.playlistId,
+            language: state.wizard.language,
+            visibility: state.wizard.visibility,
+            timingMode: state.wizard.timingMode,
+            scheduleDate: state.wizard.scheduleDate,
+            scheduleTime: state.wizard.scheduleTime,
+            scheduleTimezone: state.wizard.scheduleTimezone,
+            thumbnailUrl: state.wizard.thumbnailUrl,
+            duration: state.wizard.duration,
+            resolution: state.wizard.resolution,
+            size: state.wizard.size,
+        };
+        try {
+            sessionStorage.setItem('upclip_pending_wizard_draft', JSON.stringify(draft));
+        } catch (e) {
+            console.warn('Could not save wizard draft:', e);
+        }
+    }
+
+    // Render action buttons on upload failure with 1-click reconnect when authorization expired
+    function renderUploadErrorActions(errReason) {
+        const isAuthExpired = /expired|reconnect|authorization|invalid_grant|unauthorized|connect your channel/i.test(errReason || '');
+        if (isAuthExpired) {
+            dom.uploadActionButtons.innerHTML = `
+                <a href="/youtube/connect" class="btn btn-primary btn-sm" id="btnReconnectChannel" style="display:inline-flex; align-items:center; gap:6px; background:#dc2626; border-color:#ef4444; text-decoration:none;">
+                    <svg data-lucide="link-2" width="14" height="14"></svg>
+                    <span>Reconnect YouTube Channel</span>
+                </a>
+                <button class="btn btn-secondary btn-sm" id="btnEditSettings">Edit Settings</button>
+                <button class="btn btn-secondary btn-sm" id="btnRetryPublish">Retry</button>
+            `;
+            const reconnectBtn = document.getElementById('btnReconnectChannel');
+            if (reconnectBtn) {
+                reconnectBtn.addEventListener('click', () => {
+                    saveWizardDraftToSession();
+                });
+            }
+        } else {
+            dom.uploadActionButtons.innerHTML = `
+                <button class="btn btn-secondary btn-sm" id="btnEditSettings">Edit Settings</button>
+                <button class="btn btn-primary btn-sm" id="btnRetryPublish">Retry</button>
+            `;
+        }
+
+        const editBtn = document.getElementById('btnEditSettings');
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                dom.wizardProgressState.style.display = 'none';
+                dom.wizardFooter.style.display = 'flex';
+                setWizardStep(4);
+            });
+        }
+        const retryBtn = document.getElementById('btnRetryPublish');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => executeFinalPublish());
+        }
+        if (window.lucide) window.lucide.createIcons();
+    }
+
     async function pollUploadProgress(videoId, queueId, videoTitle = 'Video') {
         return new Promise((resolve, reject) => {
             let attempts = 0;
@@ -1126,21 +1205,7 @@
                             dom.uploadStatusMessage.textContent = errReason;
                             dom.uploadProgressBarContainer.style.display = 'none';
                             dom.uploadActionButtons.style.display = 'flex';
-                            dom.uploadActionButtons.innerHTML = `
-                                <button class="btn btn-secondary btn-sm" id="btnEditSettings">Edit Settings</button>
-                                <button class="btn btn-primary btn-sm" id="btnRetryPublish">Retry</button>
-                            `;
-                            const editBtn = document.getElementById('btnEditSettings');
-                            if (editBtn) {
-                                editBtn.addEventListener('click', () => {
-                                    dom.wizardProgressState.style.display = 'none';
-                                    dom.wizardFooter.style.display = 'flex';
-                                    setWizardStep(4);
-                                });
-                            }
-                            const retryBtn = document.getElementById('btnRetryPublish');
-                            if (retryBtn) retryBtn.addEventListener('click', () => executeFinalPublish());
-                            if (window.lucide) window.lucide.createIcons();
+                            renderUploadErrorActions(errReason);
                         }
                         showToast(`Upload failed for "${videoTitle}": ${errReason}`, 'error');
                         reject(new Error(errReason));
@@ -1301,17 +1366,7 @@
             dom.uploadStatusMessage.textContent = err.message || 'Could not complete YouTube publish.';
             dom.uploadProgressBarContainer.style.display = 'none';
             dom.uploadActionButtons.style.display = 'flex';
-            dom.uploadActionButtons.innerHTML = `
-                <button class="btn btn-secondary btn-sm" id="btnEditSettings">Edit Settings</button>
-                <button class="btn btn-primary btn-sm" id="btnRetryPublish">Retry</button>
-            `;
-            document.getElementById('btnEditSettings').addEventListener('click', () => {
-                dom.wizardProgressState.style.display = 'none';
-                dom.wizardFooter.style.display = 'flex';
-                setWizardStep(4);
-            });
-            document.getElementById('btnRetryPublish').addEventListener('click', () => executeFinalPublish());
-            if (window.lucide) window.lucide.createIcons();
+            renderUploadErrorActions(err.message);
             showToast(err.message, 'error');
         }
     }
@@ -1699,7 +1754,8 @@
             const url = forceRefresh ? '/youtube/status?refresh=1' : '/youtube/status';
             const res = await fetch(url);
             const data = await res.json();
-            state.connected = data.connected;
+            state.connected = !!data.connected;
+            state.expired = !!data.expired;
             state.channel = data.channel;
 
             updateConnectionUI();
@@ -2289,6 +2345,76 @@
         });
     }
 
+    // Helper to restore wizard draft if redirected back after re-connecting channel
+    function restoreWizardDraftFromSession() {
+        try {
+            const rawDraft = sessionStorage.getItem('upclip_pending_wizard_draft');
+            if (!rawDraft) return;
+            sessionStorage.removeItem('upclip_pending_wizard_draft');
+            const draft = JSON.parse(rawDraft);
+            if (!draft || !draft.videoId) return;
+
+            Object.assign(state.wizard, draft);
+
+            if (dom.inputVideoTitle) dom.inputVideoTitle.value = state.wizard.title || '';
+            if (dom.titleCharCounter) dom.titleCharCounter.textContent = `${(state.wizard.title || '').length}/100`;
+            if (dom.inputVideoDescription) dom.inputVideoDescription.value = state.wizard.description || '';
+            if (dom.descCharCounter) dom.descCharCounter.textContent = `${(state.wizard.description || '').length}/5000`;
+            if (dom.inputVideoTags) {
+                dom.inputVideoTags.value = Array.isArray(state.wizard.tags) ? state.wizard.tags.join(', ') : (state.wizard.tags || '');
+            }
+            if (dom.selectCategory && state.wizard.categoryId) dom.selectCategory.value = state.wizard.categoryId;
+            if (dom.selectPlaylist && state.wizard.playlistId) dom.selectPlaylist.value = state.wizard.playlistId;
+            if (dom.selectLanguage && state.wizard.language) dom.selectLanguage.value = state.wizard.language;
+
+            if (state.wizard.visibility) {
+                const visRadio = document.querySelector(`input[name="visibility"][value="${state.wizard.visibility}"]`);
+                if (visRadio) visRadio.checked = true;
+            }
+
+            if (state.wizard.timingMode) {
+                const modeRadio = document.querySelector(`input[name="timingMode"][value="${state.wizard.timingMode}"]`);
+                if (modeRadio) {
+                    modeRadio.checked = true;
+                    if (dom.schedulePickerGroup) {
+                        dom.schedulePickerGroup.style.display = state.wizard.timingMode === 'schedule' ? 'flex' : 'none';
+                    }
+                }
+            }
+            if (dom.inputScheduleDate && state.wizard.scheduleDate) dom.inputScheduleDate.value = state.wizard.scheduleDate;
+            if (dom.inputScheduleTime && state.wizard.scheduleTime) dom.inputScheduleTime.value = state.wizard.scheduleTime;
+
+            if (dom.selectedVideoFilename) dom.selectedVideoFilename.textContent = state.wizard.filename || 'clip.mp4';
+            if (dom.selectedVideoSize) dom.selectedVideoSize.textContent = state.wizard.size || '';
+            if (dom.selectedVideoDuration) dom.selectedVideoDuration.textContent = formatDuration(state.wizard.duration);
+            if (dom.selectedVideoResolution) dom.selectedVideoResolution.textContent = state.wizard.resolution || 'HD';
+            if (dom.selectedVideoCard) dom.selectedVideoCard.style.display = 'block';
+            if (dom.videoUploadDropzone) dom.videoUploadDropzone.style.display = 'none';
+
+            if (state.wizard.thumbnailUrl) {
+                if (dom.wizardThumbnailPreview) {
+                    dom.wizardThumbnailPreview.src = state.wizard.thumbnailUrl;
+                    dom.wizardThumbnailPreview.style.display = 'block';
+                }
+                if (dom.wizardThumbnailPlaceholder) dom.wizardThumbnailPlaceholder.style.display = 'none';
+                if (dom.reviewThumbnailImg) dom.reviewThumbnailImg.src = state.wizard.thumbnailUrl;
+            }
+
+            if (state.wizard.filename) {
+                dom.videoElementPreview.src = `/download/input/${encodeURIComponent(state.wizard.filename)}`;
+            }
+
+            dom.wizardProgressState.style.display = 'none';
+            dom.wizardFooter.style.display = 'flex';
+
+            switchView('upload');
+            setWizardStep(6);
+            showToast('Channel reconnected! Your upload draft was restored.', 'success');
+        } catch (e) {
+            console.warn('Failed to restore wizard draft:', e);
+        }
+    }
+
     // =========================================================================
     // 8. Initialization
     // =========================================================================
@@ -2301,6 +2427,17 @@
         loadPresets();
         loadPlaylistsDropdown();
         loadSmartScheduleAdvice();
+
+        // Handle OAuth redirect return params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('connected') === '1') {
+            showToast('YouTube Channel connected successfully!', 'success');
+            restoreWizardDraftFromSession();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (urlParams.get('error')) {
+            showToast('Connection failed: ' + (urlParams.get('error') || 'OAuth authorization failed'), 'error');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
         // Background polling for queue if items are in flight (every 10s)
         setInterval(() => {
