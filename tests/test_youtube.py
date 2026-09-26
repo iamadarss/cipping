@@ -86,3 +86,37 @@ def test_youtube_status_expired_handling(monkeypatch):
     assert data["expired"] is True
     assert "reconnect" in data["error"].lower()
 
+
+def test_next_schedule_slot():
+    """Verify /youtube/next-schedule-slot returns next slot 1 hour ahead with proper formatting."""
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/youtube/next-schedule-slot")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["success"] is True
+    assert "next_slot" in data
+    slot = data["next_slot"]
+    assert slot["interval_hours"] == 1
+    assert "date" in slot
+    assert "time" in slot
+    assert "formatted" in slot
+
+
+def test_smart_schedule_advice_1hour_rule():
+    """Verify smart-schedule-advice includes 1-hour spacing rule."""
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/youtube/smart-schedule-advice")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["success"] is True
+    assert "advice" in data
+    spacing_rule = data["advice"]["spacing_rule"]
+    assert spacing_rule["hours_ideal"] == 1
+    assert "1-hour" in spacing_rule["reason"].lower()
+
+
+

@@ -1848,6 +1848,7 @@
             if (this.dom.captionScaleDisplay) {
                 this.dom.captionScaleDisplay.textContent = Math.round(this.captionScale * 100);
             }
+            this.activeStyle.scale = Math.round(this.captionScale * 100);
             this.renderCanvas();
         }
 
@@ -3527,7 +3528,10 @@
                 videoFileName: this.videoFileName,
                 project_id: this.projectId,
                 captions: this.captions,
-                style: this.activeStyle,
+                style: {
+                    ...this.activeStyle,
+                    scale: Math.round((this.captionScale || 1.0) * 100)
+                },
                 resolution: this.dom.exportResolutionSelect ? this.dom.exportResolutionSelect.value : "9:16_1080p",
                 fps: this.dom.exportFpsSelect ? parseInt(this.dom.exportFpsSelect.value, 10) : 30,
                 format: this.dom.exportFormatSelect ? this.dom.exportFormatSelect.value : "mp4"

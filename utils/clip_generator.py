@@ -203,6 +203,8 @@ class ClipGenerator:
         start_time=0,
         duration=0,
         existing_names=None,
+        prefix=None,
+        format_str=None,
     ):
         """
         Build a clip filename based on naming mode.
@@ -210,22 +212,37 @@ class ClipGenerator:
         naming         : config.NAME_SEQUENTIAL or config.NAME_CONTENT
         transcript     : optional list of {start,end,text} used for content names
         existing_names : optional set of already-used filenames to avoid duplicates
+        prefix         : optional custom user prefix (e.g. 'Clip_', 'Short_')
+        format_str     : optional index numbering format ('001', '01', '1')
         """
         existing_names = existing_names or set()
         base_name = None
+        target_naming = naming if naming is not None else getattr(config, "DEFAULT_NAMING", config.NAME_CONTENT)
 
-        if naming == config.NAME_CONTENT:
-            base_name = self._get_content_name(transcript, start_time, duration, index)
-        elif naming == config.NAME_SEQUENTIAL:
-            base_name = f"AI_Spark_Clip_{index:03d}"
+        if target_naming == config.NAME_CONTENT:
+            base_name = self._get_content_name(transcript, start_time, duration, index, prefix=prefix, format_str=format_str)
+        elif target_naming == config.NAME_SEQUENTIAL:
+            fmt = format_str or "001"
+            if fmt == "1":
+                idx_str = f"{index}"
+            elif fmt == "01":
+                idx_str = f"{index:02d}"
+            else:
+                idx_str = f"{index:03d}"
+            pfx = prefix if (prefix and prefix.strip()) else "Clip_"
+            pfx = re.sub(r"[^A-Za-z0-9_]", "_", pfx).strip("_")
+            if pfx:
+                base_name = f"{pfx}_{idx_str}"
+            else:
+                base_name = f"Clip_{idx_str}"
 
         if not base_name:
-            base_name = f"AI_Spark_Clip_{index:03d}"
+            base_name = f"Clip_{index:03d}"
 
         # Ensure filesystem-safe filename
         safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", base_name).strip("._")
         if not safe_name:
-            safe_name = f"AI_Spark_Clip_{index:03d}"
+            safe_name = f"Clip_{index:03d}"
 
         # Handle duplicate names
         final_name = f"{safe_name}.mp4"
@@ -237,48 +254,196 @@ class ClipGenerator:
         existing_names.add(final_name)
         return final_name
 
-    def _get_content_name(self, transcript, start_time, duration, index):
-        """Extract a meaningful content-based name from spoken transcript and topic."""
+    def _get_content_name(self, transcript, start_time, duration, index, prefix=None, format_str=None):
+        """Extract a meaningful, high-clarity content-based name from spoken transcript and topic."""
+        # 1. Format the index suffix
+        if format_str == "1":
+            idx_str = f"{index}"
+        elif format_str == "001":
+            idx_str = f"{index:03d}"
+        else:
+            # Default to 02d (e.g. 01, 02) or 03d if 100+
+            idx_str = f"{index:03d}" if index >= 100 else f"{index:02d}"
+
+        # 2. Extract transcript segments
         clip_end = start_time + max(float(duration or 0), 1.0)
         collected_texts = []
-        if transcript:
-            for seg in transcript:
-                s_start = float(seg.get("start", 0))
-                s_end = float(seg.get("end", 0))
+
+        raw_segments = transcript
+        if isinstance(transcript, dict):
+            raw_segments = transcript.get("segments") or transcript.get("captions") or []
+        elif hasattr(transcript, "segments"):
+            raw_segments = transcript.segments
+
+        def _safe_float(val, default=0.0):
+            try:
+                if isinstance(val, (int, float)):
+                    return float(val)
+                s = str(val).strip().replace(",", ".")
+                if ":" in s:
+                    parts = s.split(":")
+                    if len(parts) == 3:
+                        return float(parts[0]) * 3600 + float(parts[1]) * 60 + float(parts[2])
+                    elif len(parts) == 2:
+                        return float(parts[0]) * 60 + float(parts[1])
+                return float(s)
+            except Exception:
+                return default
+
+        if raw_segments and isinstance(raw_segments, list):
+            # Pass 1: exact clip window overlap
+            for seg in raw_segments:
+                if isinstance(seg, dict):
+                    s_start = _safe_float(seg.get("start") or seg.get("startTime"), 0)
+                    s_end = _safe_float(seg.get("end") or seg.get("endTime"), s_start + 1.0)
+                    t = str(seg.get("text") or seg.get("content") or "").strip()
+                elif hasattr(seg, "start") and hasattr(seg, "text"):
+                    s_start = _safe_float(getattr(seg, "start", 0), 0)
+                    s_end = _safe_float(getattr(seg, "end", s_start + 1.0), s_start + 1.0)
+                    t = str(getattr(seg, "text", "")).strip()
+                else:
+                    continue
+
                 if not (s_end < start_time or s_start > clip_end):
-                    t = (seg.get("text") or "").strip()
                     if t:
                         collected_texts.append(t)
 
+            # Pass 2: if no speech within exact window, expand window by +/- 5 seconds
+            if not collected_texts:
+                for seg in raw_segments:
+                    if isinstance(seg, dict):
+                        s_start = _safe_float(seg.get("start") or seg.get("startTime"), 0)
+                        s_end = _safe_float(seg.get("end") or seg.get("endTime"), s_start + 1.0)
+                        t = str(seg.get("text") or seg.get("content") or "").strip()
+                    elif hasattr(seg, "start") and hasattr(seg, "text"):
+                        s_start = _safe_float(getattr(seg, "start", 0), 0)
+                        s_end = _safe_float(getattr(seg, "end", s_start + 1.0), s_start + 1.0)
+                        t = str(getattr(seg, "text", "")).strip()
+                    else:
+                        continue
+
+                    if not (s_end < (start_time - 5.0) or s_start > (clip_end + 5.0)):
+                        if t:
+                            collected_texts.append(t)
+
         full_clip_text = " ".join(collected_texts).strip()
 
+        # 3. If full_clip_text contains Devanagari Hindi or Urdu script, transliterate to Roman/Latin!
+        if full_clip_text:
+            try:
+                from utils.hinglish_transliterator import devanagari_to_hinglish, is_urdu_or_arabic
+                has_devanagari = any(0x0900 <= ord(c) <= 0x097F for c in full_clip_text)
+                if has_devanagari or is_urdu_or_arabic(full_clip_text):
+                    full_clip_text = devanagari_to_hinglish(full_clip_text)
+            except Exception:
+                pass
+
+        # 4. Comprehensive multi-language stop words (English + Hindi/Hinglish + conversational fillers)
         stop_words = {
-            "this", "that", "with", "from", "have", "were", "been", "they", "will",
-            "what", "when", "where", "which", "about", "there", "their", "would",
-            "video", "clip", "shorts", "hindi", "kya", "aur", "hota", "hoti", "hote",
-            "kare", "karna", "nahi", "islye", "lekin", "bahut", "raha", "rahe", "gaya",
-            "said", "then", "into", "more", "some", "such", "than", "them", "these",
-            "also", "just", "like", "know", "good", "well", "come", "time", "make"
+            # English articles, prepositions, pronouns, auxiliaries
+            "a", "about", "above", "after", "again", "against", "all", "also", "am",
+            "an", "and", "any", "are", "aren't", "as", "at", "be", "because", "been",
+            "before", "being", "below", "between", "both", "but", "by", "can", "can't",
+            "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't",
+            "doing", "don't", "down", "during", "each", "few", "for", "from", "further",
+            "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he",
+            "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself",
+            "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm",
+            "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself",
+            "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor",
+            "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our",
+            "ours", "ourselves", "out", "over", "own", "same", "shan't", "she",
+            "she'd", "she'll", "she's", "should", "shouldn't", "so", "some", "such",
+            "than", "that", "that's", "the", "their", "theirs", "them", "themselves",
+            "then", "there", "there's", "these", "they", "they'd", "they'll", "they're",
+            "they've", "this", "those", "through", "to", "too", "under", "until", "up",
+            "very", "was", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were",
+            "weren't", "what", "what's", "when", "when's", "where", "where's", "which",
+            "while", "who", "who's", "whom", "why", "why's", "with", "won't", "would",
+            "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours",
+            "yourself", "yourselves", "video", "clip", "shorts", "said", "just", "like",
+            "know", "good", "well", "come", "time", "make", "think", "look", "see",
+            "yeah", "okay", "actually", "basically", "really", "thing", "things",
+            # Hindi / Hinglish common stop words
+            "kya", "kyun", "kaise", "kab", "kahan", "kaun", "kis", "kise", "kisko",
+            "kisne", "jahan", "jaisa", "jaise", "jaisi", "jab", "jo", "jis", "jise",
+            "jisko", "aur", "lekin", "magar", "par", "parantu", "kintu", "agar",
+            "yadi", "to", "bhi", "hi", "hai", "hain", "tha", "thi", "the", "ho",
+            "hua", "hui", "hue", "hota", "hoti", "hote", "hona", "hone", "kar",
+            "karna", "karne", "karta", "karti", "karte", "karein", "kare", "kiya",
+            "kiye", "ki", "ke", "ka", "ko", "se", "mein", "me", "tak", "yeh", "ye",
+            "woh", "wo", "is", "ise", "iska", "iski", "iske", "us", "use", "uska",
+            "uski", "uske", "in", "inhe", "inka", "inki", "inke", "un", "unhe",
+            "unka", "unki", "unke", "apna", "apni", "apne", "aap", "tum", "hum",
+            "ham", "main", "mai", "mujh", "mujhe", "mera", "meri", "mere", "tere",
+            "teri", "tera", "tujhe", "bahut", "bohot", "zyaada", "zyada", "kam",
+            "thoda", "thodi", "pehle", "baad", "ab", "abhi", "tab", "tabhi", "aise",
+            "waise", "log", "baat", "chal", "raha", "rahi", "rahe", "gaya", "gayi",
+            "gaye", "nahi", "nahin", "na", "islye", "isliye"
         }
 
-        # Extract words of 3+ alphanumeric chars
-        words = re.findall(r"[A-Za-z0-9]{3,}", full_clip_text)
-        filtered = [w for w in words if w.lower() not in stop_words]
+        # 5. Extract significant keywords / entities
+        chosen_words = []
+        try:
+            from ai.keyword_extractor import KeywordExtractor
+            kw_ext = KeywordExtractor()
+            kws = kw_ext.extract_keywords(full_clip_text, top_n=6)
+            for item in kws:
+                w = item.get("word", "")
+                if w and len(w) >= 3 and w.lower() not in stop_words:
+                    if w.lower() not in [x.lower() for x in chosen_words]:
+                        chosen_words.append(w.capitalize())
+                if len(chosen_words) >= 4:
+                    break
+        except Exception:
+            pass
 
-        if len(filtered) >= 2:
-            title_slug = "_".join(w.capitalize() for w in filtered[:4])
-            return f"{title_slug}_{index:02d}"
+        # If keyword extraction yielded fewer than 2 words, scan words in transcript order
+        if len(chosen_words) < 2 and full_clip_text:
+            raw_tokens = re.findall(r"[A-Za-z0-9]{3,}", full_clip_text)
+            for w in raw_tokens:
+                if w.lower() not in stop_words and w.lower() not in [x.lower() for x in chosen_words]:
+                    chosen_words.append(w.capitalize())
+                if len(chosen_words) >= 4:
+                    break
 
-        # Fallback to source video filename topic
-        source_stem = Path(self.video_path).stem
-        source_words = re.findall(r"[A-Za-z0-9]{3,}", source_stem)
-        filtered_source = [w for w in source_words if w.lower() not in stop_words]
+        # 6. Build slug from chosen words (supports 1 strong keyword or multi-word)
+        title_slug = None
+        if len(chosen_words) >= 2:
+            title_slug = "_".join(chosen_words[:4])
+        elif len(chosen_words) == 1:
+            title_slug = f"{chosen_words[0]}_Viral"
 
-        if filtered_source:
-            source_slug = "_".join(w.capitalize() for w in filtered_source[:3])
-            return f"{source_slug}_Clip_{index:02d}"
+        # 7. Fallback to source video filename topic
+        if not title_slug:
+            source_stem = Path(self.video_path).stem
+            try:
+                from utils.hinglish_transliterator import devanagari_to_hinglish
+                source_stem = devanagari_to_hinglish(source_stem)
+            except Exception:
+                pass
+            source_words = re.findall(r"[A-Za-z0-9]{3,}", source_stem)
+            filtered_source = [w for w in source_words if w.lower() not in stop_words]
+            if filtered_source:
+                source_slug = "_".join(w.capitalize() for w in filtered_source[:4])
+                title_slug = f"{source_slug}_Clip"
 
-        return f"Viral_Clip_{index:03d}"
+        if not title_slug:
+            hook_labels = ["Viral_Hook", "Top_Moment", "Best_Scene", "Key_Highlight", "Epic_Clip"]
+            title_slug = hook_labels[(index - 1) % len(hook_labels)]
+
+        # 8. Clean up slug
+        title_slug = re.sub(r"[^A-Za-z0-9_]", "_", title_slug)
+        title_slug = re.sub(r"_+", "_", title_slug).strip("_")
+
+        # 9. Format with optional custom user prefix
+        pfx = ""
+        if prefix and prefix.strip() and prefix.strip() not in ("Clip_", "Clip", "clip_", "clip"):
+            clean_pfx = re.sub(r"[^A-Za-z0-9_]", "_", prefix.strip()).strip("_")
+            if clean_pfx and not title_slug.lower().startswith(clean_pfx.lower()):
+                pfx = f"{clean_pfx}_"
+
+        return f"{pfx}{title_slug}_{idx_str}"
 
     # ======================================================
     # Phase 3 - Split by Fixed Duration
@@ -288,11 +453,13 @@ class ClipGenerator:
         self,
         clip_duration=None,
         aspect_key="original",
-        naming=config.NAME_SEQUENTIAL,
+        naming=None,
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
         reframe_x=None,
+        prefix=None,
+        format_str=None,
     ):
 
         if clip_duration is None:
@@ -319,7 +486,7 @@ class ClipGenerator:
             )
 
             filename = self._build_clip_name(
-                index, naming, transcript, start, duration, used_names
+                index, naming, transcript, start, duration, used_names, prefix=prefix, format_str=format_str
             )
             output_file = config.CLIPS_DIR / filename
 
@@ -359,11 +526,13 @@ class ClipGenerator:
         clip_duration=None,
         clip_count=None,
         aspect_key="original",
-        naming=config.NAME_SEQUENTIAL,
+        naming=None,
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
         reframe_x=None,
+        prefix=None,
+        format_str=None,
     ):
         """
         Generate clips from detected scenes according to user clipping mode.
@@ -383,6 +552,8 @@ class ClipGenerator:
                 fps=fps,
                 quality=quality,
                 reframe_x=reframe_x,
+                prefix=prefix,
+                format_str=format_str,
             )
 
         if mode == config.CLIPPING_COUNT:
@@ -395,6 +566,8 @@ class ClipGenerator:
                 fps=fps,
                 quality=quality,
                 reframe_x=reframe_x,
+                prefix=prefix,
+                format_str=format_str,
             )
 
         # Default: AI mode generates one unique edited clip per scene.
@@ -408,6 +581,8 @@ class ClipGenerator:
             fps=fps,
             quality=quality,
             reframe_x=reframe_x,
+            prefix=prefix,
+            format_str=format_str,
         )
 
     # ======================================================
@@ -419,11 +594,13 @@ class ClipGenerator:
         scenes,
         clip_count,
         aspect_key="original",
-        naming=config.NAME_SEQUENTIAL,
+        naming=None,
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
         reframe_x=None,
+        prefix=None,
+        format_str=None,
     ):
         """Pick `clip_count` best scenes evenly spaced through the video."""
         clips = []
@@ -452,7 +629,7 @@ class ClipGenerator:
                 continue
 
             filename = self._build_clip_name(
-                pos, naming, transcript, start, duration, used_names
+                pos, naming, transcript, start, duration, used_names, prefix=prefix, format_str=format_str
             )
             output_file = config.CLIPS_DIR / filename
 
@@ -485,11 +662,13 @@ class ClipGenerator:
         self,
         scenes,
         aspect_key="original",
-        naming=config.NAME_SEQUENTIAL,
+        naming=None,
         transcript=None,
         fps=None,
         quality=config.DEFAULT_QUALITY,
         reframe_x=None,
+        prefix=None,
+        format_str=None,
     ):
 
         clips = []
@@ -517,7 +696,7 @@ class ClipGenerator:
                 duration = config.MAX_CLIP_DURATION
 
             filename = self._build_clip_name(
-                index, naming, transcript, start, duration, used_names
+                index, naming, transcript, start, duration, used_names, prefix=prefix, format_str=format_str
             )
             output_file = config.CLIPS_DIR / filename
 

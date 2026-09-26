@@ -4,6 +4,20 @@
 
 from pathlib import Path
 import shutil
+import sys
+import os
+
+# Ensure Windows consoles and background tasks never crash on Unicode print/logging
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 # ==========================================================
 # SECTION 2 : PROJECT ROOT
@@ -165,6 +179,7 @@ CLIPPING_COUNT = "count"           # user decides number of clips
 
 NAME_SEQUENTIAL = "sequential"
 NAME_CONTENT = "content"
+DEFAULT_NAMING = NAME_CONTENT
 
 # ==========================================================
 # EXPORT SETTINGS

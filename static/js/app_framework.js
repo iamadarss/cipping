@@ -524,6 +524,9 @@ window.UpClipSettings = new SettingsClient();
 // 6. GLOBAL TOOLTIP SYSTEM
 // =========================================================================
 function initTooltips() {
+    if (window._upclipTooltipsInitialized) return;
+    window._upclipTooltipsInitialized = true;
+
     let tooltipEl = null;
 
     document.addEventListener('mouseover', (e) => {
@@ -533,8 +536,21 @@ function initTooltips() {
             return;
         }
 
+        // If sidebar item and sidebar is NOT collapsed, label is already visible - skip tooltip
+        const sidebar = target.closest('.app-sidebar');
+        if (sidebar && !sidebar.classList.contains('collapsed') && target.classList.contains('sidebar-item')) {
+            if (tooltipEl) { tooltipEl.remove(); tooltipEl = null; }
+            return;
+        }
+
         const text = target.getAttribute('data-tooltip');
         if (!text) return;
+
+        // Temporarily suppress native browser tooltip so it doesn't duplicate
+        if (target.hasAttribute('title')) {
+            target.dataset.suppressedTitle = target.getAttribute('title');
+            target.removeAttribute('title');
+        }
 
         if (!tooltipEl) {
             tooltipEl = document.createElement('div');
@@ -544,26 +560,34 @@ function initTooltips() {
             tooltipEl.style.background = 'var(--surface-3, #1E1E2E)';
             tooltipEl.style.color = 'var(--text-primary, #FFF)';
             tooltipEl.style.border = '1px solid var(--border, #2E2E3E)';
-            tooltipEl.style.padding = '4px 8px';
-            tooltipEl.style.borderRadius = '4px';
+            tooltipEl.style.padding = '5px 9px';
+            tooltipEl.style.borderRadius = '6px';
             tooltipEl.style.fontSize = '11px';
             tooltipEl.style.fontWeight = '500';
             tooltipEl.style.pointerEvents = 'none';
-            tooltipEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+            tooltipEl.style.boxShadow = '0 6px 16px rgba(0,0,0,0.5)';
+            tooltipEl.style.transition = 'opacity 0.15s ease';
             document.body.appendChild(tooltipEl);
         }
 
         tooltipEl.textContent = text;
         const rect = target.getBoundingClientRect();
-        tooltipEl.style.left = `${Math.max(8, rect.left + rect.width / 2 - tooltipEl.offsetWidth / 2)}px`;
+        const leftPos = Math.max(8, Math.min(window.innerWidth - tooltipEl.offsetWidth - 8, rect.left + rect.width / 2 - tooltipEl.offsetWidth / 2));
+        tooltipEl.style.left = `${leftPos}px`;
         tooltipEl.style.top = `${rect.bottom + 6}px`;
     });
 
     document.addEventListener('mouseout', (e) => {
         const target = e.target.closest('[data-tooltip]');
-        if (target && tooltipEl) {
-            tooltipEl.remove();
-            tooltipEl = null;
+        if (target) {
+            if (target.dataset.suppressedTitle) {
+                target.setAttribute('title', target.dataset.suppressedTitle);
+                delete target.dataset.suppressedTitle;
+            }
+            if (tooltipEl) {
+                tooltipEl.remove();
+                tooltipEl = null;
+            }
         }
     });
 }
@@ -573,3 +597,4 @@ if (document.readyState === 'loading') {
 } else {
     initTooltips();
 }
+

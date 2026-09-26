@@ -289,9 +289,10 @@
                                 </div>
 
                                 <!-- 2-Column Balanced Settings Grid -->
+                                <!-- 2-Column Balanced Settings Grid -->
                                 <div class="settings-studio-grid">
                                     
-                                    <!-- LEFT COLUMN: RULES, CUTTING & FRAMING -->
+                                    <!-- LEFT COLUMN: RULES, CUTTING, SILENCE & SPEECH (CARDS 1 - 6) -->
                                     <div class="settings-studio-col">
                                         
                                         <!-- SECTION 1: TARGET ASPECT RATIO & SMART FRAMING -->
@@ -299,7 +300,7 @@
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">1</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <div class="settings-icon-bubble" data-feature="aspect_framing" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
                                                     </div>
                                                     <div>
@@ -376,7 +377,7 @@
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">2</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <div class="settings-icon-bubble" data-feature="scene_detection" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
                                                     </div>
                                                     <div>
@@ -472,7 +473,7 @@
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">3</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <div class="settings-icon-bubble" data-feature="scene_merger" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
                                                     </div>
                                                     <div>
@@ -517,7 +518,7 @@
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">4</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <div class="settings-icon-bubble" data-feature="silence_detection" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                                                     </div>
                                                     <div>
@@ -554,68 +555,12 @@
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 5: CLIP NAMING & PREFIX -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-naming">
-                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
-                                                <div class="settings-title-left">
-                                                    <span class="settings-sec-num">5</span>
-                                                    <div class="settings-icon-bubble">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                                    </div>
-                                                    <div>
-                                                        <h4 class="settings-group-title">Clip Naming &amp; Prefix</h4>
-                                                        <span class="settings-group-desc">Conventions for saved files and export naming</span>
-                                                    </div>
-                                                </div>
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                            </div>
-                                            <div class="settings-accordion-content" style="display:block;">
-                                                <div class="option-grid vertical" style="margin-top: var(--space-2);">
-                                                    <label class="option-card">
-                                                        <input type="radio" name="naming" value="content">
-                                                        <div class="option-label">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
-                                                            AI Content-based Title
-                                                        </div>
-                                                        <div class="option-sub">e.g. Five_Tips_For_Productivity.mp4</div>
-                                                    </label>
-                                                    <label class="option-card">
-                                                        <input type="radio" name="naming" value="sequential" checked>
-                                                        <div class="option-label">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
-                                                            Sequential Numbering
-                                                        </div>
-                                                        <div class="option-sub">e.g. AI_Spark_Clip_001.mp4</div>
-                                                    </label>
-                                                </div>
-                                                <div class="form-row" style="margin-top: 10px;">
-                                                    <div class="form-group">
-                                                        <label>File Prefix</label>
-                                                        <input type="text" id="clipNamingPrefix" value="Clip_" placeholder="e.g. Short_" class="form-control">
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label>Format</label>
-                                                        <select id="clipNamingFormat" class="form-control">
-                                                            <option value="001">001, 002, 003</option>
-                                                            <option value="01">01, 02, 03</option>
-                                                            <option value="1">1, 2, 3</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-
-                                    <!-- RIGHT COLUMN: SPEECH, AI ENGINES & CAPTIONS -->
-                                    <div class="settings-studio-col">
-                                        
-                                        <!-- SECTION 6: SPEECH-TO-TEXT & WHISPER AI -->
+                                        <!-- SECTION 5: SPEECH-TO-TEXT & WHISPER AI (MOVED TO LEFT COL) -->
                                         <div class="settings-group-card settings-accordion-item open" id="sec-whisper">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
-                                                    <span class="settings-sec-num">6</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <span class="settings-sec-num">5</span>
+                                                    <div class="settings-icon-bubble" data-feature="whisper_ai" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                                                     </div>
                                                     <div>
@@ -694,12 +639,12 @@
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 7: CUSTOM TRANSCRIPT / SUBTITLE SOURCE -->
+                                        <!-- SECTION 6: CUSTOM TRANSCRIPT / SUBTITLE SOURCE (MOVED TO LEFT COL) -->
                                         <div class="settings-group-card settings-accordion-item open" id="sec-custom-sub">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
-                                                    <span class="settings-sec-num">7</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <span class="settings-sec-num">6</span>
+                                                    <div class="settings-icon-bubble" data-feature="custom_subtitles" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
                                                     </div>
                                                     <div>
@@ -742,12 +687,68 @@
                                             </div>
                                         </div>
 
+                                    </div>
+
+                                    <!-- RIGHT COLUMN: NAMING, AI ENGINES, VIRAL, AUDIO & CAPTIONS (CARDS 7 - 12) -->
+                                    <div class="settings-studio-col">
+                                        
+                                        <!-- SECTION 7: CLIP NAMING & PREFIX (MOVED TO RIGHT COL) -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-naming">
+                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
+                                                <div class="settings-title-left">
+                                                    <span class="settings-sec-num">7</span>
+                                                    <div class="settings-icon-bubble" data-feature="clip_naming" role="button" tabindex="0" title="Click for feature guide &amp; details">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="settings-group-title">Clip Naming &amp; Prefix</h4>
+                                                        <span class="settings-group-desc">Conventions for saved files and export naming</span>
+                                                    </div>
+                                                </div>
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                            </div>
+                                            <div class="settings-accordion-content" style="display:block;">
+                                                <div class="option-grid vertical" style="margin-top: var(--space-2);">
+                                                    <label class="option-card active">
+                                                        <input type="radio" name="naming" value="content" checked>
+                                                        <div class="option-label">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                                                            AI Content-based Title
+                                                        </div>
+                                                        <div class="option-sub">e.g. Five_Tips_For_Productivity_01.mp4</div>
+                                                    </label>
+                                                    <label class="option-card">
+                                                        <input type="radio" name="naming" value="sequential">
+                                                        <div class="option-label">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
+                                                            Sequential Numbering
+                                                        </div>
+                                                        <div class="option-sub">e.g. Clip_001.mp4</div>
+                                                    </label>
+                                                </div>
+                                                <div class="form-row" style="margin-top: 10px;">
+                                                    <div class="form-group">
+                                                        <label>File Prefix</label>
+                                                        <input type="text" id="clipNamingPrefix" value="Clip_" placeholder="e.g. Short_" class="form-control">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>Format</label>
+                                                        <select id="clipNamingFormat" class="form-control">
+                                                            <option value="001">001, 002, 003</option>
+                                                            <option value="01">01, 02, 03</option>
+                                                            <option value="1">1, 2, 3</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <!-- SECTION 8: MULTI-MODAL AI INTELLIGENCE SUITE -->
                                         <div class="settings-group-card settings-accordion-item open" id="sec-ai-suite">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">8</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <div class="settings-icon-bubble" data-feature="multimodal_ai" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
                                                     </div>
                                                     <div>
@@ -803,7 +804,7 @@
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">9</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <div class="settings-icon-bubble" data-feature="viral_scoring" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                                                     </div>
                                                     <div>
@@ -853,12 +854,41 @@
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 10: SUBTITLES & BURN-IN -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-subtitles">
+                                        <!-- SECTION 10: AUDIO NORMALIZATION (MOVED BEFORE CAPTIONS) -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-audio-norm">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
                                                     <span class="settings-sec-num">10</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <div class="settings-icon-bubble" data-feature="audio_normalization" role="button" tabindex="0" title="Click for feature guide &amp; details">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="settings-group-title">Audio Loudness Normalization</h4>
+                                                        <span class="settings-group-desc">EBU R128 / YouTube standard (-14 LUFS) volume leveling</span>
+                                                    </div>
+                                                </div>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <label class="switch-control" onclick="event.stopPropagation();">
+                                                        <input type="checkbox" id="audioNormalizationToggle" checked>
+                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                        <span class="switch-status-pill active" id="audioNormalizationStatus">ON</span>
+                                                    </label>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </div>
+                                            </div>
+                                            <div class="settings-accordion-content" style="display:block;">
+                                                <div style="font-size:12px; color:var(--text-muted); margin-top:var(--space-2);">
+                                                    Levels audio peaks and balances speech intelligibility so clips don't blow out or sound too quiet on mobile devices.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION 11: SUBTITLES & BURN-IN -->
+                                        <div class="settings-group-card settings-accordion-item open" id="sec-subtitles">
+                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
+                                                <div class="settings-title-left">
+                                                    <span class="settings-sec-num">11</span>
+                                                    <div class="settings-icon-bubble" data-feature="subtitles_burnin" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M10 10H7a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"></path><path d="M19 10h-3a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"></path></svg>
                                                     </div>
                                                     <div>
@@ -901,12 +931,12 @@
                                             </div>
                                         </div>
 
-                                        <!-- SECTION 11: DYNAMIC ANIMATED CAPTIONS -->
+                                        <!-- SECTION 12: DYNAMIC ANIMATED CAPTIONS -->
                                         <div class="settings-group-card settings-accordion-item open" id="sec-captions">
                                             <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
                                                 <div class="settings-title-left">
-                                                    <span class="settings-sec-num">11</span>
-                                                    <div class="settings-icon-bubble">
+                                                    <span class="settings-sec-num">12</span>
+                                                    <div class="settings-icon-bubble" data-feature="animated_captions" role="button" tabindex="0" title="Click for feature guide &amp; details">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
                                                     </div>
                                                     <div>
@@ -930,26 +960,47 @@
                                                             <span style="font-size:11px; color:var(--primary); font-weight:700;">★ 2026 Viral Pack</span>
                                                         </label>
                                                         <select id="captionTemplate" class="form-control" style="font-weight:700;">
-                                                            <option value="hormozi_pop" selected>🔥 Hormozi Pop (Bold Yellow Punch + High-Energy Pop)</option>
-                                                            <option value="beast_glow">⚡ MrBeast Glow (Electric Lime Neon + Bounce)</option>
-                                                            <option value="red_punch">💥 Red Punch (High Drama / Breaking News Fiery)</option>
-                                                            <option value="clean_gold">✨ Clean Gold (Luxury Minimal Podcast Amber)</option>
-                                                            <option value="neon_cyber">🟣 Cyberpunk Neon (Vibrant Fuchsia Glow)</option>
-                                                            <option value="karaoke_pill">💊 Karaoke Pill (Translucent Pill Container + Cyan Wipes)</option>
-                                                            <option value="classic">Standard White Outline</option>
+                                                            <optgroup label="⚡ Built-In Viral Presets">
+                                                                <option value="hormozi_pop" selected>🔥 Hormozi Pop (Bold Yellow Punch + High-Energy Pop)</option>
+                                                                <option value="beast_glow">⚡ MrBeast Glow (Electric Lime Neon + Bounce)</option>
+                                                                <option value="red_punch">💥 Red Punch (High Drama / Breaking News Fiery)</option>
+                                                                <option value="clean_gold">✨ Clean Gold (Luxury Minimal Podcast Amber)</option>
+                                                                <option value="neon_cyber">🟣 Cyberpunk Neon (Vibrant Fuchsia Glow)</option>
+                                                                <option value="karaoke_pill">💊 Karaoke Pill (Translucent Pill Container + Cyan Wipes)</option>
+                                                                <option value="classic">Standard White Outline</option>
+                                                            </optgroup>
+                                                            <optgroup label="💾 Saved Caption Studio Presets" id="captionStudioSavedPresetsGroup">
+                                                                <!-- Dynamically injected from Caption Studio's saved presets -->
+                                                            </optgroup>
                                                         </select>
                                                     </div>
 
-                                                    <div class="form-group" style="margin-top: 10px;">
-                                                        <label>Animation Motion</label>
-                                                        <select id="captionAnimation" class="form-control">
-                                                            <option value="pop" selected>Pop (Dynamic scale punch)</option>
-                                                            <option value="bounce">Bounce (Playful spring)</option>
-                                                            <option value="highlight">Word-by-word Highlight</option>
-                                                            <option value="karaoke">Karaoke Glow</option>
-                                                            <option value="fade">Smooth Fade</option>
-                                                            <option value="none">Static Highlight</option>
-                                                        </select>
+                                                    <div class="form-row" style="margin-top: 10px;">
+                                                        <div class="form-group">
+                                                            <label>Animation Motion</label>
+                                                            <select id="captionAnimation" class="form-control">
+                                                                <option value="pop" selected>Pop (Dynamic scale punch)</option>
+                                                                <option value="bounce">Bounce (Playful spring)</option>
+                                                                <option value="highlight">Word-by-word Highlight</option>
+                                                                <option value="karaoke">Karaoke Glow</option>
+                                                                <option value="fade">Smooth Fade</option>
+                                                                <option value="none">Static Highlight</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label style="display:flex; justify-content:space-between; align-items:center;">
+                                                                <span>Words Per Chunk</span>
+                                                                <span style="font-size:10px; color:var(--primary); font-weight:600;">Hormozi / Viral Pacing</span>
+                                                            </label>
+                                                            <select id="captionWordsPerChunk" class="form-control">
+                                                                <option value="1">1 Word (Ultra-Fast Flash)</option>
+                                                                <option value="2">2 Words (Punchy High-Energy)</option>
+                                                                <option value="3">3 Words (Trending Shorts/Reels)</option>
+                                                                <option value="4" selected>4 Words (Alex Hormozi Standard)</option>
+                                                                <option value="6">6 Words (Medium Line)</option>
+                                                                <option value="8">8 Words (Full Subtitle Line)</option>
+                                                            </select>
+                                                        </div>
                                                     </div>
 
                                                     <div class="form-row" style="margin-top: 10px;">
@@ -993,35 +1044,6 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- SECTION 12: AUDIO NORMALIZATION -->
-                                        <div class="settings-group-card settings-accordion-item open" id="sec-audio-norm">
-                                            <div class="settings-accordion-header" tabindex="0" role="button" aria-expanded="true">
-                                                <div class="settings-title-left">
-                                                    <span class="settings-sec-num">12</span>
-                                                    <div class="settings-icon-bubble">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                                                    </div>
-                                                    <div>
-                                                        <h4 class="settings-group-title">Audio Loudness Normalization</h4>
-                                                        <span class="settings-group-desc">EBU R128 / YouTube standard (-14 LUFS) volume leveling</span>
-                                                    </div>
-                                                </div>
-                                                <div style="display:flex; align-items:center; gap:8px;">
-                                                    <label class="switch-control" onclick="event.stopPropagation();">
-                                                        <input type="checkbox" id="audioNormalizationToggle" checked>
-                                                        <span class="switch-track"><span class="switch-thumb"></span></span>
-                                                        <span class="switch-status-pill active" id="audioNormalizationStatus">ON</span>
-                                                    </label>
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                                </div>
-                                            </div>
-                                            <div class="settings-accordion-content" style="display:block;">
-                                                <div style="font-size:12px; color:var(--text-muted); margin-top:var(--space-2);">
-                                                    Levels audio peaks and balances speech intelligibility so clips don't blow out or sound too quiet on mobile devices.
                                                 </div>
                                             </div>
                                         </div>
@@ -1224,6 +1246,79 @@
             </div>
         </div>
     </div>
+
+    <!-- Settings Info / About Feature Modal -->
+    <div class="modal-overlay" id="settingsInfoModal" hidden>
+        <div class="modal settings-info-modal">
+            <button class="modal-close" id="settingsInfoClose" aria-label="Close">✕</button>
+            <div class="settings-info-header">
+                <div class="settings-info-icon-bubble" id="settingsInfoIconWrap">
+                    <!-- Dynamic SVG icon -->
+                </div>
+                <div style="min-width:0; flex:1;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="settings-sec-num" id="settingsInfoSecNum">1</span>
+                        <h3 id="settingsInfoTitle" class="settings-info-title">Feature Name</h3>
+                    </div>
+                    <div id="settingsInfoTagline" class="settings-info-tagline">Brief subtitle</div>
+                </div>
+            </div>
+
+            <div class="settings-info-body">
+                <!-- About Section -->
+                <div class="settings-info-section">
+                    <h4 class="settings-info-subtitle">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        About this feature (यह फीचर क्या करता है)
+                    </h4>
+                    <p id="settingsInfoDesc" class="settings-info-desc-text">Feature explanation</p>
+                </div>
+
+                <!-- On vs Off Comparison Grid -->
+                <div class="settings-info-grid">
+                    <div class="settings-info-card on-card">
+                        <div class="card-badge on-badge">
+                            <span class="status-dot on-dot"></span> ON (चालू रखने पर)
+                        </div>
+                        <p id="settingsInfoOnDesc" class="card-detail-text">ON impact</p>
+                    </div>
+                    <div class="settings-info-card off-card">
+                        <div class="card-badge off-badge">
+                            <span class="status-dot off-dot"></span> OFF (बंद रखने पर)
+                        </div>
+                        <p id="settingsInfoOffDesc" class="card-detail-text">OFF impact</p>
+                    </div>
+                </div>
+
+                <!-- Pro-Tip / Recommendation -->
+                <div class="settings-info-tip">
+                    <div class="tip-icon">💡</div>
+                    <div class="tip-content">
+                        <strong class="tip-title">Best Practice / प्रो-टिप:</strong>
+                        <div id="settingsInfoTip" class="tip-text">Recommendation text</div>
+                    </div>
+                </div>
+
+                <!-- Live Toggle Sync -->
+                <div class="settings-info-toggle-row" id="settingsInfoToggleRow">
+                    <div>
+                        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Quick Toggle</div>
+                        <div style="font-size:11px; color:var(--text-muted);">Change setting directly from this popup</div>
+                    </div>
+                    <label class="switch-control" style="cursor:pointer;">
+                        <input type="checkbox" id="settingsInfoModalToggle">
+                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                        <span class="switch-status-pill active" id="settingsInfoModalToggleStatus">ON</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top:16px;">
+                <button type="button" class="btn btn-primary btn-block" id="settingsInfoDoneBtn" style="width:100%; justify-content:center; padding:10px;">Got It / समझ गए</button>
+            </div>
+        </div>
+    </div>
+
     <div id="projectContextData" data-project='{% if project %}{{ project|tojson }}{% else %}null{% endif %}' data-file-param="{{ file_param or '' }}" hidden></div>
     <script>
         // Inject project context from DOM attributes to avoid static parser warnings

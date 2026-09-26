@@ -2733,13 +2733,96 @@ def export_data():
 # ---------------------------------------------------------------
 
 
+@youtube_bp.route("/next-schedule-slot", methods=["GET"])
+def get_next_schedule_slot():
+    """
+    Returns the next automated 1-hour schedule release slot based on the most recent
+    scheduled or uploaded video (1 hour interval ahead without manual setup).
+    """
+    conn = get_db()
+
+    # 1. Latest scheduled video
+    latest_sched = conn.execute(
+        "SELECT MAX(scheduled_at) as max_sched FROM schedules WHERE status IN ('scheduled', 'pending')"
+    ).fetchone()
+
+    # 2. Latest uploaded video in history
+    latest_history = conn.execute(
+        "SELECT MAX(published_at) as max_pub FROM history"
+    ).fetchone()
+
+    # 3. Latest uploaded video in videos table
+    latest_vid = conn.execute(
+        "SELECT MAX(published_at) as max_vid_pub FROM videos WHERE status = 'uploaded'"
+    ).fetchone()
+    conn.close()
+
+    now = datetime.now()
+    now_ts = int(now.timestamp())
+
+    candidate_timestamps = []
+    if latest_sched and latest_sched["max_sched"]:
+        try:
+            candidate_timestamps.append(int(latest_sched["max_sched"]))
+        except (ValueError, TypeError):
+            pass
+
+    if latest_history and latest_history["max_pub"]:
+        try:
+            candidate_timestamps.append(int(latest_history["max_pub"]))
+        except (ValueError, TypeError):
+            pass
+
+    if latest_vid and latest_vid["max_vid_pub"]:
+        try:
+            candidate_timestamps.append(int(latest_vid["max_vid_pub"]))
+        except (ValueError, TypeError):
+            pass
+
+    ref_time = None
+    if candidate_timestamps:
+        max_ts = max(candidate_timestamps)
+        # If the latest recorded activity is in the future or recent past (within 2 hours)
+        if max_ts > now_ts - 7200:
+            ref_time = datetime.fromtimestamp(max_ts)
+
+    # 1-Hour Automated Stagger Rule:
+    # If a video was scheduled/published at e.g. 12:00, next video is at 1:00 PM (1 hour ahead).
+    if ref_time:
+        next_dt = ref_time + timedelta(hours=1)
+        if next_dt < now + timedelta(minutes=5):
+            next_dt = now + timedelta(hours=1)
+        prev_formatted = ref_time.strftime("%I:%M %p")
+    else:
+        next_dt = now + timedelta(hours=1)
+        prev_formatted = "current time"
+
+    next_ts = int(next_dt.timestamp())
+    date_str = next_dt.strftime("%Y-%m-%d")
+    time_str = next_dt.strftime("%H:%M")
+    formatted_str = next_dt.strftime("%a, %b %d at %I:%M %p")
+
+    return jsonify({
+        "success": True,
+        "next_slot": {
+            "timestamp": next_ts,
+            "iso": next_dt.isoformat(),
+            "date": date_str,
+            "time": time_str,
+            "formatted": formatted_str,
+            "interval_hours": 1,
+            "prev_time_formatted": prev_formatted
+        }
+    })
+
+
 @youtube_bp.route("/smart-schedule-advice", methods=["GET"])
 def smart_schedule_advice():
     """
     Returns AI-powered scheduling recommendations based on YouTube Shorts algorithm patterns:
     - Peak audience engagement time windows
-    - Safe spacing between consecutive Shorts (4-6 hours)
-    - Calculated next optimal upload slot
+    - Automated 1-hour spacing between consecutive Shorts
+    - Calculated next optimal upload slot (1 hour ahead of previous upload)
     - Headline and hashtag recommendations
     """
     conn = get_db()
@@ -2757,8 +2840,7 @@ def smart_schedule_advice():
     now = datetime.now()
     
     # Peak slots daily (hours in local 24h format):
-    # Morning: 09:00, Afternoon: 13:30, Evening prime: 18:30, Late prime: 21:00
-    peak_hours = [9, 13, 18, 21]
+    peak_hours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
     
     # Determine base reference time
     ref_time = now
@@ -2774,40 +2856,26 @@ def smart_schedule_advice():
         except Exception:
             pass
 
-    # Spacing rule: Minimum 4.5 hours after ref_time
-    min_next_time = ref_time + timedelta(hours=4.5)
-    if min_next_time < now + timedelta(minutes=15):
-        min_next_time = now + timedelta(minutes=15)
+    # Spacing rule: 1 hour automated interval after ref_time
+    min_next_time = ref_time + timedelta(hours=1.0)
+    if min_next_time < now + timedelta(minutes=10):
+        min_next_time = now + timedelta(hours=1.0)
 
-    # Snap to next available peak hour
-    candidate = min_next_time.replace(minute=0, second=0, microsecond=0)
-    found_slot = None
-    for day_offset in range(7):
-        target_date = (candidate + timedelta(days=day_offset)).date()
-        for h in peak_hours:
-            slot_candidate = datetime.combine(target_date, datetime.min.time()).replace(hour=h, minute=0)
-            if slot_candidate >= min_next_time:
-                found_slot = slot_candidate
-                break
-        if found_slot:
-            break
-
-    if not found_slot:
-        found_slot = min_next_time
+    found_slot = min_next_time
 
     return jsonify({
         "success": True,
         "advice": {
             "peak_slots": [
                 {"label": "Morning Kickoff", "time": "09:00 AM", "audience": "Commute & Morning Feed"},
-                {"label": "Lunch Break", "time": "01:30 PM", "audience": "Quick Mobile Browsing"},
-                {"label": "Prime Evening (Top Performing)", "time": "06:30 PM", "audience": "Peak Engagement & Retention"},
+                {"label": "Lunch Break", "time": "01:00 PM", "audience": "Quick Mobile Browsing"},
+                {"label": "Prime Evening (Top Performing)", "time": "06:00 PM", "audience": "Peak Engagement & Retention"},
                 {"label": "Late Evening Chill", "time": "09:00 PM", "audience": "Leisure & Bedtime Scroll"}
             ],
             "spacing_rule": {
-                "hours_min": 4,
-                "hours_ideal": 5,
-                "reason": "Prevents YouTube algorithm self-cannibalization; allows test cohort data to mature before launching the next Short."
+                "hours_min": 1,
+                "hours_ideal": 1,
+                "reason": "Automated 1-hour interval ensures continuous scheduled Shorts distribution without manual setting."
             },
             "next_recommended_slot": {
                 "iso": found_slot.isoformat(),
@@ -2827,9 +2895,10 @@ def smart_schedule_advice():
 @youtube_bp.route("/auto-schedule", methods=["POST"])
 def auto_schedule_clips():
     """
-    Automatically spaces and schedules a list of clip filenames across optimal peak time slots.
+    Automatically spaces and schedules a list of clip filenames across optimal 1-hour release slots.
     """
     data = request.get_json() or {}
+    spacing_hours = float(data.get("spacing_hours", 1.0))
     clip_names = data.get("clips") or []
     if not clip_names:
         if config.OUTPUT_DIR.exists():
@@ -2839,43 +2908,53 @@ def auto_schedule_clips():
         clip_names = ["Auto_Scheduled_Short_01.mp4"]
 
     conn = get_db()
-    # Find latest scheduled time to avoid collision
+    # Find latest scheduled or published time to avoid collision
     latest_sched = conn.execute(
-        "SELECT scheduled_at FROM schedules WHERE status IN ('scheduled', 'pending') ORDER BY scheduled_at DESC LIMIT 1"
+        "SELECT MAX(scheduled_at) as max_sched FROM schedules WHERE status IN ('scheduled', 'pending')"
+    ).fetchone()
+
+    latest_history = conn.execute(
+        "SELECT MAX(published_at) as max_pub FROM history"
+    ).fetchone()
+
+    latest_vid = conn.execute(
+        "SELECT MAX(published_at) as max_vid_pub FROM videos WHERE status = 'uploaded'"
     ).fetchone()
 
     now = datetime.now()
-    ref_time = now
-    if latest_sched and latest_sched["scheduled_at"]:
+    now_ts = int(now.timestamp())
+    candidate_timestamps = []
+    if latest_sched and latest_sched["max_sched"]:
         try:
-            val = latest_sched["scheduled_at"]
-            if isinstance(val, (int, float)) or (isinstance(val, str) and val.isdigit()):
-                s_dt = datetime.fromtimestamp(int(val))
-            else:
-                s_dt = datetime.fromisoformat(str(val).replace("Z", ""))
-            if s_dt > ref_time:
-                ref_time = s_dt
-        except Exception:
+            candidate_timestamps.append(int(latest_sched["max_sched"]))
+        except (ValueError, TypeError):
+            pass
+    if latest_history and latest_history["max_pub"]:
+        try:
+            candidate_timestamps.append(int(latest_history["max_pub"]))
+        except (ValueError, TypeError):
+            pass
+    if latest_vid and latest_vid["max_vid_pub"]:
+        try:
+            candidate_timestamps.append(int(latest_vid["max_vid_pub"]))
+        except (ValueError, TypeError):
             pass
 
-    peak_hours = [9, 13, 18, 21]
+    ref_time = now
+    if candidate_timestamps:
+        max_ts = max(candidate_timestamps)
+        if max_ts > now_ts - 7200:
+            ref_time = datetime.fromtimestamp(max_ts)
+
+    # 1-hour spacing ahead
+    current_time = ref_time + timedelta(hours=spacing_hours)
+    if current_time < now + timedelta(minutes=5):
+        current_time = now + timedelta(hours=spacing_hours)
+
     scheduled_plan = []
-    current_time = max(now + timedelta(minutes=30), ref_time + timedelta(hours=4.5))
 
     for clip_name in clip_names:
-        # Find next peak slot >= current_time
-        slot = None
-        for day_offset in range(14):
-            candidate_date = (current_time + timedelta(days=day_offset)).date()
-            for h in peak_hours:
-                candidate_slot = datetime.combine(candidate_date, datetime.min.time()).replace(hour=h, minute=0)
-                if candidate_slot >= current_time:
-                    slot = candidate_slot
-                    break
-            if slot:
-                break
-        if not slot:
-            slot = current_time
+        slot = current_time
 
         # Format title cleanly from clip_name
         clean_title = Path(clip_name).stem.replace("_", " ").strip()
@@ -2888,7 +2967,7 @@ def auto_schedule_clips():
         if v_row:
             v_id = v_row["id"]
             conn.execute(
-                "UPDATE videos SET title = ?, visibility = 'public', scheduled_at = ? WHERE id = ?",
+                "UPDATE videos SET title = ?, visibility = 'public', scheduled_at = ?, status = 'scheduled' WHERE id = ?",
                 (clean_title, ts, v_id)
             )
         else:
@@ -2912,8 +2991,8 @@ def auto_schedule_clips():
             "timestamp": ts,
         })
 
-        # Advance current_time by at least 5 hours for the next Short
-        current_time = slot + timedelta(hours=5)
+        # Advance current_time by exactly spacing_hours (1 hour by default) for the next Short
+        current_time = slot + timedelta(hours=spacing_hours)
 
     conn.commit()
     conn.close()

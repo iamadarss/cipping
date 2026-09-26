@@ -736,6 +736,7 @@ if (browseBtn && videoInput && uploadZone) {
 
 async function uploadVideo(file) {
     if (!file) return;
+    if (typeof removeUploadedSubtitle === 'function') removeUploadedSubtitle();
     const formData = new FormData();
     formData.append('video', file);
 
@@ -872,7 +873,7 @@ function buildSummary() {
         (document.getElementById('langSubtitle')?.selectedOptions?.[0]?.textContent || langSub);
     const aspect = document.querySelector('input[name="aspect"]:checked')?.value || '9:16';
     const mode = document.querySelector('input[name="clipmode"]:checked')?.value || 'ai';
-    const naming = document.querySelector('input[name="naming"]:checked')?.value || 'sequential';
+    const naming = document.querySelector('input[name="naming"]:checked')?.value || 'content';
 
     const modeLabels = { ai: 'AI decides', duration: 'Duration', count: 'Count' };
     const namingLabels = { content: 'Content-based', sequential: 'Sequential' };
@@ -977,14 +978,14 @@ function collectSettings() {
     }
 
     const useUploadedSubs = document.getElementById('useUploadedSubtitlesToggle') ? document.getElementById('useUploadedSubtitlesToggle').checked : false;
-    const uploadedSubFile = (useUploadedSubs && state.uploadedSubtitle) ? state.uploadedSubtitle : (state.uploadedSubtitle || null);
+    const uploadedSubFile = (useUploadedSubs && state.uploadedSubtitle) ? state.uploadedSubtitle : null;
 
     const settings = {
         language: document.getElementById('langTranscript') ? document.getElementById('langTranscript').value : 'auto',
         subtitle_language: document.getElementById('langSubtitle') ? document.getElementById('langSubtitle').value : 'auto',
         aspect: checkedAspect ? checkedAspect.value : '9:16',
         clipping_mode: mode,
-        naming: checkedNaming ? checkedNaming.value : 'sequential',
+        naming: checkedNaming ? checkedNaming.value : 'content',
         naming_prefix: document.getElementById('clipNamingPrefix') ? document.getElementById('clipNamingPrefix').value : 'Clip_',
         naming_format: document.getElementById('clipNamingFormat') ? document.getElementById('clipNamingFormat').value : '001',
         quality: document.getElementById('exportQuality') ? document.getElementById('exportQuality').value : 'original',
@@ -1035,6 +1036,8 @@ function collectSettings() {
         caption_template: document.getElementById('captionTemplate') ? document.getElementById('captionTemplate').value : 'hormozi_pop',
         caption_animation: document.getElementById('captionAnimation') ? document.getElementById('captionAnimation').value : 'pop',
         caption_position: document.getElementById('captionPosition') ? document.getElementById('captionPosition').value : 'bottom',
+        caption_words_per_chunk: document.getElementById('captionWordsPerChunk') ? parseInt(document.getElementById('captionWordsPerChunk').value, 10) || 4 : 4,
+        custom_caption_style: window.selectedCustomCaptionStyle || null,
         caption_font: document.getElementById('captionFont') ? document.getElementById('captionFont').value : 'Arial Black',
         caption_color: document.getElementById('captionColor') ? document.getElementById('captionColor').value : '#FFFFFF',
         caption_highlight_color: document.getElementById('captionHighlightColor') ? document.getElementById('captionHighlightColor').value : '#FBBF24',
@@ -1887,35 +1890,7 @@ function initCommandPalette() {
 
 // ---------- 4. Tooltips & Shortcuts Manager ----------
 function initTooltips() {
-    let tooltipEl = document.querySelector('.app-tooltip');
-    if (!tooltipEl) {
-        tooltipEl = document.createElement('div');
-        tooltipEl.className = 'app-tooltip';
-        tooltipEl.hidden = true;
-        document.body.appendChild(tooltipEl);
-    }
-
-    document.addEventListener('mouseover', (e) => {
-        const target = e.target.closest('[data-tooltip]');
-        if (!target) return;
-        const text = target.getAttribute('data-tooltip');
-        const hotkey = target.getAttribute('data-hotkey');
-        if (!text) return;
-        
-        tooltipEl.innerHTML = `<span>${text}</span>${hotkey ? `<span class="kbd-badge">${hotkey}</span>` : ''}`;
-        tooltipEl.hidden = false;
-        
-        const rect = target.getBoundingClientRect();
-        tooltipEl.style.left = `${rect.left + rect.width / 2 - tooltipEl.offsetWidth / 2}px`;
-        tooltipEl.style.top = `${rect.bottom + 6}px`;
-    });
-
-    document.addEventListener('mouseout', (e) => {
-        const target = e.target.closest('[data-tooltip]');
-        if (target && tooltipEl) {
-            tooltipEl.hidden = true;
-        }
-    });
+    // Tooltips are handled universally by app_framework.js to prevent duplicate popups
 }
 
 function escapeHtml(str) {
@@ -1944,29 +1919,29 @@ async function loadProjects() {
                 const clipCount = (p.clips && p.clips.length) || 0;
                 const safeName = escapeHtml(p.name);
                 return `
-                <div class="compact-project-card" data-id="${p.id}" tabindex="0" role="button" aria-label="Open project ${safeName}">
-                    <div class="compact-thumb-wrap" data-id="${p.id}">
+                <div class="compact-project-card" data-id="${p.id}">
+                    <a href="/dashboard?project_id=${p.id}" class="compact-thumb-wrap" aria-label="Open project ${safeName} in AI Clip Studio">
                         <img class="compact-project-thumb" src="${thumb}" alt="${safeName}" loading="lazy" onerror="this.onerror=null; this.src='/static/img/default_thumb.png'">
                         <span class="compact-project-badge">${aspect}</span>
                         ${dur ? `<span class="compact-project-dur">${dur}</span>` : ''}
-                    </div>
+                    </a>
                     <div class="compact-project-info">
-                        <div class="compact-project-name" title="${safeName}">${safeName}</div>
+                        <a href="/dashboard?project_id=${p.id}" class="compact-project-name" title="${safeName}">${safeName}</a>
                         <div class="compact-project-meta">
                             <span class="compact-status-tag ${status.toLowerCase()}">${status}</span>
                             <span>${dur ? dur + ' • ' : ''}${clipCount} clip${clipCount === 1 ? '' : 's'}</span>
                         </div>
                         <div class="compact-card-actions">
-                            <button type="button" class="btn btn-primary btn-sm btn-action-studio" data-id="${p.id}" title="Open in AI Clip Studio">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>
+                            <button type="button" class="btn btn-primary btn-sm btn-action-studio" data-id="${p.id}" title="Open in AI Clip Studio" aria-label="Open in AI Clip Studio">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>
                                 <span>Clip Studio</span>
                             </button>
-                            <button type="button" class="btn btn-secondary btn-sm btn-action-editor" data-id="${p.id}" title="Open in Timeline Editor">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <button type="button" class="btn btn-secondary btn-sm btn-action-editor" data-id="${p.id}" title="Open in Timeline Editor" aria-label="Open in Timeline Editor">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                                 <span>Editor</span>
                             </button>
-                            <button type="button" class="btn btn-ghost btn-sm btn-action-delete" data-id="${p.id}" title="Delete project" style="color: var(--error); padding: 4px 6px;">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            <button type="button" class="btn btn-ghost btn-action-delete" data-id="${p.id}" title="Delete project" aria-label="Delete project ${safeName}">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             </button>
                         </div>
                     </div>
@@ -2409,7 +2384,13 @@ function initBatchAndRefreshListeners() {
                 return;
             }
 
-            const card = e.target.closest('.compact-project-card') || e.target.closest('.project-card');
+            const navLink = e.target.closest('a');
+            if (navLink) {
+                // Allow native anchor navigation for thumbnail and title
+                return;
+            }
+
+            const card = e.target.closest('.project-card');
             if (card) {
                 const id = card.dataset.id;
                 window.location.href = `/dashboard?project_id=${id}`;
@@ -2417,8 +2398,8 @@ function initBatchAndRefreshListeners() {
         });
         pGrid.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-                const card = e.target.closest('.compact-project-card') || e.target.closest('.project-card');
-                if (card && !e.target.closest('button')) {
+                const card = e.target.closest('.project-card');
+                if (card && !e.target.closest('button') && !e.target.closest('a')) {
                     e.preventDefault();
                     const id = card.dataset.id;
                     window.location.href = `/dashboard?project_id=${id}`;
@@ -2724,7 +2705,7 @@ function renderHomeTemplates() {
         <div class="template-card ${isSelected ? 'selected' : ''}" data-id="${t.id}" tabindex="0" role="button" aria-label="Use template ${t.name}">
             <div class="template-card-preview">
                 <div class="template-preview-badge">${aspect}</div>
-                <div style="font-size: 28px; opacity: 0.95;">${icon}</div>
+                <div style="font-size: var(--text-2xl, 28px); opacity: 0.95;">${icon}</div>
                 ${isSelected ? '<div class="template-selected-badge">✓ Selected</div>' : ''}
             </div>
             <div class="template-card-body">
@@ -2733,11 +2714,10 @@ function renderHomeTemplates() {
                     <span class="template-card-category">${t.category || 'Preset'}</span>
                 </div>
                 <p class="template-card-desc">${t.description || ''}</p>
-                <div class="template-card-footer" style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:auto; padding-top:8px;">
-                    <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); font-weight:600;">${aspect}</span>
-                    <button type="button" class="btn btn-primary btn-sm btn-use-template" data-id="${t.id}" style="padding: 4px 12px; font-size: 11px; font-weight:600; display:flex; align-items:center; gap:4px;">
+                <div class="template-card-footer">
+                    <button type="button" class="btn btn-primary btn-sm btn-use-template w-full" data-id="${t.id}" aria-label="Use template ${t.name}">
                         <span>Use Template</span>
-                        <svg data-lucide="arrow-right" width="12" height="12"></svg>
+                        <svg data-lucide="arrow-right" width="12" height="12" aria-hidden="true"></svg>
                     </button>
                 </div>
             </div>
@@ -2855,7 +2835,7 @@ function initStep2Collapsibles() {
 
         header.addEventListener('click', (e) => {
             // Prevent event if clicking inside an interactive child directly
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('.settings-icon-bubble')) return;
             toggle();
         });
         header.addEventListener('keydown', (e) => {
@@ -3051,6 +3031,9 @@ function restoreClipSettings() {
         if (s.caption_position && document.getElementById('captionPosition')) {
             document.getElementById('captionPosition').value = s.caption_position;
         }
+        if (s.caption_words_per_chunk && document.getElementById('captionWordsPerChunk')) {
+            document.getElementById('captionWordsPerChunk').value = s.caption_words_per_chunk;
+        }
         if (s.caption_font && document.getElementById('captionFont')) {
             document.getElementById('captionFont').value = s.caption_font;
         }
@@ -3148,11 +3131,378 @@ function restoreClipSettings() {
     }
 }
 
+// ==========================================================================
+// SETTINGS INFO MODAL & CAPTION STUDIO PRESET INTEGRATION
+// ==========================================================================
+const SETTINGS_INFO_GUIDE = {
+    aspect_framing: {
+        num: "1",
+        title: "Target Aspect Ratio & Smart Framing",
+        tagline: "Crop, reframe & dynamic subject tracking for target platforms",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,
+        desc: "यह सेटिंग आपके वीडियो के फ्रेम का आकार (9:16 vertical, 16:9 landscape, 1:1 square, 4:5 portrait) सेट करती है और AI Face Tracking के जरिए बोलने वाले चेहरे को हमेशा स्क्रीन के सेंटर में रखती है।",
+        onDesc: "जब Smart Reframe ON रहता है, तो AI कंप्यूटर विजन हर फ्रेम में चेहरे को डिटेक्ट करके स्मूथली कैमरा पैन करता है। मुख्य वक्ता कभी फ्रेम से बाहर नहीं जाता।",
+        offDesc: "जब OFF रहता है, तो वीडियो सिर्फ स्थिर सेंटर-क्रॉप (Static Center Crop) होता है। यदि वक्ता स्क्रीन के किनारे पर खड़ा होगा तो उसका आधा चेहरा कट सकता है।",
+        tip: "YouTube Shorts, TikTok और Instagram Reels के लिए हमेशा 9:16 चुनें और Smart Subject Reframe को ON रखें ताकि मोबाइल स्क्रीन पर वीडियो परफेक्ट दिखे।",
+        toggleId: "smartReframeToggle"
+    },
+    scene_detection: {
+        num: "2",
+        title: "Scene Detection & Clipping Strategy",
+        tagline: "Intelligent camera cut detection & selection strategy",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>`,
+        desc: "यह सेटिंग वीडियो में कैमरा एंगल्स, विजुअल ट्रांजिशन और कट्स को डिटेक्ट करती है ताकि हर क्लिप एक लॉजिकल सीन या बात पूरी होने पर ही बने।",
+        onDesc: "कैमरा कट्स को समझकर क्लिप्स को सही विजुअल मोमेंट्स पर काटता है। बीच सीन में या चेहरे के बोलते वक्त अचानक भद्दा कट नहीं लगता।",
+        offDesc: "केवल टाइम या काउंट के आधार पर बिना सीन देखे कट करता है, जिससे कई बार बीच वाक्य या बीच मोशन में वीडियो कट सकता है।",
+        tip: "AI Auto Decisions मोड के साथ थ्रेशोल्ड 27.0 रखें। पॉडकास्ट, इंटरव्यू या ट्यूटोरियल के लिए यह सबसे बेहतरीन रिजल्ट देता है।",
+        toggleId: "sceneDetectionToggle"
+    },
+    scene_merger: {
+        num: "3",
+        title: "Anti-Micro-Clip Scene Merger",
+        tagline: "Eliminates 2-5s micro fragments & enforces Shorts duration floor",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>`,
+        desc: "UpClip Studio का सबसे मुख्य और पावरफुल इंजन! जब वीडियो में तेज-तेज कैमरा कट होते हैं, तो अक्सर 2 से 5 सेकंड के बेकार छोटे टुकड़े (micro-clips) बन जाते हैं। यह फीचर उन छोटे टुकड़ों को खुद-ब-खुद जोड़कर (merge करके) 60-90 सेकंड की पूरी और देखने लायक वायरल शॉर्ट क्लिप बनाता है।",
+        onDesc: "कोई भी क्लिप 60 सेकंड से छोटी नहीं बनेगी। 2-5s के छोटे सीन अपने आप पास के सीन से जुड़ जाएंगे और Shorts/Reels के लिए परफेक्ट 60-75s का क्लिप तैयार होगा।",
+        offDesc: "वीडियो में जितने भी छोटे-छोटे कट्स होंगे, उनकी दर्जनों 3-4 सेकंड की बेकार क्लिप्स बन जाएंगी जो अपलोड करने लायक नहीं होतीं।",
+        tip: "इसे हमेशा ON रखें! Min Duration 60s तथा Target Duration 75s रखें ताकि YouTube Shorts और Instagram Reels का मोनेटाइजेशन और रीच अधिकतम रहे।",
+        toggleId: "sceneMergerToggle"
+    },
+    silence_detection: {
+        num: "4",
+        title: "Silence & Dead-Air Detection",
+        tagline: "Detects awkward pauses & hesitation for tight pacing",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`,
+        desc: "यह फीचर वक्ता की सांस लेने की आवाज, झिझक, और अवांछित सन्नाटे (awkward pauses & dead-air) को पहचानता है।",
+        onDesc: "बातचीत के बीच के लंबे सन्नाटे हट जाते हैं, जिससे वीडियो की स्पीड (pacing) बहुत तेज और आकर्षक हो जाती है। दर्शक बोर होकर स्क्रॉल नहीं करते।",
+        offDesc: "ओरिजिनल ऑडियो जैसा है वैसा ही रहता है, 2-3 सेकंड के खाली सन्नाटे भी क्लिप में बने रहेंगे।",
+        tip: "पॉडकास्ट, इंटरव्यू या भाषण के वीडियो के लिए इसे ON रखें और Noise Floor -30 dB सेट करें।",
+        toggleId: "silenceHandlingToggle"
+    },
+    whisper_ai: {
+        num: "5",
+        title: "Whisper AI Speech-to-Text",
+        tagline: "OpenAI Whisper multi-language speech transcription",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`,
+        desc: "OpenAI Whisper मॉडल का उपयोग करके वीडियो की आवाज को 99% सटीकता के साथ टेक्स्ट में बदलता है। यह हिंदी, हिंग्लिश, इंग्लिश और अन्य भारतीय भाषाओं को आसानी से पहचानता है।",
+        onDesc: "वीडियो के हर शब्द का सटीक टाइमस्टैम्प बनता है, जिससे AI वायरल टॉपिक्स का पता लगाता है, क्लिप्स के नाम रखता है, और डायनामिक कैप्शन्स बनाता है।",
+        offDesc: "ऑडियो का कोई ट्रांसक्रिप्शन नहीं होगा। कैप्शन्स और AI कंटेंट-बेस्ड टाइटल काम नहीं करेंगे (केवल सामान्य विजुअल कट्स बनेंगे)।",
+        tip: "अगर आपके पास GPU है तो GPU Accel ON रखें और मॉडल 'base' या 'small' चुनें। हिंदी और हिंग्लिश के लिए 'small' बहुत सटीक है।",
+        toggleId: "whisperToggle"
+    },
+    custom_subtitles: {
+        num: "6",
+        title: "Custom Subtitles & Transcript Source",
+        tagline: "Upload external SRT / VTT to bypass Whisper AI",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>`,
+        desc: "अगर आपके पास पहले से बनी हुई .SRT, .VTT या .JSON सबटाइटिल फाइल है, तो आप उसे सीधे अपलोड कर सकते हैं।",
+        onDesc: "Whisper AI ट्रांसक्रिप्शन को स्किप करके आपकी दी हुई सबटाइटल फाइल का इस्तेमाल किया जाता है, जिससे प्रोसेसिंग का समय 80% बचता है।",
+        offDesc: "सिस्टम इनपुट वीडियो के ऑडियो से नया ट्रांसक्रिप्शन Whisper AI द्वारा खुद जनरेट करेगा।",
+        tip: "यदि आपके पास पहले से यूट्यूब या एडिटर से एक्सपोर्ट की गई सटीक सबटाइटिल फाइल है, तो इसे ON करें।",
+        toggleId: "useUploadedSubtitlesToggle"
+    },
+    clip_naming: {
+        num: "7",
+        title: "Clip Naming & Prefix",
+        tagline: "AI content-based hook titles vs sequential numbering",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+        desc: "एक्सपोर्ट होने वाली फाइलों का नामकरण कैसे होगा। 'AI Content-based Title' में वीडियो के उस भाग में बोली गई सबसे मुख्य बात (Topic/Hook) के आधार पर नाम रखा जाता है (जैसे: Five_Tips_For_Productivity_01.mp4)।",
+        onDesc: "हर क्लिप की पहचान तुरंत हो जाती है क्योंकि फाइल के नाम में ही उसका विषय लिखा होता है। यूट्यूब/इंस्टा अपलोड करते समय टाइटल सोचने की जरूरत नहीं होती।",
+        offDesc: "फाइलों के साधारण नाम रखे जाते हैं जैसे Clip_001.mp4, Clip_002.mp4।",
+        tip: "हमेशा 'AI Content-based Title' चुनें! UpClip Studio ट्रांसक्रिप्ट से मुख्य टॉपिक निकालकर ऑटोमैटिक अर्थपूर्ण नाम देता है।",
+        toggleId: null
+    },
+    multimodal_ai: {
+        num: "8",
+        title: "Multi-Modal AI Intelligence Engines",
+        tagline: "Audio energy, motion dynamics & emotion tone detection",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>`,
+        desc: "यह 3 AI इंजनों का संगम है: (1) ऑडियो एनर्जी (ताली, हंसी, चीखना), (2) विजुअल मोशन डायनामिक्स (एक्शन या तेज मूवमेंट), और (3) इमोशन क्लासिफायर (उत्साह, आश्चर्य, सस्पेंस)।",
+        onDesc: "AI पूरे वीडियो में उन 10-15% पलों को ढूंढता है जहाँ सबसे ज्यादा ड्रामा, हंसी, या महत्वपूर्ण बात हुई हो, और उन्हीं को क्लिप बनाता है।",
+        offDesc: "केवल बराबर समय के अंतराल पर या सिर्फ सीन कट्स पर क्लिप्स बनती हैं, चाहे वह हिस्सा कितना भी बोरिंग क्यों न हो।",
+        tip: "वायरल क्लिप्स ढूंढने के लिए तीनों चेकबॉक्स (Audio Energy, Motion, Emotion) को हमेशा ON रखें।",
+        toggleId: "audioEnergyToggle"
+    },
+    viral_scoring: {
+        num: "9",
+        title: "AI Viral Scoring & Clip Ranking",
+        tagline: "5-pillar retention predictor with A+/A ranking badges",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+        desc: "यह हर क्लिप को 0 से 100 तक का Viral Score और A+, A, B ग्रेड देता है। यह हुक स्ट्रेंथ, पेसिंग, ऑडियो क्वालिटी और ऑडियंस एंगेजमेंट का विश्लेषण करता है।",
+        onDesc: "सबसे ज्यादा वायरल होने की संभावना वाली क्लिप्स सबसे ऊपर रैंक होती हैं, और कम स्कोर वाली क्लिप्स फिल्टर हो जाती हैं। साथ ही वायरल हैशटैग (#Shorts, #Viral) भी मिलते हैं।",
+        offDesc: "क्लिप्स का कोई स्कोरिंग या रैंकिंग नहीं होगी, सारी क्लिप्स बिना किसी ग्रेड के एक सामान्य लिस्ट में दिखेंगी।",
+        tip: "Min Viral Score को 50+ रखें ताकि केवल वही क्लिप्स एक्सपोर्ट हों जिनमें दर्शकों को बांध कर रखने का दम हो।",
+        toggleId: "viralRankingToggle"
+    },
+    audio_normalization: {
+        num: "10",
+        title: "Audio Loudness Normalization",
+        tagline: "EBU R128 / YouTube standard (-14 LUFS) volume leveling",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`,
+        desc: "यह सभी क्लिप्स के वॉल्यूम को ब्रॉडकास्ट और यूट्यूब/इंस्टाग्राम के स्टैंडर्ड लेवल (-14 LUFS) पर नॉर्मलाइज करता है।",
+        onDesc: "अगर वक्ता कभी बहुत धीरे बोल रहा हो या अचानक चिल्लाए, तो आवाज बैलेंस हो जाएगी। हेडफोन और मोबाइल स्पीकर पर आवाज एकदम क्रिस्प और लाउड सुनाई देगी।",
+        offDesc: "ओरिजिनल वीडियो का वॉल्यूम बिना किसी बदलाव के रहेगा। कुछ क्लिप्स बहुत धीमी और कुछ बहुत तेज लग सकती हैं।",
+        tip: "इसे हमेशा ON रखें ताकि सोशल मीडिया पर कोई दर्शक धीमी आवाज की वजह से वीडियो छोड़ कर न जाए।",
+        toggleId: "audioNormalizationToggle"
+    },
+    subtitles_burnin: {
+        num: "11",
+        title: "Subtitles Burn-In & Styling",
+        tagline: "Hardcoded static full-line subtitles burned into video pixels",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 10H7a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"/><path d="M19 10h-3a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h3"/></svg>`,
+        desc: "【Subtitles Burn-In vs Animated Captions में अंतर】: यह पारंपरिक/क्लासिक सबटाइटल्स हैं (जैसे YouTube, Netflix या फिल्मों में नीचे 1-2 लाइन की सफेद/पीली पट्टी में पूरे वाक्य स्थिर लिखे आते हैं)। यह FFmpeg द्वारा वीडियो के पिक्सल में स्थायी रूप से बर्न (छाप) दिए जाते हैं।",
+        onDesc: "वीडियो के नीचे पूरी-पूरी लाइन के स्थिर (Static) सबटाइटल्स दिखेंगे। यह इंटरव्यू, पॉडकास्ट या ट्यूटोरियल के लिए बहुत साफ-सुथरा और प्रोफेशनल लुक देता है।",
+        offDesc: "वीडियो पर कोई क्लासिक सबटाइटिल पट्टी नहीं जलेगी। (अगर आपको टिक-टॉक स्टाइल कूदने वाले कैप्शन्स चाहिए, तो इसके बदले Section 12 Animated Captions ऑन करें)।",
+        tip: "यदि आपका वीडियो शांत, फॉर्मल या लंबी बातचीत वाला है तो Subtitles Burn-In चुनें। यदि शॉर्ट्स/रील्स के लिए वायरल मोशन स्टाइल चाहिए तो इसे OFF करके Section 12 ऑन करें!",
+        toggleId: "subtitleEnabled"
+    },
+    animated_captions: {
+        num: "12",
+        title: "Dynamic Animated Captions",
+        tagline: "TikTok / Reels kinetic word-by-word motion highlight",
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`,
+        desc: "【Subtitles Burn-In vs Animated Captions में अंतर】: यह Alex Hormozi, MrBeast और वायरल शॉर्ट्स स्टाइल के शब्द-दर-शब्द चमकने वाले (Kinetic Karaoke Pop) कैप्शन्स हैं! इसमें पूरा वाक्य एक साथ नहीं आता, बल्कि जो शब्द बोला जा रहा होता है वह तुरंत पॉप, बाउंस या ग्लो करता है।",
+        onDesc: "स्क्रीन पर बोल्ड, हाई-एनर्जी शब्द-दर-शब्द एनिमेटेड टेक्स्ट आएगा जो सोशल मीडिया पर दर्शकों की निगाहें स्क्रीन पर चिपकाए रखता है (Retention 300% बढ़ाता है)।",
+        offDesc: "कोई डायनामिक मोशन कैप्शन्स नहीं बनेंगे।",
+        tip: "YouTube Shorts, TikTok और Instagram Reels के लिए इसे हमेशा ON रखें! आप Words Per Chunk (2, 3 या 4 शब्द) और Caption Studio के सेव किए हुए कस्टम प्रीसेट्स भी चुन सकते हैं।",
+        toggleId: "captionEnabled"
+    }
+};
+
+function openSettingsInfoModal(featureKey) {
+    const data = SETTINGS_INFO_GUIDE[featureKey];
+    if (!data) return;
+
+    const modal = document.getElementById('settingsInfoModal');
+    if (!modal) return;
+
+    const secNumEl = document.getElementById('settingsInfoSecNum');
+    const titleEl = document.getElementById('settingsInfoTitle');
+    const taglineEl = document.getElementById('settingsInfoTagline');
+    const iconWrapEl = document.getElementById('settingsInfoIconWrap');
+    const descEl = document.getElementById('settingsInfoDesc');
+    const onDescEl = document.getElementById('settingsInfoOnDesc');
+    const offDescEl = document.getElementById('settingsInfoOffDesc');
+    const tipEl = document.getElementById('settingsInfoTip');
+
+    if (secNumEl) secNumEl.textContent = data.num || '';
+    if (titleEl) titleEl.textContent = data.title;
+    if (taglineEl) taglineEl.textContent = data.tagline;
+    if (iconWrapEl) iconWrapEl.innerHTML = data.icon;
+    if (descEl) descEl.textContent = data.desc;
+    if (onDescEl) onDescEl.textContent = data.onDesc;
+    if (offDescEl) offDescEl.textContent = data.offDesc;
+    if (tipEl) tipEl.textContent = data.tip;
+
+    const toggleRow = document.getElementById('settingsInfoToggleRow');
+    const modalToggle = document.getElementById('settingsInfoModalToggle');
+    const modalToggleStatus = document.getElementById('settingsInfoModalToggleStatus');
+
+    if (data.toggleId && document.getElementById(data.toggleId) && toggleRow && modalToggle && modalToggleStatus) {
+        toggleRow.style.display = 'flex';
+        const srcEl = document.getElementById(data.toggleId);
+        modalToggle.checked = srcEl.checked;
+        modalToggleStatus.textContent = srcEl.checked ? 'ON' : 'OFF';
+        modalToggleStatus.className = 'switch-status-pill ' + (srcEl.checked ? 'active' : '');
+
+        modalToggle.onchange = function() {
+            srcEl.checked = modalToggle.checked;
+            srcEl.dispatchEvent(new Event('change', { bubbles: true }));
+            modalToggleStatus.textContent = modalToggle.checked ? 'ON' : 'OFF';
+            modalToggleStatus.className = 'switch-status-pill ' + (modalToggle.checked ? 'active' : '');
+            saveClipSettings();
+        };
+    } else if (toggleRow) {
+        toggleRow.style.display = 'none';
+    }
+
+    modal.hidden = false;
+    modal.classList.add('active');
+}
+
+function closeSettingsInfoModal() {
+    const modal = document.getElementById('settingsInfoModal');
+    if (modal) {
+        modal.hidden = true;
+        modal.classList.remove('active');
+    }
+}
+
+function initSettingsInfoModal() {
+    // Bind all icon bubbles in settings cards
+    document.querySelectorAll('.settings-icon-bubble[data-feature]').forEach(bubble => {
+        if (bubble.dataset.infoBound) return;
+        bubble.dataset.infoBound = "true";
+        bubble.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const featureKey = bubble.dataset.feature;
+            openSettingsInfoModal(featureKey);
+        });
+    });
+
+    // Close buttons and backdrop click
+    document.getElementById('settingsInfoClose')?.addEventListener('click', closeSettingsInfoModal);
+    document.getElementById('settingsInfoDoneBtn')?.addEventListener('click', closeSettingsInfoModal);
+    document.getElementById('settingsInfoModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'settingsInfoModal') closeSettingsInfoModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !document.getElementById('settingsInfoModal')?.hidden) {
+            closeSettingsInfoModal();
+        }
+    });
+}
+
+function initCaptionStudioSavedPresetsIntegration() {
+    const optgroup = document.getElementById('captionStudioSavedPresetsGroup');
+    const templateSelect = document.getElementById('captionTemplate');
+    if (!optgroup || !templateSelect) return;
+
+    let savedPresets = [];
+    try {
+        const raw = localStorage.getItem("upclip_custom_caption_presets");
+        if (raw) savedPresets = JSON.parse(raw);
+    } catch (e) {
+        savedPresets = [];
+    }
+
+    optgroup.innerHTML = "";
+    if (savedPresets && savedPresets.length) {
+        savedPresets.forEach((p, idx) => {
+            const opt = document.createElement("option");
+            opt.value = `custom_cs_${idx}`;
+            opt.textContent = `💾 ${p.name || 'Custom Preset ' + (idx + 1)}`;
+            optgroup.appendChild(opt);
+        });
+        optgroup.hidden = false;
+    } else {
+        optgroup.hidden = true;
+    }
+
+    function toHexColor(val, fallback) {
+        if (!val) return fallback;
+        const s = String(val).trim();
+        if (s.startsWith('#')) {
+            if (s.length === 7) return s.toUpperCase();
+            if (s.length === 4) return (`#${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`).toUpperCase();
+        }
+        const m = s.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        if (m) {
+            const r = parseInt(m[1], 10).toString(16).padStart(2, '0');
+            const g = parseInt(m[2], 10).toString(16).padStart(2, '0');
+            const b = parseInt(m[3], 10).toString(16).padStart(2, '0');
+            return (`#${r}${g}${b}`).toUpperCase();
+        }
+        return fallback;
+    }
+
+    if (!templateSelect.dataset.presetBound) {
+        templateSelect.dataset.presetBound = "true";
+        templateSelect.addEventListener('change', () => {
+            const val = templateSelect.value;
+            if (val.startsWith('custom_cs_')) {
+                const idx = parseInt(val.replace('custom_cs_', ''), 10);
+                const p = savedPresets[idx];
+                if (p && p.style) {
+                    window.selectedCustomCaptionStyle = p.style;
+                    const st = p.style;
+
+                    // 1. Font Family
+                    const font = st.fontFamily || st.font_family;
+                    const fontEl = document.getElementById('captionFont');
+                    if (font && fontEl) {
+                        const exists = Array.from(fontEl.options).some(o => o.value.toLowerCase() === font.toLowerCase());
+                        if (!exists) {
+                            const newOpt = document.createElement('option');
+                            newOpt.value = font;
+                            newOpt.textContent = font;
+                            fontEl.appendChild(newOpt);
+                        }
+                        fontEl.value = font;
+                        fontEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    // 2. Font Size
+                    const size = st.fontSize || st.font_size;
+                    const sizeEl = document.getElementById('captionSize');
+                    if (size && sizeEl) {
+                        sizeEl.value = parseInt(size, 10);
+                        sizeEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        sizeEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    // 3. Base Text Color
+                    const textColor = st.textColor || st.text_color;
+                    const colorEl = document.getElementById('captionColor');
+                    if (textColor && colorEl) {
+                        colorEl.value = toHexColor(textColor, '#FFFFFF');
+                        colorEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        colorEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    // 4. Active Word Highlight Color
+                    const activeColor = st.activeWordColor || st.active_word_color;
+                    const hlEl = document.getElementById('captionHighlightColor');
+                    if (activeColor && hlEl) {
+                        hlEl.value = toHexColor(activeColor, '#FBBF24');
+                        hlEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        hlEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    // 5. Outline / Stroke Width
+                    const outlineWidth = st.strokeWidth !== undefined ? st.strokeWidth : (st.outline_width !== undefined ? st.outline_width : st.outline);
+                    const outlineEl = document.getElementById('captionOutline');
+                    if (outlineWidth !== undefined && outlineEl) {
+                        outlineEl.value = parseInt(outlineWidth, 10);
+                        outlineEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    // 6. Animation
+                    const anim = st.animation;
+                    const animEl = document.getElementById('captionAnimation');
+                    if (anim && animEl) {
+                        animEl.value = anim;
+                        animEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    // 7. Vertical Position
+                    let position = st.position;
+                    if (!position && st.posYPercent !== undefined) {
+                        const py = parseFloat(st.posYPercent);
+                        position = py < 40 ? 'top' : (py > 70 ? 'bottom' : 'middle');
+                    }
+                    const posEl = document.getElementById('captionPosition');
+                    if (position && posEl) {
+                        posEl.value = position;
+                        posEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    // 8. Words per chunk
+                    const chunk = st.words_per_chunk || st.wordsPerChunk;
+                    const chunkEl = document.getElementById('captionWordsPerChunk');
+                    if (chunk && chunkEl) {
+                        chunkEl.value = parseInt(chunk, 10);
+                        chunkEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    showToast(`Applied Caption Studio preset: ${p.name || 'Custom Preset'}`, 'success');
+                }
+            } else {
+                window.selectedCustomCaptionStyle = null;
+            }
+            saveClipSettings();
+        });
+    }
+}
+
 // ---------- Init All ----------
 checkFfmpeg();
 initEngineSwitches();
 initPresetButtons();
 initSubtitleUploadHandlers();
+initSettingsInfoModal();
+initCaptionStudioSavedPresetsIntegration();
 if (document.querySelector('.wiz-panel')) {
     showStep(1);
     restoreClipSettings();

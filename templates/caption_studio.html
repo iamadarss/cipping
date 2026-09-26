@@ -156,6 +156,32 @@
                                 </div>
                             </div>
 
+                            <!-- Live Watermark Overlay -->
+                            <div class="watermark-overlay-preview" id="watermarkPreview" style="display:none; position:absolute; pointer-events:none; z-index:18; transition:all 0.2s ease;">
+                                <img id="watermarkPreviewImg" src="" alt="Watermark" style="display:none; max-width:100%; height:auto; object-fit:contain; border-radius:4px;">
+                                <span id="watermarkPreviewText" style="display:none; font-family:'Arial Black', sans-serif; font-size:13px; color:#ffffff; text-shadow:0 2px 4px rgba(0,0,0,0.85); white-space:nowrap;"></span>
+                            </div>
+
+                            <!-- Live Outro Subscribe & Bell CTA Card Preview -->
+                            <div class="outro-cta-overlay-preview" id="outroCtaPreview" style="display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:90px; width:88%; z-index:19; pointer-events:none; transition:opacity 0.3s ease;">
+                                <div class="outro-card-ui" style="background:rgba(15,18,24,0.92); border:1.5px solid rgba(255,255,255,0.22); border-radius:18px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 8px 24px rgba(0,0,0,0.7); backdrop-filter:blur(8px);">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <div id="outroAvatarCircle" style="width:34px; height:34px; border-radius:50%; background:#EF4444; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; border:1.5px solid rgba(255,255,255,0.4); overflow:hidden;">
+                                            <img id="outroAvatarImg" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+                                            <span id="outroAvatarLetter">U</span>
+                                        </div>
+                                        <div>
+                                            <div id="outroChannelNameDisplay" style="font-weight:700; font-size:12px; color:#ffffff; line-height:1.2;">UpClip Creator</div>
+                                            <div id="outroHandleDisplay" style="font-size:10px; color:#94A3B8;">@creator</div>
+                                        </div>
+                                    </div>
+                                    <div style="background:#FF0000; color:#fff; border-radius:14px; padding:4px 10px; font-weight:800; font-size:11px; display:flex; align-items:center; gap:4px; box-shadow:0 2px 8px rgba(255,0,0,0.5);">
+                                        <span id="outroBellIconAnim">🔔</span>
+                                        <span>SUBSCRIBE</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Integrated Video Bottom Transport Bar (hidden until video is loaded) -->
                             <div class="video-bottom-transport" id="videoBottomTransport" style="display:none;">
                                 <!-- Integrated Video Timeline Progress Bar -->
@@ -627,6 +653,216 @@
                                 </div>
                             </div>
 
+                            <!-- ACCORDION 8: CHANNEL LOGO & WATERMARK -->
+                            <div class="accordion-group" id="accordionWatermark">
+                                <div class="accordion-header" data-target="accordionWatermark">
+                                    <div class="accordion-header-left">
+                                        <svg data-lucide="shield-check" width="15" height="15" style="color:#38BDF8;"></svg>
+                                        <span>Channel Logo & Watermark</span>
+                                    </div>
+                                    <div class="accordion-header-right">
+                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                    </div>
+                                </div>
+                                <div class="accordion-body">
+                                    <div class="setting-subheader">
+                                        <span>Enable Watermark</span>
+                                        <label class="toggle-switch-sm">
+                                            <input type="checkbox" id="watermarkToggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Upload Logo</span>
+                                        <div style="display:flex; align-items:center; gap:8px; width:60%;">
+                                            <input type="file" id="watermarkFileInput" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none;">
+                                            <button type="button" class="btn btn-secondary btn-xs" id="watermarkUploadBtn" style="flex:1;">
+                                                <svg data-lucide="upload" width="12" height="12"></svg>
+                                                <span>Choose PNG/JPG</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="setting-row" id="watermarkPreviewRow" style="display:none;">
+                                        <span class="setting-label">Loaded Logo</span>
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <img id="watermarkThumbImg" src="" style="width:34px; height:34px; object-fit:contain; border-radius:6px; background:#1E293B; border:1px solid rgba(255,255,255,0.1);">
+                                            <button type="button" class="btn btn-danger btn-xs" id="watermarkRemoveBtn" title="Remove Logo">✕</button>
+                                        </div>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Text Watermark</span>
+                                        <input type="text" id="watermarkTextInput" class="form-control input-sm" placeholder="e.g. @MyChannel" style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Corner Position</span>
+                                        <select id="watermarkPositionSelect" class="setting-select">
+                                            <option value="top_right" selected>Top Right</option>
+                                            <option value="top_left">Top Left</option>
+                                            <option value="bottom_right">Bottom Right</option>
+                                            <option value="bottom_left">Bottom Left</option>
+                                            <option value="top_center">Top Center</option>
+                                        </select>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Size (% of screen)</span>
+                                        <div class="slider-control">
+                                            <input type="range" id="watermarkScaleRange" class="emerald-range-slider" min="8" max="35" value="16">
+                                            <span class="value-badge"><span id="watermarkScaleDisplay">16</span>%</span>
+                                        </div>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Opacity</span>
+                                        <div class="slider-control">
+                                            <input type="range" id="watermarkOpacityRange" class="emerald-range-slider" min="15" max="100" value="80">
+                                            <span class="value-badge"><span id="watermarkOpacityDisplay">80</span>%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ACCORDION 9: OUTRO & SUBSCRIBE CTA -->
+                            <div class="accordion-group" id="accordionOutro">
+                                <div class="accordion-header" data-target="accordionOutro">
+                                    <div class="accordion-header-left">
+                                        <svg data-lucide="bell-ring" width="15" height="15" style="color:#EF4444;"></svg>
+                                        <span>Subscribe & Bell Outro CTA</span>
+                                    </div>
+                                    <div class="accordion-header-right">
+                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                    </div>
+                                </div>
+                                <div class="accordion-body">
+                                    <div class="setting-subheader">
+                                        <span>Enable Outro Card</span>
+                                        <label class="toggle-switch-sm">
+                                            <input type="checkbox" id="outroToggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Channel Name</span>
+                                        <input type="text" id="outroChannelNameInput" class="form-control input-sm" placeholder="Your Channel Name" value="UpClip Creator" style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Channel Handle</span>
+                                        <input type="text" id="outroHandleInput" class="form-control input-sm" placeholder="@creator" value="@creator" style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Duration (End of video)</span>
+                                        <div class="slider-control">
+                                            <input type="range" id="outroDurationRange" class="emerald-range-slider" min="2" max="7" value="4">
+                                            <span class="value-badge"><span id="outroDurationDisplay">4</span>s</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ACCORDION 10: SOUND EFFECTS (SFX) -->
+                            <div class="accordion-group" id="accordionSFX">
+                                <div class="accordion-header" data-target="accordionSFX">
+                                    <div class="accordion-header-left">
+                                        <svg data-lucide="volume-2" width="15" height="15" style="color:#F59E0B;"></svg>
+                                        <span>Viral Sound Effects (SFX)</span>
+                                    </div>
+                                    <div class="accordion-header-right">
+                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                    </div>
+                                </div>
+                                <div class="accordion-body">
+                                    <div class="setting-subheader">
+                                        <span>Enable Caption SFX</span>
+                                        <label class="toggle-switch-sm">
+                                            <input type="checkbox" id="sfxToggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Sound Type</span>
+                                        <select id="sfxTypeSelect" class="setting-select">
+                                            <option value="whoosh" selected>Whoosh / Swoosh (Modern Reel)</option>
+                                            <option value="pop">Pop / Bubble (Hormozi / Casual)</option>
+                                            <option value="chime">Chime / Bell (Punchy Viral)</option>
+                                            <option value="click">Subtle Click (Minimal)</option>
+                                        </select>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Trigger Cue</span>
+                                        <select id="sfxFreqSelect" class="setting-select">
+                                            <option value="major" selected>Major Moments & Hook</option>
+                                            <option value="every_other">Every 2nd Caption</option>
+                                            <option value="all">Every Caption Pop</option>
+                                        </select>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">SFX Volume</span>
+                                        <div class="slider-control">
+                                            <input type="range" id="sfxVolumeRange" class="emerald-range-slider" min="10" max="100" value="70">
+                                            <span class="value-badge"><span id="sfxVolumeDisplay">70</span>%</span>
+                                        </div>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Preview Audio</span>
+                                        <button type="button" class="btn btn-secondary btn-xs" id="sfxPreviewPlayBtn" style="display:flex; align-items:center; gap:4px;">
+                                            <svg data-lucide="play" width="12" height="12"></svg>
+                                            <span>Test Sound Effect</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ACCORDION 11: B-ROLL OVERLAYS -->
+                            <div class="accordion-group" id="accordionBRoll">
+                                <div class="accordion-header" data-target="accordionBRoll">
+                                    <div class="accordion-header-left">
+                                        <svg data-lucide="film" width="15" height="15" style="color:#A855F7;"></svg>
+                                        <span>B-Roll Cutaway Overlay</span>
+                                    </div>
+                                    <div class="accordion-header-right">
+                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                    </div>
+                                </div>
+                                <div class="accordion-body">
+                                    <div class="setting-subheader">
+                                        <span>Enable B-Roll Clip</span>
+                                        <label class="toggle-switch-sm">
+                                            <input type="checkbox" id="brollToggle">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Upload Clip</span>
+                                        <div style="display:flex; align-items:center; gap:8px; width:60%;">
+                                            <input type="file" id="brollFileInput" accept="video/mp4,video/quicktime,video/webm,image/*" style="display:none;">
+                                            <button type="button" class="btn btn-secondary btn-xs" id="brollUploadBtn" style="flex:1;">
+                                                <svg data-lucide="upload" width="12" height="12"></svg>
+                                                <span>Choose Video / Pic</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="setting-row" id="brollPreviewRow" style="display:none;">
+                                        <span class="setting-label">Attached Clip</span>
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <span id="brollNameBadge" style="font-size:11px; color:#38BDF8; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">clip.mp4</span>
+                                            <button type="button" class="btn btn-danger btn-xs" id="brollRemoveBtn">✕</button>
+                                        </div>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Overlay Style</span>
+                                        <select id="brollModeSelect" class="setting-select">
+                                            <option value="cutaway" selected>Fullscreen Cutaway</option>
+                                            <option value="pip">Picture-in-Picture (PiP Corner)</option>
+                                        </select>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Start Time (sec)</span>
+                                        <input type="number" id="brollStartInput" min="0" step="0.5" value="2.0" class="form-control input-sm" style="width:70px; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                    </div>
+                                    <div class="setting-row">
+                                        <span class="setting-label">Duration (sec)</span>
+                                        <input type="number" id="brollDurationInput" min="0.5" max="30" step="0.5" value="3.0" class="form-control input-sm" style="width:70px; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </section>
                 </div>

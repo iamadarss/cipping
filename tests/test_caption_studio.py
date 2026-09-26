@@ -459,3 +459,193 @@ def test_caption_studio_custom_presets_crud():
     assert del_data["success"] is True
     assert not any(p["id"] == preset_id for p in del_data["presets"])
 
+
+def test_auto_caption_input_validation_and_resilience(monkeypatch):
+    app = create_app()
+    client = app.test_client()
+
+    # 1. Missing videoFileName -> 400
+    res_empty = client.post("/api/caption-studio/auto-caption", json={})
+    assert res_empty.status_code == 400
+    assert "No video filename provided" in res_empty.get_json()["error"]
+
+    # 2. Nonexistent video -> 404 (clean error, never 500)
+    res_not_found = client.post("/api/caption-studio/auto-caption", json={"videoFileName": "nonexistent_abc_123.mp4"})
+    assert res_not_found.status_code == 404
+    assert res_not_found.get_json()["success"] is False
+
+    # 3. Mocked Whisper pipeline verifying chunking, Hinglish conversion and timing
+    from ai.whisper_engine import WhisperEngine
+
+    fake_segments = [
+        {"start": 0.0, "end": 2.5, "text": "नमस्ते दोस्तों यह एक परीक्षण वीडियो है"},
+        {"start": 3.0, "end": 5.5, "text": "स्वागत है आपका अप क्लिप स्टूडियो में"}
+    ]
+
+    def mock_transcribe_cached(self, video_path, cache_file, language=None):
+        return fake_segments
+
+    monkeypatch.setattr(WhisperEngine, "transcribe_cached", mock_transcribe_cached)
+
+    import config
+    sample_video = config.INPUT_DIR / "sample.mp4"
+    if not sample_video.exists():
+        sample_video.write_bytes(b"\x00" * 2048)
+
+    # Call with URL-encoded filename
+    res_success = client.post(
+        "/api/caption-studio/auto-caption",
+        json={
+            "videoFileName": "sample.mp4?t=12345",
+            "language": "hinglish",
+            "style": "viral"
+        }
+    )
+    assert res_success.status_code == 200
+    res_data = res_success.get_json()
+    assert res_data["success"] is True
+    captions = res_data["captions"]
+    assert len(captions) > 0
+
+    # Ensure words are parsed with start/end numbers
+    for cap in captions:
+        assert "start" in cap
+        assert "end" in cap
+        assert "words" in cap
+        assert isinstance(cap["words"], list)
+        for w in cap["words"]:
+            assert "text" in w
+            assert "start" in w
+            assert "end" in w
+
+
+def test_caption_studio_resolution_font_scaling():
+    """Verify that caption font size, stroke, and shadow are proportionally scaled to video resolution."""
+    from ai.animated_caption_renderer import AnimatedCaptionRenderer
+
+    renderer = AnimatedCaptionRenderer()
+    sample_transcript = [
+        {"start": 0.0, "end": 2.0, "text": "Viral Shorts Caption", "words": [
+            {"text": "Viral", "start": 0.0, "end": 0.6},
+            {"text": "Shorts", "start": 0.6, "end": 1.2},
+            {"text": "Caption", "start": 1.2, "end": 2.0}
+        ]}
+    ]
+
+    # 1. Default preview font size 38 on 1080x1920 Full HD video -> scales by 4.5x to 171
+    ass_1080p = renderer.build_ass(
+        sample_transcript,
+        opts={"fontSize": 38, "strokeWidth": 3.5, "shadowBlur": 8, "play_res_x": 1080, "play_res_y": 1920}
+    )
+    style_line = [l for l in ass_1080p.splitlines() if l.startswith("Style: Caption")][0]
+    parts = style_line.split(",")
+    # Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+    fontsize = int(parts[2])
+    outline = int(parts[16])
+    shadow = int(parts[17])
+    assert fontsize == 171, f"Expected 171 for 1080p scaling of 38px, got {fontsize}"
+    assert outline == 10, f"Expected 10 for 1080p outline, got {outline}"
+    assert shadow == 24, f"Expected 24 for 1080p shadow, got {shadow}"
+
+    # 2. Enlarged font size 50 on 1080x1920 Full HD video -> scales to 225
+    ass_large = renderer.build_ass(
+        sample_transcript,
+        opts={"fontSize": 50, "play_res_x": 1080, "play_res_y": 1920}
+    )
+    style_large = [l for l in ass_large.splitlines() if l.startswith("Style: Caption")][0]
+    assert int(style_large.split(",")[2]) == 225
+
+    # 3. 720p video (720x1280) -> scales by 3.0x (38 * 3 = 114)
+    ass_720p = renderer.build_ass(
+        sample_transcript,
+        opts={"fontSize": 38, "play_res_x": 720, "play_res_y": 1280}
+    )
+    style_720p = [l for l in ass_720p.splitlines() if l.startswith("Style: Caption")][0]
+    assert int(style_720p.split(",")[2]) == 114
+
+
+def test_viral_enhancer_features_and_routes():
+    """Verify ViralEnhancer generation of Outro CTA cards, text watermarks, and upload routes."""
+    import io
+    from pathlib import Path
+    from ai.viral_enhancer import ViralEnhancer
+    import config
+    from app import create_app
+
+    enhancer = ViralEnhancer()
+
+    # 1. Outro CTA Card generation
+    out_dir = config.OUTPUT_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    card_path = out_dir / "test_outro_card.png"
+    result_card = enhancer.generate_outro_cta_card(
+        channel_name="UpClip Viral",
+        handle="@upclipviral",
+        output_path=card_path,
+        card_width=860,
+        card_height=240
+    )
+    assert result_card.exists()
+    assert result_card.stat().st_size > 1000
+
+    # 2. Text Watermark overlay generation
+    wm_path = out_dir / "test_text_watermark.png"
+    result_wm = enhancer.generate_text_watermark_image(
+        text="@MyViralChannel",
+        output_path=wm_path,
+        font_size=42,
+        opacity=0.85
+    )
+    assert result_wm.exists()
+    assert result_wm.stat().st_size > 500
+
+    # 3. Route tests: upload-logo, upload-broll, preview-outro-card
+    app = create_app()
+    client = app.test_client()
+
+    # Test upload-logo
+    logo_data = {
+        "logo": (io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"\x00" * 100), "channel_logo.png")
+    }
+    res_logo = client.post(
+        "/api/caption-studio/upload-logo",
+        data=logo_data,
+        content_type="multipart/form-data"
+    )
+    assert res_logo.status_code == 200
+    logo_json = res_logo.get_json()
+    assert logo_json["success"] is True
+    assert "file_path" in logo_json
+    assert logo_json["url"].startswith("/static/uploads/logos/")
+
+    # Test upload-broll
+    broll_data = {
+        "broll": (io.BytesIO(b"\x00\x00\x00 ftypisom" + b"\x00" * 100), "broll_clip.mp4")
+    }
+    res_broll = client.post(
+        "/api/caption-studio/upload-broll",
+        data=broll_data,
+        content_type="multipart/form-data"
+    )
+    assert res_broll.status_code == 200
+    broll_json = res_broll.get_json()
+    assert broll_json["success"] is True
+    assert "file_path" in broll_json
+    assert broll_json["url"].startswith("/static/uploads/brolls/")
+
+    # Test preview-outro-card
+    res_outro = client.post(
+        "/api/caption-studio/preview-outro-card",
+        json={
+            "channel_name": "Test Creator",
+            "handle": "@testcreator"
+        }
+    )
+    assert res_outro.status_code == 200
+    outro_json = res_outro.get_json()
+    assert outro_json["success"] is True
+    assert "url" in outro_json
+    assert outro_json["url"].startswith("/static/uploads/previews/")
+
+
+

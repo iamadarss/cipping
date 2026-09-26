@@ -174,7 +174,9 @@ def run_pipeline_job(job, app=None):
         clipping_mode = settings.get("clipping_mode", config.CLIPPING_AI)
         clip_duration = settings.get("clip_duration")
         clip_count = settings.get("clip_count")
-        naming = settings.get("naming", config.NAME_SEQUENTIAL)
+        naming = settings.get("naming", getattr(config, "DEFAULT_NAMING", config.NAME_CONTENT))
+        naming_prefix = settings.get("naming_prefix")
+        naming_format = settings.get("naming_format")
         subtitle_enabled = settings.get("subtitle_enabled", True)
         subtitle_translate = settings.get("subtitle_language", language)
         quality = settings.get("quality", config.DEFAULT_QUALITY)
@@ -183,7 +185,10 @@ def run_pipeline_job(job, app=None):
         # AI Engine & Feature Toggles
         whisper_enabled = settings.get("whisper_enabled", True)
         whisper_model = settings.get("whisper_model") or getattr(config, "WHISPER_MODEL", "base")
-        uploaded_sub_filename = settings.get("uploaded_subtitle_file") or settings.get("uploaded_transcript_file")
+        use_uploaded_subtitles = settings.get("use_uploaded_subtitles", False)
+        uploaded_sub_filename = None
+        if use_uploaded_subtitles:
+            uploaded_sub_filename = settings.get("uploaded_subtitle_file") or settings.get("uploaded_transcript_file")
 
         scene_detection_enabled = settings.get("scene_detection_enabled", True)
         scene_threshold = float(settings.get("scene_threshold", getattr(config, "SCENE_THRESHOLD", 27.0)))
@@ -249,6 +254,7 @@ def run_pipeline_job(job, app=None):
             project_state.set_caption_style(project_id, job.caption_style)
 
         # Animated caption style options
+        user_words_per_chunk = int(settings.get("caption_words_per_chunk") or settings.get("words_per_chunk") or 4)
         caption_opts = {
             "animation": settings.get("caption_animation", config.CAPTION_ANIMATION),
             "position": settings.get("caption_position", config.CAPTION_POSITION),
@@ -259,7 +265,34 @@ def run_pipeline_job(job, app=None):
             "outline": settings.get("caption_outline", config.CAPTION_OUTLINE),
             "margin_v": settings.get("caption_margin_v", config.CAPTION_MARGIN_V),
             "min_word_ms": settings.get("caption_min_word_ms", config.CAPTION_MIN_WORD_MS),
+            "words_per_chunk": user_words_per_chunk,
+            "highlight_color": settings.get("caption_highlight_color", "#FFDD00"),
         }
+        # Merge custom Caption Studio preset style if supplied (supporting both camelCase & snake_case)
+        custom_cs_style = settings.get("custom_caption_style") or {}
+        if custom_cs_style:
+            f_fam = custom_cs_style.get("font_family") or custom_cs_style.get("fontFamily")
+            if f_fam: caption_opts["font"] = f_fam
+            f_sz = custom_cs_style.get("font_size") or custom_cs_style.get("fontSize")
+            if f_sz: caption_opts["size"] = int(f_sz)
+            t_col = custom_cs_style.get("text_color") or custom_cs_style.get("textColor")
+            if t_col: caption_opts["color"] = t_col
+            h_col = custom_cs_style.get("active_word_color") or custom_cs_style.get("activeWordColor")
+            if h_col: caption_opts["highlight_color"] = h_col
+            o_wid = custom_cs_style.get("outline_width") if custom_cs_style.get("outline_width") is not None else custom_cs_style.get("strokeWidth")
+            if o_wid is not None: caption_opts["outline"] = int(o_wid)
+            s_blr = custom_cs_style.get("shadow_blur") if custom_cs_style.get("shadow_blur") is not None else custom_cs_style.get("shadowBlur")
+            if s_blr is not None: caption_opts["shadow"] = int(s_blr)
+            anim = custom_cs_style.get("animation")
+            if anim: caption_opts["animation"] = anim
+            pos = custom_cs_style.get("position")
+            if not pos and custom_cs_style.get("posYPercent"):
+                try:
+                    py = float(custom_cs_style["posYPercent"])
+                    pos = "top" if py < 40 else ("bottom" if py > 70 else "middle")
+                except Exception:
+                    pass
+            if pos: caption_opts["position"] = pos
         if job.caption_style:
             caption_opts["font"] = job.caption_style.font_family or caption_opts["font"]
             if user_specified_size:
@@ -325,37 +358,62 @@ def run_pipeline_job(job, app=None):
             else:
                 job.add_log(f"Uploaded subtitle file '{uploaded_sub_filename}' not found.")
 
-        # Priority 1.5: Co-located subtitle (.srt / .vtt / .json) in INPUT_DIR or SUBTITLE_DIR
-        if not transcript:
-            for candidate_dir in [config.INPUT_DIR, config.SUBTITLE_DIR, config.TRANSCRIPT_DIR]:
-                for ext in (".srt", ".vtt", ".json"):
-                    cand = candidate_dir / f"{stem}{ext}"
-                    if cand.exists():
-                        try:
-                            from ai.transcript import TranscriptManager
-                            manager = TranscriptManager()
-                            manager.load(cand)
-                            if manager.segments:
-                                transcript = manager.segments
-                                job.add_log(f"Auto-detected co-located subtitle: loaded {len(transcript)} segments from '{cand.name}'. (Whisper bypassed)")
-                                break
-                        except Exception as auto_sub_err:
-                            print(f"[PROCESS] Auto-sub note: {auto_sub_err}")
-                if transcript:
-                    break
+        # Priority 1.5: Co-located subtitle (.srt / .vtt / .json) next to video if custom subtitles requested
+        if not transcript and use_uploaded_subtitles:
+            for ext in (".srt", ".vtt", ".json"):
+                cand = video.parent / f"{stem}{ext}"
+                if cand.exists() and cand.stat().st_mtime >= video.stat().st_mtime:
+                    try:
+                        from ai.transcript import TranscriptManager
+                        manager = TranscriptManager()
+                        manager.load(cand)
+                        if manager.segments:
+                            transcript = manager.segments
+                            job.add_log(f"Auto-detected co-located subtitle: loaded {len(transcript)} segments from '{cand.name}'. (Whisper bypassed)")
+                            break
+                    except Exception as auto_sub_err:
+                        print(f"[PROCESS] Auto-sub note: {auto_sub_err}")
 
-        # Priority 2: Whisper transcription if enabled and not already provided
+        # Priority 2: Whisper transcription if enabled and not already provided (Unified with Caption Studio)
         if not transcript and whisper_enabled:
             job.add_log(f"Transcribing video audio using Whisper ({whisper_model})...")
-            whisper = WhisperEngine(whisper_model)
-            whisper_lang = language if language != "auto" else None
-            transcript_file = config.TRANSCRIPT_DIR / f"{stem}_{whisper_model}.json"
-            transcript = whisper.transcribe_cached(
-                video,
-                transcript_file,
-                language=whisper_lang,
-            )
-            job.add_log(f"Whisper transcript: {len(transcript)} segments generated with model '{whisper_model}'.")
+            try:
+                from ai.whisper_engine import WhisperEngine
+                from utils.hinglish_transliterator import convert_text_to_target_language
+
+                lang_code = (language or "auto").lower().strip()
+                is_hinglish = lang_code in ("hinglish", "hi-latn")
+                whisper_lang = "hi" if (is_hinglish or lang_code in ("hindi", "hi")) else (
+                    "en" if lang_code in ("english", "en") else (None if lang_code in ("auto", "") else lang_code)
+                )
+
+                whisper = WhisperEngine(whisper_model)
+                transcript_file = config.TRANSCRIPT_DIR / f"{stem}_{whisper_model}.json"
+                raw_transcript = whisper.transcribe_cached(
+                    video,
+                    transcript_file,
+                    language=whisper_lang,
+                )
+
+                # Process transcript through unified language converter (matching Caption Studio)
+                target_for_conversion = "hi" if lang_code in ("hi", "hindi") else (
+                    "en" if lang_code in ("en", "english") else "hinglish"
+                )
+                transcript = []
+                for seg in (raw_transcript or []):
+                    s_txt = str(seg.get("text", "") or "").strip()
+                    if s_txt:
+                        clean_txt = convert_text_to_target_language(s_txt, target_for_conversion)
+                        transcript.append({
+                            "start": float(seg.get("start", 0)),
+                            "end": float(seg.get("end", 0)),
+                            "text": clean_txt
+                        })
+
+                job.add_log(f"Whisper transcript: {len(transcript)} segments generated with model '{whisper_model}' (Unified Caption Studio engine).")
+            except Exception as wh_err:
+                job.add_log(f"Whisper speech-to-text notice: {wh_err}")
+                print(f"[PROCESS] Whisper error: {wh_err}")
         elif not transcript:
             job.add_log("Speech transcription bypassed (no subtitles provided & Whisper disabled).")
 
@@ -524,6 +582,8 @@ def run_pipeline_job(job, app=None):
             fps=config.FPS,
             quality=quality,
             reframe_x=reframe_x,
+            prefix=naming_prefix,
+            format_str=naming_format,
         )
         clip_files = [Path(c).name for c in clips]
         job.add_log(f"Clips generated: {len(clips)} (Framed to {aspect_key})")

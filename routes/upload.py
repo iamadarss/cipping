@@ -43,6 +43,19 @@ def upload_video():
 
     file.save(str(save_path))
 
+    # Invalidate any old transcripts or subtitles for this video stem to prevent reusing stale captions
+    stem = Path(filename).stem
+    for t_file in config.TRANSCRIPT_DIR.glob(f"{stem}*.json"):
+        try:
+            t_file.unlink(missing_ok=True)
+        except Exception:
+            pass
+    for s_file in config.SUBTITLE_DIR.glob(f"{stem}*.*"):
+        try:
+            s_file.unlink(missing_ok=True)
+        except Exception:
+            pass
+
     # Extract metadata
     try:
         loader = VideoLoader(save_path)

@@ -48,6 +48,15 @@ Thumbs.db
 oauth_client_secrets.json
 oauth_client_secrets.json
 
+# Builds & Packaging
+build/
+dist/
+*.spec
+
+# User uploads & temporary files
+static/uploads/*
+!static/uploads/.gitkeep
+
 # Google OAuth & sensitive credentials
 .env.*
 client_secrets.json
@@ -55,3 +64,4 @@ credentials.json
 token.json
 youtube_token.json
 *.token
+

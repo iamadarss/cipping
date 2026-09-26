@@ -271,6 +271,18 @@
         }[m]));
     }
 
+    function formatCleanTitle(rawTitle) {
+        if (!rawTitle) return '';
+        const parts = String(rawTitle).split('|').map(p => p.trim()).filter(Boolean);
+        const uniqueParts = [];
+        for (const p of parts) {
+            if (uniqueParts.length === 0 || uniqueParts[uniqueParts.length - 1].toLowerCase() !== p.toLowerCase()) {
+                uniqueParts.push(p);
+            }
+        }
+        return escapeHtml(uniqueParts.join(' | '));
+    }
+
     function formatBytes(bytes) {
         if (!bytes || bytes === 0) return '0 B';
         const k = 1024;
@@ -404,8 +416,8 @@
             dom.kpiFailed.textContent = state.errors.length;
 
             // Badges in navbar
-            dom.queueBadgeCount.textContent = state.queue.length;
-            dom.scheduledBadgeCount.textContent = state.schedules.length;
+            if (dom.queueBadgeCount) dom.queueBadgeCount.textContent = state.queue.length;
+            if (dom.scheduledBadgeCount) dom.scheduledBadgeCount.textContent = state.schedules.length;
 
             // Subtitle status details
             if (state.schedules.length > 0) {
@@ -445,23 +457,35 @@
 
     function updateConnectionUI() {
         if (state.expired) {
-            dom.topbarStatusPill.className = 'status-pill warning';
-            dom.topbarStatusPill.innerHTML = '<span class="dot" style="background:#f59e0b;"></span><span>Auth Expired</span>';
-            dom.topbarStatusPill.title = 'YouTube authorization expired. Click to reconnect.';
-            dom.deskConnectionBadge.className = 'status-pill warning';
-            dom.deskConnectionBadge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span><span>Auth Expired</span>';
+            if (dom.topbarStatusPill) {
+                dom.topbarStatusPill.className = 'status-pill warning';
+                dom.topbarStatusPill.innerHTML = '<span class="dot" style="background:#f59e0b;"></span><span>Auth Expired</span>';
+                dom.topbarStatusPill.title = 'YouTube authorization expired. Click to reconnect.';
+            }
+            if (dom.deskConnectionBadge) {
+                dom.deskConnectionBadge.className = 'status-pill warning';
+                dom.deskConnectionBadge.innerHTML = '<span class="dot" style="background:#f59e0b;"></span><span>Auth Expired</span>';
+            }
         } else if (state.connected && state.channel) {
-            dom.topbarStatusPill.className = 'status-pill connected';
-            dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Connected</span>';
-            dom.topbarStatusPill.title = state.channel.title || 'Connected YouTube Channel';
-            dom.deskConnectionBadge.className = 'status-pill connected';
-            dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Connected</span>';
+            if (dom.topbarStatusPill) {
+                dom.topbarStatusPill.className = 'status-pill connected';
+                dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Connected</span>';
+                dom.topbarStatusPill.title = state.channel.title || 'Connected YouTube Channel';
+            }
+            if (dom.deskConnectionBadge) {
+                dom.deskConnectionBadge.className = 'status-pill connected';
+                dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Connected</span>';
+            }
         } else {
-            dom.topbarStatusPill.className = 'status-pill disconnected';
-            dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
-            dom.topbarStatusPill.title = 'No YouTube channel connected';
-            dom.deskConnectionBadge.className = 'status-pill disconnected';
-            dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
+            if (dom.topbarStatusPill) {
+                dom.topbarStatusPill.className = 'status-pill disconnected';
+                dom.topbarStatusPill.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
+                dom.topbarStatusPill.title = 'No YouTube channel connected';
+            }
+            if (dom.deskConnectionBadge) {
+                dom.deskConnectionBadge.className = 'status-pill disconnected';
+                dom.deskConnectionBadge.innerHTML = '<span class="dot"></span><span>Not Connected</span>';
+            }
         }
     }
 
@@ -484,7 +508,7 @@
                     ${item.thumbnail ? `<img src="${item.thumbnail}" style="width:100%;height:100%;object-fit:cover;">` : '<svg data-lucide="clapperboard" width="18" height="18"></svg>'}
                 </div>
                 <div class="compact-video-info">
-                    <div class="compact-video-title">${escapeHtml(item.title || 'Untitled Video')}</div>
+                    <div class="compact-video-title" title="${escapeHtml(item.title || '')}">${formatCleanTitle(item.title || 'Untitled Video')}</div>
                     <div class="compact-video-meta">
                         <span class="status-pill connected" style="padding:2px 8px; font-size:10px;">${escapeHtml(item.status || 'published')}</span>
                         <span>•</span>
@@ -519,7 +543,7 @@
                     <svg data-lucide="calendar" width="18" height="18" style="color:var(--primary);"></svg>
                 </div>
                 <div class="compact-video-info">
-                    <div class="compact-video-title">${escapeHtml(s.title || 'Scheduled Upload')}</div>
+                    <div class="compact-video-title" title="${escapeHtml(s.title || '')}">${formatCleanTitle(s.title || 'Scheduled Upload')}</div>
                     <div class="compact-video-meta">
                         <span style="color:var(--primary); font-weight:600;">${formatDate(s.scheduled_at)}</span>
                     </div>
@@ -531,6 +555,29 @@
                 </div>
             </div>
         `).join('');
+
+        dom.upcomingSchedulesList.querySelectorAll('.btn-cancel-schedule').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await showConfirm('Cancel Schedule', 'Are you sure you want to cancel this scheduled upload?');
+                if (confirmed) {
+                    btn.disabled = true;
+                    try {
+                        const res = await fetch(`/youtube/schedules/${btn.dataset.id}`, { method: 'DELETE' });
+                        const resData = await res.json();
+                        if (resData.success) {
+                            showToast('Schedule cancelled', 'success');
+                            loadOverview();
+                        } else {
+                            showToast(resData.error || 'Failed to cancel schedule', 'error');
+                            btn.disabled = false;
+                        }
+                    } catch (e) {
+                        showToast('Error cancelling schedule: ' + e.message, 'error');
+                        btn.disabled = false;
+                    }
+                }
+            });
+        });
     }
 
     function renderOverviewChannel() {
@@ -622,7 +669,7 @@
         dom.btnWizardNext.disabled = !isValid;
     }
 
-    function resetWizard() {
+    function resetWizard(autoScheduleNext = false) {
         state.wizard = {
             step: 1,
             maxSteps: 6,
@@ -640,7 +687,7 @@
             playlistId: '',
             language: 'en',
             visibility: 'public',
-            timingMode: 'now',
+            timingMode: autoScheduleNext ? 'schedule' : 'now',
             scheduleDate: '',
             scheduleTime: '',
             scheduleTimezone: 'Asia/Kolkata',
@@ -657,14 +704,55 @@
         dom.descCharCounter.textContent = '0/5000';
         dom.wizardFooter.style.display = 'flex';
         dom.wizardProgressState.style.display = 'none';
+        if (dom.uploadActionButtons) dom.uploadActionButtons.style.display = 'none';
+        if (dom.videoFileInput) dom.videoFileInput.value = '';
+        if (dom.customThumbFileInput) dom.customThumbFileInput.value = '';
+        if (dom.thumbnailPreviewContainer) dom.thumbnailPreviewContainer.style.display = 'none';
 
-        // Reset default dates
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        dom.inputScheduleDate.value = tomorrow.toISOString().split('T')[0];
-        dom.inputScheduleTime.value = '19:00';
+        // Auto-fetch 1-hour ahead slot without manual setup
+        applyNextScheduleSlot(autoScheduleNext);
 
         setWizardStep(1);
+    }
+
+    async function applyNextScheduleSlot(autoSelectSchedule = false) {
+        try {
+            const res = await fetch('/youtube/next-schedule-slot');
+            const data = await res.json();
+            if (data && data.success && data.next_slot) {
+                const s = data.next_slot;
+                if (dom.inputScheduleDate) dom.inputScheduleDate.value = s.date;
+                if (dom.inputScheduleTime) dom.inputScheduleTime.value = s.time;
+                state.wizard.scheduleDate = s.date;
+                state.wizard.scheduleTime = s.time;
+
+                const noticeText = document.getElementById('autoScheduleNoticeText');
+                if (noticeText) {
+                    noticeText.textContent = `Auto-scheduled 1 hour after previous release (${s.prev_time_formatted || 'last upload'}) → ${s.formatted}`;
+                }
+            }
+        } catch (err) {
+            console.warn('Auto schedule slot fetch failed:', err);
+            const nextH = new Date(Date.now() + 3600 * 1000);
+            const ymd = nextH.toISOString().split('T')[0];
+            const hm = nextH.toTimeString().slice(0, 5);
+            if (dom.inputScheduleDate) dom.inputScheduleDate.value = ymd;
+            if (dom.inputScheduleTime) dom.inputScheduleTime.value = hm;
+            state.wizard.scheduleDate = ymd;
+            state.wizard.scheduleTime = hm;
+        }
+
+        if (autoSelectSchedule) {
+            state.wizard.timingMode = 'schedule';
+            const rad = document.querySelector('input[name="publishingMode"][value="schedule"]');
+            if (rad) {
+                rad.checked = true;
+                dom.radioTimingMode.forEach(r => r.closest('.radio-card')?.classList.toggle('active', r.value === 'schedule'));
+            }
+            if (dom.scheduleFieldsWrapper) {
+                dom.scheduleFieldsWrapper.style.display = 'block';
+            }
+        }
     }
 
     // Step 1: File selection & upload to /youtube/import
@@ -945,6 +1033,9 @@
             state.wizard.timingMode = e.target.value;
             dom.radioTimingMode.forEach(r => r.closest('.radio-card').classList.toggle('active', r.checked));
             dom.scheduleFieldsWrapper.style.display = e.target.value === 'schedule' ? 'block' : 'none';
+            if (e.target.value === 'schedule') {
+                applyNextScheduleSlot(false);
+            }
             validateCurrentStep();
         });
     });
@@ -1182,7 +1273,7 @@
                                 ${data.youtube_url ? `<a href="${data.youtube_url}" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none;">Open YouTube ↗</a>` : ''}
                             `;
                             const anotherBtn = document.getElementById('btnUploadAnother');
-                            if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard());
+                            if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard(true));
 
                             if (window.lucide) window.lucide.createIcons();
                         }
@@ -1295,7 +1386,7 @@
                     <button class="btn btn-primary btn-sm" data-nav="scheduled">View in Schedules</button>
                 `;
                 const anotherBtn = document.getElementById('btnUploadAnother');
-                if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard());
+                if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard(true));
                 showToast('Release scheduled!', 'success');
                 loadOverview();
                 loadScheduled();
@@ -1337,7 +1428,7 @@
                 `;
 
                 const anotherBtn = document.getElementById('btnUploadAnother');
-                if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard());
+                if (anotherBtn) anotherBtn.addEventListener('click', () => resetWizard(true));
 
                 const queueBtn = document.getElementById('btnGoToQueue');
                 if (queueBtn) {
@@ -1380,7 +1471,7 @@
             const res = await fetch('/youtube/upload-queue');
             const data = await res.json();
             state.queue = data.items || [];
-            dom.queueBadgeCount.textContent = state.queue.length;
+            if (dom.queueBadgeCount) dom.queueBadgeCount.textContent = state.queue.length;
 
             // Calculate live accurate counts for each filter
             const counts = {
@@ -1542,7 +1633,7 @@
             const res = await fetch('/youtube/schedules');
             const data = await res.json();
             state.schedules = data.schedules || [];
-            dom.scheduledBadgeCount.textContent = state.schedules.length;
+            if (dom.scheduledBadgeCount) dom.scheduledBadgeCount.textContent = state.schedules.length;
 
             if (state.schedules.length === 0) {
                 dom.scheduledItemsList.innerHTML = `
@@ -1561,7 +1652,7 @@
                         <svg data-lucide="calendar" width="22" height="22" style="color:var(--primary);"></svg>
                     </div>
                     <div class="compact-video-info">
-                        <div class="compact-video-title" style="font-size:14px;">${escapeHtml(s.title || 'Scheduled Video')}</div>
+                        <div class="compact-video-title" style="font-size:14px;" title="${escapeHtml(s.title || '')}">${formatCleanTitle(s.title || 'Scheduled Video')}</div>
                         <div class="compact-video-meta">
                             <span style="color:var(--primary); font-weight:700;">${formatDate(s.scheduled_at)} (${escapeHtml(s.timezone || 'UTC')})</span>
                             ${s.due_now ? '<span class="status-pill retrying" style="font-size:10px; margin-left:6px;">Due Now</span>' : ''}
@@ -1707,7 +1798,7 @@
                     </div>
                 </td>
                 <td style="font-weight:600; color:var(--text-primary); max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(h.title || 'Untitled Video')}">
-                    ${escapeHtml(h.title || 'Untitled Video')}
+                    ${formatCleanTitle(h.title || 'Untitled Video')}
                 </td>
                 <td>
                     <span class="status-pill ${statusClass}" style="padding:2px 8px; font-size:10px; text-transform:capitalize;">${escapeHtml(h.status || 'published')}</span>
@@ -2303,13 +2394,13 @@
         if (!btn) return;
         const origHtml = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span> Distributing Across Peak Times...';
+        btn.innerHTML = '<span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span> Distributing with 1-Hour Spacing...';
 
         try {
             const res = await fetch('/youtube/auto-schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ spacing_hours: 4 })
+                body: JSON.stringify({ spacing_hours: 1 })
             });
             const data = await res.json();
             if (data.success) {

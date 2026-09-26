@@ -5,7 +5,7 @@ import json
 import re
 import time
 from pathlib import Path
-from flask import Blueprint, request, jsonify, send_file, render_template, session, redirect
+from flask import Blueprint, request, jsonify, send_file, render_template, session, redirect, current_app
 
 import config
 from core.project_manager import project_manager
@@ -143,44 +143,75 @@ def caption_studio_preload():
 
 @caption_studio_bp.route("/api/caption-studio/auto-caption", methods=["POST"])
 def auto_caption():
-    data = request.get_json() or {}
-    video_filename = data.get("videoFileName")
-    language = data.get("language", "en")
+    data = request.get_json(silent=True) or {}
+    video_filename = data.get("videoFileName") or data.get("video_filename") or ""
+    language = data.get("language", "hinglish")
     project_id = data.get("project_id", "")
     if not video_filename:
         return jsonify({"success": False, "error": "No video filename provided"}), 400
 
+    import urllib.parse
+    raw_decoded = urllib.parse.unquote(str(video_filename)).strip()
+    if "://" in raw_decoded:
+        raw_decoded = urllib.parse.urlparse(raw_decoded).path
+    if "?" in raw_decoded:
+        raw_decoded = raw_decoded.split("?")[0]
+    clean_name = Path(raw_decoded).name
+
     # Locate source video resiliently
-    clean_name = Path(video_filename).name
     video_path = None
     candidate_paths = [
         config.INPUT_DIR / clean_name,
         config.CLIPS_DIR / clean_name,
         config.FINAL_DIR / clean_name,
         config.ROOT_DIR / clean_name,
+        Path(raw_decoded),
         Path(video_filename),
     ]
     for cp in candidate_paths:
-        if cp.exists() and cp.is_file():
-            video_path = cp
-            break
+        try:
+            if cp.exists() and cp.is_file() and cp.stat().st_size > 0:
+                video_path = cp
+                break
+        except Exception:
+            pass
 
-    # If still not found, search by name stem
+    # If still not found, search by name stem ONLY among valid media files (>1KB)
     if not video_path:
         fname_stem = Path(clean_name).stem
+        valid_exts = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
         for search_dir in [config.INPUT_DIR, config.CLIPS_DIR, config.FINAL_DIR]:
-            if search_dir.exists():
-                matches = list(search_dir.glob(f"*{fname_stem}*"))
-                if matches:
-                    video_path = matches[0]
-                    break
+            if not search_dir.exists():
+                continue
+            # Try exact stem match first
+            for p in search_dir.iterdir():
+                try:
+                    if p.is_file() and p.suffix.lower() in valid_exts and p.stem.lower() == fname_stem.lower():
+                        if p.stat().st_size > 1024:
+                            video_path = p
+                            break
+                except Exception:
+                    pass
+            if video_path:
+                break
+            # Try fuzzy match only on valid video files
+            for p in search_dir.iterdir():
+                try:
+                    if p.is_file() and p.suffix.lower() in valid_exts and fname_stem.lower() in p.stem.lower():
+                        if p.stat().st_size > 1024:
+                            video_path = p
+                            break
+                except Exception:
+                    pass
+            if video_path:
+                break
 
     if not video_path or not video_path.exists():
-        return jsonify({"success": False, "error": f"Video file not found: {video_filename}"}), 404
+        return jsonify({"success": False, "error": f"Video file not found on server: {clean_name}"}), 404
 
     try:
         from ai.whisper_engine import WhisperEngine
-        from utils.hinglish_transliterator import convert_text_to_target_language, is_urdu_or_arabic
+        from utils.hinglish_transliterator import convert_text_to_target_language
 
         lang_code = (language or "hinglish").lower().strip()
         is_hinglish = lang_code in ("hinglish", "hi-latn")
@@ -190,7 +221,12 @@ def auto_caption():
 
         model_name = data.get("model", getattr(config, "WHISPER_MODEL", "base") or "base")
         whisper = WhisperEngine(model_name)
-        transcript = whisper.transcribe(video_path, language=whisper_lang)
+
+        config.TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+        cache_key = f"{video_path.stem}_{whisper_lang or 'auto'}.json"
+        cache_file = config.TRANSCRIPT_DIR / cache_key
+
+        transcript = whisper.transcribe_cached(video_path, cache_file=cache_file, language=whisper_lang)
         
         # Segment density / pace
         pace_style = data.get("style", "viral").lower()
@@ -202,8 +238,12 @@ def auto_caption():
             target_chunk = 4
 
         captions = []
+        raw_segments = transcript.get("segments", []) if isinstance(transcript, dict) else (transcript or [])
+
         # Chunk transcript segments into readable short-form caption segments
-        for seg_idx, seg in enumerate(transcript):
+        for seg_idx, seg in enumerate(raw_segments):
+            if not isinstance(seg, dict):
+                continue
             raw_text = str(seg.get("text", "") or "").strip()
             if not raw_text:
                 continue
@@ -212,11 +252,30 @@ def auto_caption():
             target_for_conversion = "hi" if lang_code in ("hi", "hindi") else (
                 "en" if lang_code in ("en", "english") else "hinglish"
             )
-            raw_text = convert_text_to_target_language(raw_text, target_for_conversion)
+            try:
+                converted_text = convert_text_to_target_language(raw_text, target_for_conversion)
+                if converted_text and converted_text.strip():
+                    raw_text = converted_text.strip()
+            except Exception as conv_err:
+                try:
+                    current_app.logger.warning("Language conversion fallback: %s", conv_err)
+                except Exception:
+                    pass
 
             words = raw_text.split()
-            seg_start = float(seg["start"])
-            seg_end = float(seg["end"])
+            if not words:
+                continue
+
+            try:
+                seg_start = float(seg.get("start", 0.0) or 0.0)
+                seg_end = float(seg.get("end", 0.0) or 0.0)
+            except (ValueError, TypeError):
+                seg_start = 0.0
+                seg_end = 2.0
+
+            if seg_end <= seg_start:
+                seg_end = seg_start + max(1.5, len(words) * 0.35)
+
             total_dur = max(0.2, seg_end - seg_start)
 
             chunk_size = target_chunk if len(words) > target_chunk else len(words)
@@ -253,6 +312,7 @@ def auto_caption():
         if project_id and captions:
             try:
                 from core.project_state import project_state
+                config.SUBTITLE_DIR.mkdir(parents=True, exist_ok=True)
                 srt_content = _build_srt(captions)
                 stem = Path(video_filename).stem
                 srt_file = config.SUBTITLE_DIR / f"{stem}_captions.srt"
@@ -261,11 +321,20 @@ def auto_caption():
                 vtt_file.write_text(_build_vtt(captions), encoding="utf-8")
                 project_state.add_caption_file(project_id, srt_file.name, "srt", f"/download/subtitle/{srt_file.name}")
                 project_state.add_caption_file(project_id, vtt_file.name, "vtt", f"/download/subtitle/{vtt_file.name}")
-            except Exception:
-                pass
+            except Exception as sub_err:
+                try:
+                    current_app.logger.warning("Could not persist initial project subtitle: %s", sub_err)
+                except Exception:
+                    pass
 
         return jsonify({"success": True, "captions": captions})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        try:
+            current_app.logger.error("Auto caption failure: %s", e, exc_info=True)
+        except Exception:
+            pass
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -276,7 +345,18 @@ def export_video():
     captions = data.get("captions", [])
     video_filename = data.get("videoFileName", "")
     project_id = data.get("project_id", "")
-    style = data.get("style", {})
+    style = dict(data.get("style") or {})
+    resolution = data.get("resolution", "9:16_1080p")
+    res_str = str(resolution or "").lower()
+    if "16:9" in res_str:
+        style.setdefault("play_res_x", 1920)
+        style.setdefault("play_res_y", 1080)
+    elif "720" in res_str:
+        style.setdefault("play_res_x", 720)
+        style.setdefault("play_res_y", 1280)
+    elif "9:16" in res_str or "1080" in res_str:
+        style.setdefault("play_res_x", 1080)
+        style.setdefault("play_res_y", 1920)
 
     if not video_filename:
         return jsonify({"success": False, "error": "No video provided"}), 400
@@ -310,6 +390,37 @@ def export_video():
 
         if not result or not output_path.exists():
             return jsonify({"success": False, "error": "FFmpeg caption rendering failed."}), 500
+
+        # Apply Viral Enhancements (Watermark Logo, Outro Subscribe CTA, SFX audio, B-Rolls) if enabled
+        watermark = data.get("watermark")
+        outro_cta = data.get("outro_cta")
+        sfx = data.get("sfx")
+        b_rolls = data.get("b_rolls")
+
+        if (watermark and watermark.get("enabled")) or \
+           (outro_cta and outro_cta.get("enabled")) or \
+           (sfx and sfx.get("enabled")) or \
+           (b_rolls and isinstance(b_rolls, list) and len(b_rolls) > 0):
+            try:
+                from ai.viral_enhancer import viral_enhancer
+                enhanced_path = config.FINAL_DIR / f"enhanced_{stem}_{int(time.time() * 1000)}.mp4"
+                enh_res = viral_enhancer.composite_enhancements(
+                    input_video=output_path,
+                    output_video=enhanced_path,
+                    watermark=watermark,
+                    outro_cta=outro_cta,
+                    sfx=sfx,
+                    b_rolls=b_rolls,
+                    captions=captions
+                )
+                if enh_res and enhanced_path.exists():
+                    try:
+                        output_path.unlink(missing_ok=True)
+                        enhanced_path.replace(output_path)
+                    except Exception:
+                        pass
+            except Exception as enh_err:
+                print(f"[CAPTION_STUDIO] Viral enhancements processing note: {enh_err}")
 
         # Save matching SRT & VTT in subtitle directory
         srt_path = config.SUBTITLE_DIR / f"{stem}_captions.srt"
@@ -1197,4 +1308,85 @@ def delete_custom_preset():
     _save_custom_presets(filtered)
 
     return jsonify({"success": True, "deleted_id": preset_id, "presets": filtered})
+
+
+@caption_studio_bp.route("/api/caption-studio/upload-logo", methods=["POST"])
+def upload_logo():
+    """Upload channel logo or watermark image."""
+    if "logo" not in request.files:
+        return jsonify({"success": False, "error": "No logo file provided"}), 400
+
+    file = request.files["logo"]
+    if not file.filename:
+        return jsonify({"success": False, "error": "Empty filename"}), 400
+
+    logo_dir = config.ROOT_DIR / "static" / "uploads" / "logos"
+    logo_dir.mkdir(parents=True, exist_ok=True)
+
+    ext = Path(file.filename).suffix.lower() or ".png"
+    clean_name = f"logo_{int(time.time() * 1000)}{ext}"
+    target_path = logo_dir / clean_name
+    file.save(str(target_path))
+
+    return jsonify({
+        "success": True,
+        "filename": clean_name,
+        "file_path": str(target_path.resolve()),
+        "url": f"/static/uploads/logos/{clean_name}"
+    })
+
+
+@caption_studio_bp.route("/api/caption-studio/upload-broll", methods=["POST"])
+def upload_broll():
+    """Upload B-roll video or cutaway image."""
+    if "broll" not in request.files:
+        return jsonify({"success": False, "error": "No B-roll file provided"}), 400
+
+    file = request.files["broll"]
+    if not file.filename:
+        return jsonify({"success": False, "error": "Empty filename"}), 400
+
+    broll_dir = config.ROOT_DIR / "static" / "uploads" / "brolls"
+    broll_dir.mkdir(parents=True, exist_ok=True)
+
+    ext = Path(file.filename).suffix.lower() or ".mp4"
+    clean_name = f"broll_{int(time.time() * 1000)}{ext}"
+    target_path = broll_dir / clean_name
+    file.save(str(target_path))
+
+    return jsonify({
+        "success": True,
+        "filename": clean_name,
+        "file_path": str(target_path.resolve()),
+        "url": f"/static/uploads/brolls/{clean_name}"
+    })
+
+
+@caption_studio_bp.route("/api/caption-studio/preview-outro-card", methods=["POST"])
+def preview_outro_card():
+    """Generate dynamic Outro CTA card PNG for live visual preview in studio."""
+    data = request.get_json(silent=True) or {}
+    ch_name = data.get("channel_name", "UpClip Creator")
+    handle = data.get("handle", "@creator")
+    logo_path = data.get("logo_path")
+
+    try:
+        from ai.viral_enhancer import viral_enhancer
+        preview_dir = config.ROOT_DIR / "static" / "uploads" / "previews"
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        preview_name = f"preview_outro_{int(time.time())}.png"
+        target_path = preview_dir / preview_name
+        viral_enhancer.generate_outro_cta_card(
+            channel_name=ch_name,
+            handle=handle,
+            logo_path=logo_path,
+            output_path=target_path
+        )
+        return jsonify({
+            "success": True,
+            "url": f"/static/uploads/previews/{preview_name}"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 

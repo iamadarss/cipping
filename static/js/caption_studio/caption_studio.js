@@ -27,6 +27,42 @@
         captions: [],
         activeCategory: 'all',
         activePresetId: null, // Clean initial state: no preset selected until chosen
+        viralEnhancements: {
+            watermark: {
+                enabled: false,
+                image_path: '',
+                image_url: '',
+                text: '',
+                position: 'top_right',
+                scale_pct: 16,
+                opacity: 80
+            },
+            outro_cta: {
+                enabled: false,
+                channel_name: 'UpClip Creator',
+                handle: '@creator',
+                avatar_path: '',
+                avatar_url: '',
+                duration: 4
+            },
+            sfx: {
+                enabled: false,
+                sound_type: 'whoosh',
+                trigger_cue: 'major',
+                volume: 70
+            },
+            b_rolls: [
+                {
+                    enabled: false,
+                    file_path: '',
+                    file_url: '',
+                    file_name: '',
+                    mode: 'cutaway',
+                    start_time: 2.0,
+                    duration: 3.0
+                }
+            ]
+        }
     };
 
     const activeStyle = {
@@ -511,6 +547,7 @@
         initCustomPresetsSystem();
         initExportModal();
         initUndoRedo();
+        initViralEnhancements();
         initPreloadData();
 
         // Enforce clean initial state:
@@ -665,6 +702,51 @@
             caseUpperBtn: document.getElementById('caseUpperBtn'),
             caseTitleBtn: document.getElementById('caseTitleBtn'),
             caseNormalBtn: document.getElementById('caseNormalBtn'),
+
+            // Viral Enhancements
+            watermarkPreview: document.getElementById('watermarkPreview'),
+            watermarkPreviewImg: document.getElementById('watermarkPreviewImg'),
+            watermarkPreviewText: document.getElementById('watermarkPreviewText'),
+            watermarkToggle: document.getElementById('watermarkToggle'),
+            watermarkFileInput: document.getElementById('watermarkFileInput'),
+            watermarkUploadBtn: document.getElementById('watermarkUploadBtn'),
+            watermarkPreviewRow: document.getElementById('watermarkPreviewRow'),
+            watermarkThumbImg: document.getElementById('watermarkThumbImg'),
+            watermarkRemoveBtn: document.getElementById('watermarkRemoveBtn'),
+            watermarkTextInput: document.getElementById('watermarkTextInput'),
+            watermarkPositionSelect: document.getElementById('watermarkPositionSelect'),
+            watermarkScaleRange: document.getElementById('watermarkScaleRange'),
+            watermarkScaleDisplay: document.getElementById('watermarkScaleDisplay'),
+            watermarkOpacityRange: document.getElementById('watermarkOpacityRange'),
+            watermarkOpacityDisplay: document.getElementById('watermarkOpacityDisplay'),
+
+            outroCtaPreview: document.getElementById('outroCtaPreview'),
+            outroAvatarLetter: document.getElementById('outroAvatarLetter'),
+            outroAvatarImg: document.getElementById('outroAvatarImg'),
+            outroChannelNameDisplay: document.getElementById('outroChannelNameDisplay'),
+            outroHandleDisplay: document.getElementById('outroHandleDisplay'),
+            outroToggle: document.getElementById('outroToggle'),
+            outroChannelNameInput: document.getElementById('outroChannelNameInput'),
+            outroHandleInput: document.getElementById('outroHandleInput'),
+            outroDurationRange: document.getElementById('outroDurationRange'),
+            outroDurationDisplay: document.getElementById('outroDurationDisplay'),
+
+            sfxToggle: document.getElementById('sfxToggle'),
+            sfxTypeSelect: document.getElementById('sfxTypeSelect'),
+            sfxFreqSelect: document.getElementById('sfxFreqSelect'),
+            sfxVolumeRange: document.getElementById('sfxVolumeRange'),
+            sfxVolumeDisplay: document.getElementById('sfxVolumeDisplay'),
+            sfxPreviewPlayBtn: document.getElementById('sfxPreviewPlayBtn'),
+
+            brollToggle: document.getElementById('brollToggle'),
+            brollFileInput: document.getElementById('brollFileInput'),
+            brollUploadBtn: document.getElementById('brollUploadBtn'),
+            brollPreviewRow: document.getElementById('brollPreviewRow'),
+            brollNameBadge: document.getElementById('brollNameBadge'),
+            brollRemoveBtn: document.getElementById('brollRemoveBtn'),
+            brollModeSelect: document.getElementById('brollModeSelect'),
+            brollStartInput: document.getElementById('brollStartInput'),
+            brollDurationInput: document.getElementById('brollDurationInput'),
         };
     }
 
@@ -927,6 +1009,7 @@
 
             // Sync live karaoke caption playback if captions are loaded
             syncCaptionsToTime(current);
+            syncOutroPreviewToTime(current, duration);
         });
 
         video.addEventListener('loadedmetadata', () => {
@@ -967,12 +1050,6 @@
         video.addEventListener('play', () => updatePlayPauseButtonIcon(false));
         video.addEventListener('pause', () => updatePlayPauseButtonIcon(true));
 
-        // When mouse leaves phone frame, video keeps playing smoothly
-        frame.addEventListener('mouseleave', () => {
-            if (state.videoLoaded && video.paused) {
-                video.play().catch(() => {});
-            }
-        });
     }
 
     function updatePlayPauseButtonIcon(isPaused) {
@@ -1942,7 +2019,11 @@
             project_id: state.projectId || '',
             resolution: el.exportResolutionSelect ? el.exportResolutionSelect.value : '9:16_1080p',
             fps: el.exportFpsSelect ? parseInt(el.exportFpsSelect.value, 10) : 30,
-            format: el.exportFormatSelect ? el.exportFormatSelect.value : 'mp4'
+            format: el.exportFormatSelect ? el.exportFormatSelect.value : 'mp4',
+            watermark: state.viralEnhancements.watermark.enabled ? state.viralEnhancements.watermark : null,
+            outro_cta: state.viralEnhancements.outro_cta.enabled ? state.viralEnhancements.outro_cta : null,
+            sfx: state.viralEnhancements.sfx.enabled ? state.viralEnhancements.sfx : null,
+            b_rolls: (state.viralEnhancements.b_rolls[0] && state.viralEnhancements.b_rolls[0].enabled) ? state.viralEnhancements.b_rolls : null,
         };
 
         fetch('/api/caption-studio/export', {
@@ -2244,5 +2325,361 @@
             toast.style.transform = 'translateY(-8px)';
             setTimeout(() => toast.remove(), 200);
         }, duration);
+    }
+
+    // =========================================================================
+    // 17. VIRAL ENHANCEMENTS ENGINE (WATERMARK, OUTRO CTA, SFX, B-ROLL)
+    // =========================================================================
+    function initViralEnhancements() {
+        initWatermarkControls();
+        initOutroCtaControls();
+        initSfxControls();
+        initBRollControls();
+    }
+
+    function initWatermarkControls() {
+        const wm = state.viralEnhancements.watermark;
+
+        if (el.watermarkToggle) {
+            el.watermarkToggle.addEventListener('change', (e) => {
+                wm.enabled = e.target.checked;
+                updateWatermarkPreview();
+            });
+        }
+
+        if (el.watermarkUploadBtn && el.watermarkFileInput) {
+            el.watermarkUploadBtn.addEventListener('click', () => el.watermarkFileInput.click());
+            el.watermarkFileInput.addEventListener('change', () => {
+                const file = el.watermarkFileInput.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('logo', file);
+
+                showToast('Uploading channel logo...', 'info', 2000);
+                fetch('/api/caption-studio/upload-logo', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        wm.image_path = res.file_path;
+                        wm.image_url = res.url;
+                        if (el.watermarkThumbImg) el.watermarkThumbImg.src = res.url;
+                        if (el.watermarkPreviewRow) el.watermarkPreviewRow.style.display = 'flex';
+                        if (el.watermarkToggle && !el.watermarkToggle.checked) {
+                            el.watermarkToggle.checked = true;
+                            wm.enabled = true;
+                        }
+                        updateWatermarkPreview();
+                        showToast('Channel logo attached successfully!', 'success');
+                    } else {
+                        showToast(res.error || 'Failed to upload logo', 'error');
+                    }
+                })
+                .catch(err => showToast(`Upload error: ${err.message}`, 'error'));
+            });
+        }
+
+        if (el.watermarkRemoveBtn) {
+            el.watermarkRemoveBtn.addEventListener('click', () => {
+                wm.image_path = '';
+                wm.image_url = '';
+                if (el.watermarkFileInput) el.watermarkFileInput.value = '';
+                if (el.watermarkPreviewRow) el.watermarkPreviewRow.style.display = 'none';
+                updateWatermarkPreview();
+                showToast('Logo removed', 'info');
+            });
+        }
+
+        if (el.watermarkTextInput) {
+            el.watermarkTextInput.addEventListener('input', (e) => {
+                wm.text = e.target.value.trim();
+                updateWatermarkPreview();
+            });
+        }
+
+        if (el.watermarkPositionSelect) {
+            el.watermarkPositionSelect.addEventListener('change', (e) => {
+                wm.position = e.target.value;
+                updateWatermarkPreview();
+            });
+        }
+
+        if (el.watermarkScaleRange) {
+            el.watermarkScaleRange.addEventListener('input', (e) => {
+                wm.scale_pct = parseInt(e.target.value, 10);
+                if (el.watermarkScaleDisplay) el.watermarkScaleDisplay.textContent = wm.scale_pct;
+                updateWatermarkPreview();
+            });
+        }
+
+        if (el.watermarkOpacityRange) {
+            el.watermarkOpacityRange.addEventListener('input', (e) => {
+                wm.opacity = parseInt(e.target.value, 10);
+                if (el.watermarkOpacityDisplay) el.watermarkOpacityDisplay.textContent = wm.opacity;
+                updateWatermarkPreview();
+            });
+        }
+    }
+
+    function updateWatermarkPreview() {
+        const wm = state.viralEnhancements.watermark;
+        if (!el.watermarkPreview) return;
+
+        if (!wm.enabled || (!wm.image_url && !wm.text)) {
+            el.watermarkPreview.style.display = 'none';
+            return;
+        }
+
+        el.watermarkPreview.style.display = 'flex';
+        el.watermarkPreview.style.opacity = (wm.opacity / 100).toString();
+
+        // Clear previous placement
+        el.watermarkPreview.style.top = '';
+        el.watermarkPreview.style.bottom = '';
+        el.watermarkPreview.style.left = '';
+        el.watermarkPreview.style.right = '';
+        el.watermarkPreview.style.transform = '';
+
+        const margin = '16px';
+        switch (wm.position) {
+            case 'top_right':
+                el.watermarkPreview.style.top = margin;
+                el.watermarkPreview.style.right = margin;
+                break;
+            case 'top_left':
+                el.watermarkPreview.style.top = margin;
+                el.watermarkPreview.style.left = margin;
+                break;
+            case 'bottom_right':
+                el.watermarkPreview.style.bottom = '85px';
+                el.watermarkPreview.style.right = margin;
+                break;
+            case 'bottom_left':
+                el.watermarkPreview.style.bottom = '85px';
+                el.watermarkPreview.style.left = margin;
+                break;
+            case 'top_center':
+                el.watermarkPreview.style.top = margin;
+                el.watermarkPreview.style.left = '50%';
+                el.watermarkPreview.style.transform = 'translateX(-50%)';
+                break;
+            default:
+                el.watermarkPreview.style.top = margin;
+                el.watermarkPreview.style.right = margin;
+        }
+
+        if (wm.image_url) {
+            if (el.watermarkPreviewImg) {
+                el.watermarkPreviewImg.src = wm.image_url;
+                el.watermarkPreviewImg.style.display = 'block';
+                const px = Math.round(280 * (wm.scale_pct / 100));
+                el.watermarkPreviewImg.style.maxWidth = `${px}px`;
+                el.watermarkPreviewImg.style.maxHeight = `${px}px`;
+            }
+            if (el.watermarkPreviewText) el.watermarkPreviewText.style.display = 'none';
+        } else if (wm.text) {
+            if (el.watermarkPreviewText) {
+                el.watermarkPreviewText.textContent = wm.text;
+                el.watermarkPreviewText.style.display = 'block';
+                const fontSize = Math.max(10, Math.round(18 * (wm.scale_pct / 16)));
+                el.watermarkPreviewText.style.fontSize = `${fontSize}px`;
+            }
+            if (el.watermarkPreviewImg) el.watermarkPreviewImg.style.display = 'none';
+        }
+    }
+
+    function initOutroCtaControls() {
+        const outro = state.viralEnhancements.outro_cta;
+
+        if (el.outroToggle) {
+            el.outroToggle.addEventListener('change', (e) => {
+                outro.enabled = e.target.checked;
+                updateOutroPreview();
+            });
+        }
+
+        if (el.outroChannelNameInput) {
+            el.outroChannelNameInput.addEventListener('input', (e) => {
+                outro.channel_name = e.target.value.trim() || 'UpClip Creator';
+                updateOutroPreview();
+            });
+        }
+
+        if (el.outroHandleInput) {
+            el.outroHandleInput.addEventListener('input', (e) => {
+                outro.handle = e.target.value.trim() || '@creator';
+                updateOutroPreview();
+            });
+        }
+
+        if (el.outroDurationRange) {
+            el.outroDurationRange.addEventListener('input', (e) => {
+                outro.duration = parseInt(e.target.value, 10);
+                if (el.outroDurationDisplay) el.outroDurationDisplay.textContent = outro.duration;
+            });
+        }
+    }
+
+    function updateOutroPreview() {
+        const outro = state.viralEnhancements.outro_cta;
+        if (!el.outroCtaPreview) return;
+
+        if (!outro.enabled) {
+            el.outroCtaPreview.style.display = 'none';
+            return;
+        }
+
+        el.outroCtaPreview.style.display = 'flex';
+        if (el.outroChannelNameDisplay) {
+            el.outroChannelNameDisplay.textContent = outro.channel_name || 'UpClip Creator';
+        }
+        if (el.outroHandleDisplay) {
+            el.outroHandleDisplay.textContent = outro.handle || '@creator';
+        }
+        if (el.outroAvatarLetter) {
+            const firstLetter = (outro.channel_name || 'U').charAt(0).toUpperCase();
+            el.outroAvatarLetter.textContent = firstLetter;
+        }
+    }
+
+    function syncOutroPreviewToTime(current, duration) {
+        if (!el.outroCtaPreview) return;
+        const outro = state.viralEnhancements.outro_cta;
+        if (!outro.enabled) {
+            el.outroCtaPreview.style.display = 'none';
+            return;
+        }
+        const outroDur = outro.duration || 4;
+        if (duration > 0 && current >= Math.max(0, duration - outroDur)) {
+            el.outroCtaPreview.style.display = 'flex';
+        } else {
+            // Only hide during playback if video is actively playing
+            if (state.videoElement && !state.videoElement.paused) {
+                el.outroCtaPreview.style.display = 'none';
+            }
+        }
+    }
+
+    function initSfxControls() {
+        const sfx = state.viralEnhancements.sfx;
+
+        if (el.sfxToggle) {
+            el.sfxToggle.addEventListener('change', (e) => {
+                sfx.enabled = e.target.checked;
+            });
+        }
+
+        if (el.sfxTypeSelect) {
+            el.sfxTypeSelect.addEventListener('change', (e) => {
+                sfx.sound_type = e.target.value;
+            });
+        }
+
+        if (el.sfxFreqSelect) {
+            el.sfxFreqSelect.addEventListener('change', (e) => {
+                sfx.trigger_cue = e.target.value;
+            });
+        }
+
+        if (el.sfxVolumeRange) {
+            el.sfxVolumeRange.addEventListener('input', (e) => {
+                sfx.volume = parseInt(e.target.value, 10);
+                if (el.sfxVolumeDisplay) el.sfxVolumeDisplay.textContent = sfx.volume;
+            });
+        }
+
+        if (el.sfxPreviewPlayBtn) {
+            el.sfxPreviewPlayBtn.addEventListener('click', () => {
+                const soundType = (el.sfxTypeSelect ? el.sfxTypeSelect.value : sfx.sound_type) || 'whoosh';
+                const audioPath = `/static/audio/${soundType}.wav`;
+                try {
+                    const audio = new Audio(audioPath);
+                    audio.volume = Math.max(0.05, Math.min(1.0, (sfx.volume || 70) / 100));
+                    audio.play().catch(err => {
+                        console.warn('[SFX Preview] audio play error:', err);
+                    });
+                } catch (err) {
+                    console.warn('[SFX Preview] failed to instantiate Audio:', err);
+                }
+            });
+        }
+    }
+
+    function initBRollControls() {
+        const brolls = state.viralEnhancements.b_rolls;
+        const broll = brolls[0];
+
+        if (el.brollToggle) {
+            el.brollToggle.addEventListener('change', (e) => {
+                broll.enabled = e.target.checked;
+            });
+        }
+
+        if (el.brollUploadBtn && el.brollFileInput) {
+            el.brollUploadBtn.addEventListener('click', () => el.brollFileInput.click());
+            el.brollFileInput.addEventListener('change', () => {
+                const file = el.brollFileInput.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('broll', file);
+
+                showToast('Uploading B-roll clip...', 'info', 2000);
+                fetch('/api/caption-studio/upload-broll', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        broll.file_path = res.file_path;
+                        broll.file_url = res.url;
+                        broll.file_name = file.name;
+                        if (el.brollNameBadge) el.brollNameBadge.textContent = file.name;
+                        if (el.brollPreviewRow) el.brollPreviewRow.style.display = 'flex';
+                        if (el.brollToggle && !el.brollToggle.checked) {
+                            el.brollToggle.checked = true;
+                            broll.enabled = true;
+                        }
+                        showToast('B-Roll clip attached successfully!', 'success');
+                    } else {
+                        showToast(res.error || 'Failed to upload B-roll', 'error');
+                    }
+                })
+                .catch(err => showToast(`Upload error: ${err.message}`, 'error'));
+            });
+        }
+
+        if (el.brollRemoveBtn) {
+            el.brollRemoveBtn.addEventListener('click', () => {
+                broll.file_path = '';
+                broll.file_url = '';
+                broll.file_name = '';
+                if (el.brollFileInput) el.brollFileInput.value = '';
+                if (el.brollPreviewRow) el.brollPreviewRow.style.display = 'none';
+                showToast('B-Roll clip removed', 'info');
+            });
+        }
+
+        if (el.brollModeSelect) {
+            el.brollModeSelect.addEventListener('change', (e) => {
+                broll.mode = e.target.value;
+            });
+        }
+
+        if (el.brollStartInput) {
+            el.brollStartInput.addEventListener('change', (e) => {
+                broll.start_time = parseFloat(e.target.value) || 0.0;
+            });
+        }
+
+        if (el.brollDurationInput) {
+            el.brollDurationInput.addEventListener('change', (e) => {
+                broll.duration = parseFloat(e.target.value) || 3.0;
+            });
+        }
     }
 })();

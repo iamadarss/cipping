@@ -37,14 +37,7 @@
                 </button>
             </div>
 
-            <div class="topbar-right">
-                <!-- Status Pill -->
-                <div class="status-pill disconnected" id="topbarStatusPill">
-                    <span class="dot"></span>
-                    <span class="status-text">Checking...</span>
-                </div>
-                <a href="/dashboard" class="btn btn-primary btn-sm"><svg data-lucide="plus" width="14" height="14"></svg> New Project</a>
-            </div>
+            <div class="topbar-right"></div>
         </header>
 
         <div class="app-main">
@@ -101,7 +94,7 @@
 
             <!-- Main Workspace Container -->
             <main class="app-workspace">
-                <div class="workspace-content" style="max-width: 1280px; margin: 0 auto; width: 100%;">
+                <div class="workspace-content" style="max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
                     <!-- Desk Header -->
                     <div class="desk-header">
                         <div class="desk-header-title">
@@ -136,12 +129,10 @@
                         <button class="desk-nav-tab" data-view="queue">
                             <svg data-lucide="layers" width="15" height="15"></svg>
                             <span>Upload Queue</span>
-                            <span class="tab-badge" id="queueBadgeCount">0</span>
                         </button>
                         <button class="desk-nav-tab" data-view="scheduled">
                             <svg data-lucide="calendar" width="15" height="15"></svg>
                             <span>Scheduled</span>
-                            <span class="tab-badge" id="scheduledBadgeCount">0</span>
                         </button>
                         <button class="desk-nav-tab" data-view="history">
                             <svg data-lucide="history" width="15" height="15"></svg>
@@ -150,7 +141,6 @@
                         <button class="desk-nav-tab" data-view="presets">
                             <svg data-lucide="sparkles" width="15" height="15"></svg>
                             <span>Publishing Presets</span>
-                            <span class="tab-badge" id="presetsBadgeCount">0</span>
                         </button>
                         <button class="desk-nav-tab" data-view="connection">
                             <svg data-lucide="link" width="15" height="15"></svg>
@@ -216,8 +206,8 @@
                         <!-- Quick Actions Bar (Section 6) -->
                         <div class="quick-actions-bar">
                             <span class="bar-label">Quick Actions:</span>
-                            <button class="btn btn-primary btn-sm" id="btnQuickUpload">
-                                <svg data-lucide="plus" width="14" height="14"></svg>
+                            <button class="btn btn-secondary btn-sm" id="btnQuickUpload">
+                                <svg data-lucide="upload" width="14" height="14"></svg>
                                 <span>Upload Video</span>
                             </button>
                             <button class="btn btn-secondary btn-sm" id="btnQuickSchedule">
@@ -238,52 +228,6 @@
                             </button>
                         </div>
 
-                        <!-- AI Smart Publishing Advisor & 1-Click Auto-Scheduler Card -->
-                        <div class="desk-card" style="margin-bottom: var(--space-5); border: 1px solid rgba(16, 185, 129, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(20, 24, 33, 0.95) 100%);">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
-                                <div style="flex:1; min-width:280px;">
-                                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                                        <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.4); padding:3px 10px; border-radius:100px; color:var(--primary); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
-                                            <svg data-lucide="sparkles" width="12" height="12"></svg> AI Publishing Advisor
-                                        </div>
-                                        <span style="font-size:12px; color:var(--text-muted);">Algorithm-Backed Growth Strategy</span>
-                                    </div>
-                                    <h3 style="font-size:17px; font-weight:800; color:var(--text-primary); margin:0 0 8px 0; display:flex; align-items:center; gap:8px;">
-                                        <span>YouTube Shorts Smart Schedule & Optimization</span>
-                                    </h3>
-                                    <p style="font-size:13px; color:var(--text-secondary); margin:0 0 12px 0; line-height:1.5;">
-                                        Maximize your Shorts reach and audience conversion with automated staggered release windows, peak traffic distribution, and viral keyword tagging.
-                                    </p>
-                                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;" id="smartAdvisorSlots">
-                                        <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
-                                            <div style="font-size:11px; font-weight:700; color:var(--primary); margin-bottom:2px;">🔥 PRIME PEAK WINDOW</div>
-                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">6:30 PM – 9:30 PM</div>
-                                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Highest evening viewer engagement</div>
-                                        </div>
-                                        <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
-                                            <div style="font-size:11px; font-weight:700; color:#38bdf8; margin-bottom:2px;">⏱ ALGORITHM SPACING</div>
-                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">4 to 6 Hours Apart</div>
-                                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Prevents self-cannibalizing views</div>
-                                        </div>
-                                        <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
-                                            <div style="font-size:11px; font-weight:700; color:#fbbf24; margin-bottom:2px;">🎯 TITLE & HASHTAGS</div>
-                                            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">&lt; 50 Chars + 3 #Tags</div>
-                                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Clean hook + #Shorts #Viral</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style="display:flex; flex-direction:column; gap:8px; align-self:center;">
-                                    <button class="btn btn-primary" id="btnAutoScheduleClips" style="padding:10px 18px; font-size:13px; font-weight:700; box-shadow:0 4px 14px rgba(16, 185, 129, 0.35);">
-                                        <svg data-lucide="calendar-check" width="16" height="16"></svg>
-                                        <span>1-Click Auto-Schedule All Clips</span>
-                                    </button>
-                                    <button class="btn btn-secondary btn-sm" id="btnRefreshAdvisor" style="justify-content:center;">
-                                        <svg data-lucide="refresh-cw" width="13" height="13"></svg>
-                                        <span>Refresh Advice</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- Overview Content Grid (Sections 7 & 8) -->
                         <div class="desk-overview-grid">
@@ -296,7 +240,7 @@
                                     </h3>
                                     <a href="#" class="desk-card-action" data-nav="history">
                                         <span>View All History</span>
-                                        <svg data-lucide="arrow-right" width="13" height="13"></svg>
+                                        <svg data-lucide="chevron-right" width="14" height="14"></svg>
                                     </a>
                                 </div>
                                 <div id="overviewRecentUploadsList">
@@ -311,7 +255,7 @@
                             </div>
 
                             <!-- Right: Scheduled Uploads + Channel Card -->
-                            <div style="display:flex; flex-direction:column; gap: var(--space-5);">
+                            <div style="display:flex; flex-direction:column; gap: var(--space-5); min-width: 0; width: 100%;">
                                 <!-- Scheduled Card -->
                                 <div class="desk-card">
                                     <div class="desk-card-header">
@@ -320,8 +264,8 @@
                                             <span>Upcoming Scheduled</span>
                                         </h3>
                                         <a href="#" class="desk-card-action" data-nav="scheduled">
-                                            <span>View All</span>
-                                            <svg data-lucide="arrow-right" width="13" height="13"></svg>
+                                            <span>View All Scheduled</span>
+                                            <svg data-lucide="chevron-right" width="14" height="14"></svg>
                                         </a>
                                     </div>
                                     <div id="overviewUpcomingSchedulesList">
@@ -342,10 +286,6 @@
                                             <svg data-lucide="user-check" width="16" height="16" style="color:var(--primary);"></svg>
                                             <span>Connected Channel</span>
                                         </h3>
-                                        <a href="#" class="desk-card-action" data-nav="connection">
-                                            <span>Manage</span>
-                                            <svg data-lucide="arrow-right" width="13" height="13"></svg>
-                                        </a>
                                     </div>
                                     <div id="overviewChannelBody" style="display:flex; align-items:center; gap: 14px;">
                                         <div style="width:48px; height:48px; border-radius:50%; background:var(--surface-1); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); overflow:hidden;" id="overviewChannelAvatar">
@@ -355,7 +295,7 @@
                                             <h4 style="font-size:14px; font-weight:700; color:var(--text-primary); margin:0 0 2px;" id="overviewChannelName">Channel Not Connected</h4>
                                             <p style="font-size:12px; color:var(--text-muted); margin:0;" id="overviewChannelDetails">Connect your YouTube account to publish directly.</p>
                                         </div>
-                                        <button class="btn btn-secondary btn-sm" id="btnConnectShortcut" data-nav="connection">Connect</button>
+                                        <button class="btn btn-secondary btn-sm" id="btnConnectShortcut" data-nav="connection" style="flex-shrink: 0;">Connect</button>
                                     </div>
                                 </div>
                             </div>
@@ -444,22 +384,22 @@
                                     <!-- 1-Click Preset Quick Apply Bar -->
                                     <div class="preset-quick-banner" style="background:var(--surface-1); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius); padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
                                         <div style="display:flex; align-items:center; gap:10px;">
-                                            <div style="width:34px; height:34px; border-radius:8px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center;">
+                                            <div style="width:34px; height:34px; border-radius:var(--radius-sm); background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center;">
                                                 <svg data-lucide="sparkles" width="18" height="18"></svg>
                                             </div>
                                             <div>
-                                                <div style="font-size:13px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+                                                <div style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
                                                     <span>1-Click Publishing Preset</span>
-                                                    <span class="status-pill connected" style="font-size:10px; padding:1px 7px;">Auto Fill</span>
+                                                    <span class="status-pill connected" style="font-size:var(--text-xs); padding:1px 7px;">Auto Fill</span>
                                                 </div>
-                                                <div style="font-size:11px; color:var(--text-secondary);">Instantly configure all tags, playlist, category & description</div>
+                                                <div style="font-size:var(--text-xs); color:var(--text-secondary);">Instantly configure all tags, playlist, category & description</div>
                                             </div>
                                         </div>
                                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                            <select id="wizardPresetDropdown" style="padding:7px 12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary); font-size:12px; min-width:180px;">
+                                            <select id="wizardPresetDropdown" style="padding:7px 12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary); font-size:var(--text-xs); min-width:180px;">
                                                 <option value="">-- Choose Preset Profile --</option>
                                             </select>
-                                            <button type="button" class="btn btn-primary btn-sm" id="btnApplyWizardPreset" style="font-size:12px; padding:7px 14px;">
+                                            <button type="button" class="btn btn-primary btn-sm" id="btnApplyWizardPreset">
                                                 <svg data-lucide="zap" width="13" height="13"></svg>
                                                 <span>Apply Preset</span>
                                             </button>
@@ -467,13 +407,13 @@
                                     </div>
 
                                     <div style="margin-bottom: var(--space-4);">
-                                        <label for="inputVideoTitle" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Title *</label>
+                                        <label for="inputVideoTitle" style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Title *</label>
                                         <input type="text" id="inputVideoTitle" maxlength="100" class="form-input" placeholder="Catchy title that describes your video..." style="width:100%; padding:10px 14px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
                                         <div class="char-counter" id="titleCharCounter">0/100</div>
                                     </div>
 
                                     <div>
-                                        <label for="inputVideoDescription" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Description</label>
+                                        <label for="inputVideoDescription" style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Description</label>
                                         <textarea id="inputVideoDescription" rows="8" maxlength="5000" class="form-textarea" placeholder="Tell viewers what your video is about, links, hashtags, and credits..." style="width:100%; padding:12px 14px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary); resize:vertical;"></textarea>
                                         <div class="char-counter" id="descCharCounter">0/5000</div>
                                     </div>
@@ -482,17 +422,17 @@
                                 <!-- STEP 3: DISCOVERY / METADATA -->
                                 <div class="wizard-step-pane" id="wizard-step-3">
                                     <div style="margin-bottom: var(--space-4);">
-                                        <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Tags (Press Enter or comma to create chip)</label>
+                                        <label style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Tags (Press Enter or comma to create chip)</label>
                                         <div class="tag-input-box" id="tagInputBox">
                                             <!-- Chips dynamically inserted -->
                                             <input type="text" class="tag-input-field" id="tagInputField" placeholder="Type a tag and press Enter...">
                                         </div>
-                                        <p style="font-size:11px; color:var(--text-muted); margin:4px 0 0;">Tags help viewers discover your videos. YouTube allows up to 500 characters of tags.</p>
+                                        <p style="font-size:var(--text-xs); color:var(--text-muted); margin:4px 0 0;">Tags help viewers discover your videos. YouTube allows up to 500 characters of tags.</p>
                                     </div>
 
                                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
                                         <div>
-                                            <label for="selectCategory" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Category</label>
+                                            <label for="selectCategory" style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Category</label>
                                             <select id="selectCategory" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
                                                 <option value="22" selected>People & Blogs</option>
                                                 <option value="24">Entertainment</option>
@@ -508,7 +448,7 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label for="selectPlaylist" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Add to Playlist (Optional)</label>
+                                            <label for="selectPlaylist" style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Add to Playlist (Optional)</label>
                                             <select id="selectPlaylist" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
                                                 <option value="">None (Don't add to playlist)</option>
                                             </select>
@@ -516,7 +456,7 @@
                                     </div>
 
                                     <div>
-                                        <label for="selectLanguage" style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Language</label>
+                                        <label for="selectLanguage" style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Language</label>
                                         <select id="selectLanguage" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
                                             <option value="en" selected>English</option>
                                             <option value="es">Spanish</option>
@@ -531,7 +471,7 @@
 
                                 <!-- STEP 4: PUBLISH SETTINGS -->
                                 <div class="wizard-step-pane" id="wizard-step-4">
-                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:8px;">Visibility</label>
+                                    <label style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:8px;">Visibility</label>
                                     <div class="radio-card-grid">
                                         <label class="radio-card active">
                                             <input type="radio" name="videoVisibility" value="public" checked>
@@ -556,7 +496,7 @@
                                         </label>
                                     </div>
 
-                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:8px; margin-top:20px;">Publishing Timing</label>
+                                    <label style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:8px; margin-top:20px;">Publishing Timing</label>
                                     <div class="radio-card-grid">
                                         <label class="radio-card active">
                                             <input type="radio" name="publishingMode" value="now" checked>
@@ -576,9 +516,9 @@
 
                                     <!-- Conditional Schedule Fields -->
                                     <div id="scheduleFieldsWrapper" style="display:none; background:var(--surface-1); padding:16px; border-radius:var(--radius); border:1px solid var(--border); margin-top:12px;">
-                                        <h4 style="font-size:13px; font-weight:700; color:var(--primary); margin:0 0 12px; display:flex; align-items:center; gap:6px;">
+                                        <h4 style="font-size:var(--text-sm); font-weight:700; color:var(--primary); margin:0 0 12px; display:flex; align-items:center; gap:6px;">
                                             <svg data-lucide="calendar" width="14" height="14"></svg>
-                                            <span>Schedule Release Date & Time</span>
+                                            <span>Schedule Release Date &amp; Time</span>
                                         </h4>
                                         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
                                             <div>
@@ -606,7 +546,7 @@
 
                                 <!-- STEP 5: THUMBNAIL -->
                                 <div class="wizard-step-pane" id="wizard-step-5">
-                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Thumbnail</label>
+                                    <label style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Video Thumbnail</label>
                                     <p style="font-size:12px; color:var(--text-secondary); margin:0 0 16px;">Select an enticing thumbnail that represents your video. Recommended size: 1280x720 (16:9 aspect ratio, under 2MB).</p>
 
                                     <div style="display:grid; grid-template-columns: 280px 1fr; gap: var(--space-5); align-items:start;">
@@ -680,13 +620,13 @@
                                         <div style="width:64px; height:64px; border-radius:50%; background:var(--primary-soft); color:var(--primary); display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;" id="uploadStatusIcon">
                                             <svg data-lucide="upload-cloud" width="32" height="32"></svg>
                                         </div>
-                                        <h3 style="font-size:20px; font-weight:800; color:var(--text-primary); margin:0 0 6px;" id="uploadStatusTitle">Publishing Video to YouTube</h3>
-                                        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 20px;" id="uploadStatusMessage">Please keep this window open while your media is transferred.</p>
+                                        <h3 style="font-size:var(--text-xl); font-weight:800; color:var(--text-primary); margin:0 0 6px;" id="uploadStatusTitle">Publishing Video to YouTube</h3>
+                                        <p style="font-size:var(--text-sm); color:var(--text-secondary); margin:0 0 20px;" id="uploadStatusMessage">Please keep this window open while your media is transferred.</p>
 
                                         <!-- Progress Bar -->
                                         <div style="max-width:480px; margin:0 auto;" id="uploadProgressBarContainer">
-                                            <div style="height:10px; border-radius:5px; background:var(--surface-1); overflow:hidden; border:1px solid var(--border);">
-                                                <div style="height:100%; width:0%; background:linear-gradient(90deg, var(--primary), #34D399); border-radius:5px; transition:width 0.3s ease;" id="uploadProgressBarFill"></div>
+                                            <div style="height:10px; border-radius:var(--radius-full); background:var(--surface-1); overflow:hidden; border:1px solid var(--border);">
+                                                <div style="height:100%; width:0%; background:linear-gradient(90deg, var(--primary), #34D399); border-radius:var(--radius-full); transition:width 0.3s ease;" id="uploadProgressBarFill"></div>
                                             </div>
                                             <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-top:8px;">
                                                 <span id="uploadPercentText">0%</span>
@@ -746,11 +686,7 @@
                     <div class="desk-view-pane" id="view-scheduled" style="display:none;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4); flex-wrap:wrap; gap:10px;">
                             <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin:0;">Automated Release Schedule</h3>
-                            <div style="display:flex; gap:8px;">
-                                <button class="btn btn-secondary btn-sm" id="btnAutoScheduleFromSchedView">
-                                    <svg data-lucide="calendar-check" width="14" height="14"></svg>
-                                    <span>1-Click Auto-Schedule Clips</span>
-                                </button>
+                            <div>
                                 <button class="btn btn-primary btn-sm" data-nav="upload" data-mode="schedule">
                                     <svg data-lucide="plus" width="14" height="14"></svg>
                                     <span>Schedule Video</span>
@@ -818,8 +754,8 @@
                             <div style="display:flex; align-items:center; gap:20px; padding:12px 0;">
                                 <img id="channelAvatar" src="" style="width:72px; height:72px; border-radius:50%; border:2px solid var(--border); object-fit:cover;">
                                 <div style="flex:1;">
-                                    <h3 id="channelTitle" style="font-size:20px; font-weight:800; color:var(--text-primary); margin:0 0 4px;">Channel Name</h3>
-                                    <p id="channelHandle" style="font-size:13px; color:var(--text-muted); margin:0 0 10px;">@handle</p>
+                                    <h3 id="channelTitle" style="font-size:var(--text-xl); font-weight:800; color:var(--text-primary); margin:0 0 4px;">Channel Name</h3>
+                                    <p id="channelHandle" style="font-size:var(--text-sm); color:var(--text-muted); margin:0 0 10px;">@handle</p>
                                     <div style="display:flex; gap:16px; font-size:12px; color:var(--text-secondary);">
                                         <span id="channelSubscribers">0 Subscribers</span>
                                         <span id="channelVideoCount">0 Videos</span>
@@ -844,15 +780,15 @@
                                 <div style="width:64px; height:64px; border-radius:var(--radius-card); background:rgba(255,0,0,0.1); border:1px solid rgba(255,0,0,0.25); color:#FF0000; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
                                     <svg data-lucide="youtube" width="36" height="36"></svg>
                                 </div>
-                                <h3 style="font-size:20px; font-weight:800; color:var(--text-primary); margin:0 0 8px;">Connect Your YouTube Channel</h3>
-                                <p style="font-size:13px; color:var(--text-secondary); margin:0 0 24px; line-height:1.5;">
+                                <h3 style="font-size:var(--text-xl); font-weight:800; color:var(--text-primary); margin:0 0 8px;">Connect Your YouTube Channel</h3>
+                                <p style="font-size:var(--text-sm); color:var(--text-secondary); margin:0 0 24px; line-height:1.5;">
                                     Authorize UpClip Studio with Google OAuth to upload video shorts, schedule releases, manage playlists, and monitor video publishing directly from your desktop workspace.
                                 </p>
-                                <a href="/youtube/connect" class="btn btn-primary" style="padding:12px 28px; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                                <a href="/youtube/connect" class="btn btn-primary" style="text-decoration:none;">
                                     <svg data-lucide="key" width="16" height="16"></svg>
                                     <span>Connect YouTube Channel</span>
                                 </a>
-                                <div style="margin-top:20px; font-size:11px; color:var(--text-muted); line-height:1.4;">
+                                <div style="margin-top:20px; font-size:var(--text-xs); color:var(--text-muted); line-height:1.4;">
                                     Your access tokens and credentials remain stored strictly on your local machine. No third-party servers ever receive your YouTube login data.
                                 </div>
                             </div>
@@ -865,11 +801,11 @@
                     <div class="desk-view-pane" id="view-presets" style="display:none;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5); flex-wrap:wrap; gap:12px;">
                             <div>
-                                <h3 style="font-size:18px; font-weight:800; color:var(--text-primary); margin:0 0 4px; display:flex; align-items:center; gap:8px;">
+                                <h3 style="font-size:var(--text-lg); font-weight:800; color:var(--text-primary); margin:0 0 4px; display:flex; align-items:center; gap:8px;">
                                     <svg data-lucide="sparkles" width="20" height="20" style="color:var(--primary);"></svg>
                                     <span>Publishing Presets & Profiles</span>
                                 </h3>
-                                <p style="font-size:13px; color:var(--text-secondary); margin:0;">
+                                <p style="font-size:var(--text-sm); color:var(--text-secondary); margin:0;">
                                     Configure 1-click profiles with predefined tags, playlists, categories, and descriptions to automate your release workflow.
                                 </p>
                             </div>
@@ -898,7 +834,7 @@
                             </div>
                             <form id="deskSettingsForm" style="display:flex; flex-direction:column; gap:16px;">
                                 <div>
-                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Upload Visibility</label>
+                                    <label style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Upload Visibility</label>
                                     <select id="settingDefaultVisibility" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
                                         <option value="public">Public</option>
                                         <option value="unlisted">Unlisted</option>
@@ -906,7 +842,7 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Category</label>
+                                    <label style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Category</label>
                                     <select id="settingDefaultCategory" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
                                         <option value="22">People & Blogs</option>
                                         <option value="24">Entertainment</option>
@@ -916,7 +852,7 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label style="font-size:13px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Tags (comma separated)</label>
+                                    <label style="font-size:var(--text-sm); font-weight:700; color:var(--text-primary); display:block; margin-bottom:6px;">Default Tags (comma separated)</label>
                                     <input type="text" id="settingDefaultTags" placeholder="shorts, viral, creator" style="width:100%; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
                                 </div>
                                 <div style="padding-top:12px; border-top:1px solid var(--border-subtle); display:flex; justify-content:flex-end;">
@@ -939,7 +875,7 @@
                     <svg data-lucide="sparkles" width="18" height="18" style="color:var(--primary);"></svg>
                     <span>Create Publishing Preset</span>
                 </h3>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnPresetModalClose" style="padding:4px 8px;">✕</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnPresetModalClose" aria-label="Close modal">✕</button>
             </div>
             <form id="formPresetEditor" style="display:flex; flex-direction:column; gap:14px; margin-top:8px;">
                 <input type="hidden" id="inputPresetId" value="">
@@ -950,7 +886,7 @@
                 <div>
                     <label for="inputPresetTitlePattern" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Title Pattern (Optional)</label>
                     <input type="text" id="inputPresetTitlePattern" placeholder="e.g. {title} | Podcast Clip" class="form-input" style="width:100%; padding:9px 12px; border-radius:var(--radius-sm); background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);">
-                    <span style="font-size:11px; color:var(--text-muted);">Use {title} to retain original video title.</span>
+                    <span style="font-size:var(--text-xs); color:var(--text-muted);">Use {title} to retain original video title.</span>
                 </div>
                 <div>
                     <label for="inputPresetDescription" style="font-size:12px; font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">Description Template</label>
@@ -1016,9 +952,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalConfirmTitle">Confirm Action</h3>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnModalClose" style="padding:4px 8px;">✕</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnModalClose" aria-label="Close modal">✕</button>
             </div>
-            <p id="modalConfirmText" style="font-size:13px; color:var(--text-secondary); margin:0 0 20px; line-height:1.5;">Are you sure you want to proceed?</p>
+            <p id="modalConfirmText" style="font-size:var(--text-sm); color:var(--text-secondary); margin:0 0 20px; line-height:1.5;">Are you sure you want to proceed?</p>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary btn-sm" id="btnModalCancel">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" id="btnModalOk">Confirm</button>
@@ -1031,7 +967,7 @@
         <div class="modal-content" style="max-width:600px;">
             <div class="modal-header">
                 <h3>Select Video from Project Library</h3>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnLibraryClose" style="padding:4px 8px;">✕</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnLibraryClose" aria-label="Close modal">✕</button>
             </div>
             <div id="libraryVideosList" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
                 <!-- Populated dynamically -->

@@ -201,17 +201,32 @@ class AnimatedCaptionRenderer:
             or opts.get("font")
             or config.SUBTITLE_FONT
         )
+
+        play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
+        play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
+
+        # Scale factor between web preview coordinate system and render resolution.
+        # In ASS (libass), TrueType fonts require a ~4.5x factor on 1080p (min_dim / 240.0)
+        # to match the visual footprint of CSS typography on the mobile preview frame.
+        min_dim = min(play_res_x, play_res_y)
+        scale_ratio = max(1.0, min_dim / 240.0)
+        stroke_ratio = max(1.0, min_dim / 360.0)
+
         try:
             raw_size = (
                 opts.get("font_size")
                 or opts.get("fontSize")
                 or opts.get("size")
                 or opts.get("caption_size")
-                or 34
+                or 38
             )
-            size = int(raw_size)
+            base_size = float(raw_size)
         except (TypeError, ValueError):
-            size = 34
+            base_size = 38.0
+
+        # Scale font size proportionally to video resolution so rendered text matches preview screen size
+        scaled_size = round(base_size * scale_ratio)
+        size = max(28, min(int(scaled_size), int(play_res_y * 0.30)))
 
         # Primary text color & active highlight color
         text_color_hex = (
@@ -236,16 +251,20 @@ class AnimatedCaptionRenderer:
             primary_ass = self._to_ass_color(active_color_hex)
             secondary_ass = self._to_ass_color(text_color_hex)
 
-        # Background / outline color & opacity
-        raw_bg_opacity = opts.get("background_opacity", opts.get("bgOpacity", 0.0))
-        try:
-            bg_opacity = float(raw_bg_opacity)
-            if bg_opacity > 1.0:
-                bg_opacity = bg_opacity / 100.0
-        except (TypeError, ValueError):
+        # Background mode / opacity
+        bg_mode = (opts.get("bg_mode") or opts.get("bgMode") or "none").lower()
+        if bg_mode == "none":
             bg_opacity = 0.0
-        bg_alpha = int((1.0 - max(0.0, min(1.0, bg_opacity))) * 255)
+        else:
+            raw_bg_opacity = opts.get("background_opacity", opts.get("bgOpacity", 0.0))
+            try:
+                bg_opacity = float(raw_bg_opacity)
+                if bg_opacity > 1.0:
+                    bg_opacity = bg_opacity / 100.0
+            except (TypeError, ValueError):
+                bg_opacity = 0.65 if bg_mode in ("solid", "semi") else 0.0
 
+        bg_alpha = int((1.0 - max(0.0, min(1.0, bg_opacity))) * 255)
         bg_hex = (
             opts.get("background_color")
             or opts.get("backgroundColor")
@@ -268,9 +287,10 @@ class AnimatedCaptionRenderer:
             outline_ass = self._to_ass_color(outline_hex, alpha=255)
         else:
             try:
-                outline_w = int(opts.get("outline_width", opts.get("strokeWidth", opts.get("outline", 3))))
+                raw_outline = float(opts.get("outline_width", opts.get("strokeWidth", opts.get("outline", 3.5))))
             except (TypeError, ValueError):
-                outline_w = 3
+                raw_outline = 3.5
+            outline_w = max(1, round(raw_outline * stroke_ratio)) if raw_outline > 0 else 0
             outline_ass = self._to_ass_color(outline_hex, alpha=0)
 
         # Shadow color & blur/offset
@@ -285,9 +305,10 @@ class AnimatedCaptionRenderer:
             shadow_ass = self._to_ass_color(shadow_hex, alpha=255)
         else:
             try:
-                shadow_w = int(opts.get("shadow_blur", opts.get("shadowBlur", opts.get("shadow", 2))))
+                raw_shadow = float(opts.get("shadow_blur", opts.get("shadowBlur", opts.get("shadow", 2.0))))
             except (TypeError, ValueError):
-                shadow_w = 2
+                raw_shadow = 2.0
+            shadow_w = max(1, round(raw_shadow * stroke_ratio)) if raw_shadow > 0 else 0
             shadow_ass = self._to_ass_color(shadow_hex, alpha=0)
 
         # Bold & Italic flags
@@ -310,7 +331,8 @@ class AnimatedCaptionRenderer:
 
         # Letter spacing
         try:
-            spacing = int(opts.get("letter_spacing", opts.get("letterSpacing", opts.get("spacing", 0))))
+            raw_spacing = float(opts.get("letter_spacing", opts.get("letterSpacing", opts.get("spacing", 0))))
+            spacing = round(raw_spacing * scale_ratio)
         except (TypeError, ValueError):
             spacing = 0
 
@@ -319,15 +341,6 @@ class AnimatedCaptionRenderer:
 
         # Alignment calculation (ASS: 1=bot-left, 2=bot-center, 3=bot-right, 4=mid-left, 5=mid-center, 6=mid-right, 7=top-left, 8=top-center, 9=top-right)
         align_horiz = (opts.get("text_align") or opts.get("textAlign") or opts.get("alignment") or "center").lower()
-        position = (opts.get("position") or "bottom").lower()
-
-        if position == "top":
-            base_row = 7
-        elif position in ("middle", "center"):
-            base_row = 4
-        else:  # bottom or lower_third
-            base_row = 1
-
         if align_horiz == "left":
             col_offset = 0
         elif align_horiz == "right":
@@ -335,38 +348,60 @@ class AnimatedCaptionRenderer:
         else:  # center
             col_offset = 1
 
-        alignment = base_row + col_offset
+        position = (opts.get("position") or "bottom").lower()
 
-        play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
-        play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
-
-        # Vertical margin calculation (support posYPercent from Caption Studio)
+        # Vertical margin calculation (support posYPercent from Caption Studio & platform safe zones)
         pos_y_pct = opts.get("posYPercent", opts.get("pos_y_percent"))
         if pos_y_pct is not None:
             try:
                 py = float(pos_y_pct)
-                if position == "top":
-                    margin_v = max(20, int(py / 100.0 * play_res_y))
-                elif position in ("middle", "center"):
+                if position == "top" or py <= 35:
+                    alignment = 7 + col_offset
+                    margin_v = max(40, int(py / 100.0 * play_res_y) - int(size / 2))
+                elif position in ("middle", "center") or (45 <= py <= 55):
+                    alignment = 4 + col_offset
                     margin_v = 0
                 else:
-                    margin_v = max(20, int((100.0 - py) / 100.0 * play_res_y))
+                    alignment = 1 + col_offset
+                    margin_v = max(40, int((100.0 - py) / 100.0 * play_res_y) - int(size / 2))
             except (TypeError, ValueError):
-                margin_v = 60
+                alignment = 1 + col_offset
+                margin_v = 280 if play_res_y >= 1280 else 100
         else:
-            try:
-                margin_v = int(opts.get("margin_v", opts.get("margin_y", 60)))
+            if position == "top":
+                base_row = 7
+                alignment = base_row + col_offset
+                try:
+                    raw_mv = int(opts.get("margin_v", opts.get("margin_y", 0)))
+                except (TypeError, ValueError):
+                    raw_mv = 0
+                margin_v = raw_mv if raw_mv > 0 else (120 if play_res_y >= 1280 else 50)
+            elif position in ("middle", "center"):
+                base_row = 4
+                alignment = base_row + col_offset
+                margin_v = 0
+            else:  # bottom or lower_third
+                base_row = 1
+                alignment = base_row + col_offset
+                try:
+                    raw_mv = int(opts.get("margin_v", opts.get("margin_y", 0)))
+                except (TypeError, ValueError):
+                    raw_mv = 0
+                if play_res_y >= 1280:
+                    margin_v = max(raw_mv, 280) if raw_mv > 0 else 280
+                else:
+                    margin_v = max(raw_mv, 60) if raw_mv > 0 else 60
                 if position == "lower_third":
-                    margin_v = max(margin_v, 140)
-            except (TypeError, ValueError):
-                margin_v = 60
+                    margin_v = max(margin_v, 360 if play_res_y >= 1280 else 140)
 
         try:
-            margin_l = int(opts.get("margin_l", opts.get("margin_x", 30)))
-            margin_r = int(opts.get("margin_r", 30))
+            raw_ml = float(opts.get("margin_l", opts.get("margin_x", 30)))
+            raw_mr = float(opts.get("margin_r", 30))
         except (TypeError, ValueError):
-            margin_l = 30
-            margin_r = 30
+            raw_ml = 30.0
+            raw_mr = 30.0
+        margin_l = max(20, round(raw_ml * scale_ratio))
+        margin_r = max(20, round(raw_mr * scale_ratio))
 
         return f"""[Script Info]
 ScriptType: v4.00+
@@ -493,6 +528,21 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         anim = self._animation_block(anim_name)
         lines = []
 
+        text_case = (opts.get("text_case") or opts.get("textCase") or opts.get("casing") or "normal").lower()
+
+        def _apply_case(t):
+            if not t:
+                return t
+            if text_case == "uppercase":
+                return t.upper()
+            if text_case == "capitalize":
+                return t.capitalize()
+            if text_case == "title":
+                return t.title()
+            if text_case == "lowercase":
+                return t.lower()
+            return t
+
         # Check if manual coordinates were supplied
         pos_override = ""
         if opts.get("use_manual_pos") and "pos_x" in opts and "pos_y" in opts:
@@ -503,8 +553,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             except Exception:
                 pos_override = ""
 
-        # Break long sentences into short kinetic chunks (2-4 words) with strict non-overlap
-        chunks = self._prepare_kinetic_chunks(transcript, max_words=4)
+        # Break long sentences into short kinetic chunks (2-4 words or user-configured chunk) with strict non-overlap
+        max_words = int(opts.get("words_per_chunk") or opts.get("words_per_line") or 4)
+        chunks = self._prepare_kinetic_chunks(transcript, max_words=max_words)
 
         for chunk in chunks:
             start = chunk["start"]
@@ -517,7 +568,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 # Static subtitle line without karaoke wipes
                 dialogue = (
                     f"Dialogue: 0,{self._format_time(start)},{self._format_time(end)},"
-                    f"Caption,,0,0,0,,{pos_override}{text}"
+                    f"Caption,,0,0,0,,{pos_override}{_apply_case(text)}"
                 )
                 lines.append(dialogue)
                 continue
@@ -536,7 +587,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 scaled_durs[-1] = max(1, scaled_durs[-1] + diff)
 
                 for w, d_cs in zip(words_data, scaled_durs):
-                    w_text = w.get("text", "").strip()
+                    w_text = _apply_case(w.get("text", "").strip())
                     if w_text:
                         karaoke_parts.append(r"{\k%d}%s" % (d_cs, w_text))
                 karaoke = " ".join(karaoke_parts)
@@ -548,7 +599,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 karaoke_parts = []
                 for idx, w in enumerate(words):
                     cs = per_word_cs if idx < len(words) - 1 else max(1, dur_total_cs - per_word_cs * (len(words) - 1))
-                    karaoke_parts.append(r"{\k%d}%s" % (cs, w))
+                    karaoke_parts.append(r"{\k%d}%s" % (cs, _apply_case(w)))
                 karaoke = " ".join(karaoke_parts)
 
             dialogue = (

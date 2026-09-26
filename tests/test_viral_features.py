@@ -129,6 +129,33 @@ def test_content_based_naming_extraction():
     assert "Rahul" in name or "Gyanesh" in name or "Election" in name or "Controversy" in name
     assert name.endswith("_01") or name.endswith("_001") or "Clip" in name
 
+    # Test Hindi transcript transliterates and names cleanly
+    hindi_transcript = [
+        {"start": 0.0, "end": 20.0, "text": "राहुल गांधी ने चुनाव आयोग और ज्ञानेश कुमार पर बड़ा बयान दिया"}
+    ]
+    hindi_name = gen._get_content_name(
+        transcript=hindi_transcript,
+        start_time=0.0,
+        duration=20.0,
+        index=2,
+        format_str="001"
+    )
+    assert hindi_name.endswith("_002")
+    assert any(w in hindi_name for w in ["Rahul", "Gandhi", "Chunav", "Gyanesh", "Kumar"])
+
+    # Test custom user prefix
+    pfx_name = gen._build_clip_name(
+        index=3,
+        naming="content",
+        transcript=transcript,
+        start_time=5.0,
+        duration=35.0,
+        prefix="ViralHit_"
+    )
+    assert pfx_name.startswith("ViralHit_")
+    assert pfx_name.endswith(".mp4")
+
+
 
 def test_youtube_smart_schedule_api():
     """Verify YouTube smart schedule advice and auto-schedule endpoints."""
