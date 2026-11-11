@@ -1,6 +1,14 @@
 from pathlib import Path
 import subprocess
 import config
+from ai.caption_templates import (
+    get_template,
+    get_all_templates,
+    build_hook_title_ass,
+    hex_to_ass_color,
+    CAPTION_TEMPLATES,
+)
+from ai.emoji_captions import annotate_caption_words, lookup_emoji, normalize_token
 
 
 class AnimatedCaptionRenderer:
@@ -84,97 +92,7 @@ class AnimatedCaptionRenderer:
 
     @staticmethod
     def _template_options(template):
-        template = (template or "hormozi_pop").lower()
-        templates = {
-            "hormozi_pop": {
-                "font": "Arial Black", "size": 42, "weight": 900, "color": "#FFFFFF",
-                "highlight_color": "#FFDD00", "background": "#000000", "background_opacity": 0.0,
-                "outline": 4, "shadow": 4, "position": "bottom", "margin_v": 75, "animation": "pop",
-                "description": "Alex Hormozi Viral Style — Yellow punch, bold black outline, high-energy pop"
-            },
-            "beast_glow": {
-                "font": "Arial Black", "size": 44, "weight": 900, "color": "#FFFFFF",
-                "highlight_color": "#39FF14", "background": "#000000", "background_opacity": 0.0,
-                "outline": 5, "shadow": 6, "position": "bottom", "margin_v": 80, "animation": "bounce",
-                "description": "MrBeast Style — Electric lime neon active word with heavy punchy stroke"
-            },
-            "red_punch": {
-                "font": "Arial Black", "size": 42, "weight": 900, "color": "#FFFFFF",
-                "highlight_color": "#FF2A2A", "background": "#000000", "background_opacity": 0.0,
-                "outline": 4, "shadow": 5, "position": "bottom", "margin_v": 75, "animation": "pop",
-                "description": "High Drama / Breaking News — Fiery red highlight on crisp white text"
-            },
-            "clean_gold": {
-                "font": "Inter", "size": 36, "weight": 700, "color": "#FFFFFF",
-                "highlight_color": "#F59E0B", "background": "#0F172A", "background_opacity": 0.45,
-                "outline": 2, "shadow": 3, "position": "bottom", "margin_v": 70, "animation": "fade_in",
-                "description": "Luxury Gold — Podcast & business minimal aesthetic with warm amber highlight"
-            },
-            "neon_cyber": {
-                "font": "Montserrat", "size": 40, "weight": 800, "color": "#FFFFFF",
-                "highlight_color": "#D946EF", "background": "#000000", "background_opacity": 0.0,
-                "outline": 3, "shadow": 5, "position": "bottom", "margin_v": 75, "animation": "pop",
-                "description": "Cyberpunk Neon — Vibrant fuchsia glow for modern gaming/tech reels"
-            },
-            "karaoke_pill": {
-                "font": "Inter", "size": 34, "weight": 700, "color": "#FFFFFF",
-                "highlight_color": "#38BDF8", "background": "#000000", "background_opacity": 0.70,
-                "outline": 0, "shadow": 0, "position": "bottom", "margin_v": 65, "animation": "none",
-                "description": "Karaoke Pill — Smooth rounded backdrop container with electric cyan highlight"
-            },
-            # Aliases & backward compatibility
-            "tiktok_pop": {
-                "font": "Arial Black", "size": 42, "weight": 900, "color": "#FFFFFF",
-                "highlight_color": "#FFDD00", "background": "#000000", "background_opacity": 0.0,
-                "outline": 4, "shadow": 4, "position": "bottom", "margin_v": 75, "animation": "pop"
-            },
-            "clean": {
-                "font": "Inter", "size": 32, "weight": 700, "color": "#FFFFFF",
-                "highlight_color": "#38BDF8", "background": "#000000", "background_opacity": 0.0,
-                "outline": 1, "shadow": 2, "position": "bottom", "margin_v": 70, "animation": "fade_in"
-            },
-            "bold": {
-                "font": "Anton", "size": 44, "weight": 800, "color": "#FFFFFF",
-                "highlight_color": "#F43F5E", "background": "#000000", "background_opacity": 0.0,
-                "outline": 4, "shadow": 6, "position": "bottom", "margin_v": 60, "animation": "bounce"
-            },
-            "minimal": {
-                "font": "DM Sans", "size": 28, "weight": 600, "color": "#FFFFFF",
-                "highlight_color": "#FFFFFF", "background": "#000000", "background_opacity": 0.0,
-                "outline": 0, "shadow": 2, "position": "bottom", "margin_v": 80, "animation": "none"
-            },
-            "creator": {
-                "font": "Poppins", "size": 36, "weight": 800, "color": "#FFFFFF",
-                "highlight_color": "#22D3EE", "background": "#0F172A", "background_opacity": 0.5,
-                "outline": 2, "shadow": 4, "position": "bottom", "margin_v": 60, "animation": "pop"
-            },
-            "podcast": {
-                "font": "Montserrat", "size": 34, "weight": 800, "color": "#FFFFFF",
-                "highlight_color": "#FBBF24", "background": "#000000", "background_opacity": 0.7,
-                "outline": 0, "shadow": 3, "position": "lower_third", "margin_v": 130, "animation": "fade_in"
-            },
-            "news": {
-                "font": "Arial Black", "size": 36, "weight": 900, "color": "#FFFFFF",
-                "highlight_color": "#EF4444", "background": "#1E293B", "background_opacity": 0.85,
-                "outline": 2, "shadow": 4, "position": "bottom", "margin_v": 50, "animation": "slide_up"
-            },
-            "gaming": {
-                "font": "Bebas Neue", "size": 48, "weight": 900, "color": "#00FF66",
-                "highlight_color": "#FF0055", "background": "#000000", "background_opacity": 0.0,
-                "outline": 4, "shadow": 8, "position": "bottom", "margin_v": 60, "animation": "pop"
-            },
-            "dynamic": {
-                "font": "Plus Jakarta Sans", "size": 38, "weight": 800, "color": "#FFFFFF",
-                "highlight_color": "#A855F7", "background": "#000000", "background_opacity": 0.0,
-                "outline": 3, "shadow": 5, "position": "bottom", "margin_v": 60, "animation": "pop"
-            },
-            "classic": {
-                "font": "Arial", "size": 32, "weight": 700, "color": "#FFFFFF",
-                "highlight_color": "#FFD700", "background": "#000000", "background_opacity": 0.0,
-                "outline": 3, "shadow": 3, "position": "bottom", "margin_v": 60, "animation": "pop"
-            }
-        }
-        return templates.get(template, templates["hormozi_pop"])
+        return get_template(template)
 
     # -----------------------------------------------
     # Merge template + user overrides
@@ -528,7 +446,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         anim = self._animation_block(anim_name)
         lines = []
 
-        text_case = (opts.get("text_case") or opts.get("textCase") or opts.get("casing") or "normal").lower()
+        # Check casing (support uppercase template flag)
+        text_case = (
+            opts.get("text_case")
+            or opts.get("textCase")
+            or opts.get("casing")
+            or ("uppercase" if opts.get("uppercase") else "normal")
+        ).lower()
+
+        # Check soft neon glow effect (\blur4)
+        glow_tag = r"{\blur4}" if opts.get("glow") else ""
+
+        # Contextual emoji flag
+        enable_emoji = bool(opts.get("emoji", True))
 
         def _apply_case(t):
             if not t:
@@ -554,7 +484,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 pos_override = ""
 
         # Break long sentences into short kinetic chunks (2-4 words or user-configured chunk) with strict non-overlap
-        max_words = int(opts.get("words_per_chunk") or opts.get("words_per_line") or 4)
+        max_words = int(
+            opts.get("words_per_chunk")
+            or opts.get("words_per_line")
+            or opts.get("max_words_per_line")
+            or 4
+        )
         chunks = self._prepare_kinetic_chunks(transcript, max_words=max_words)
 
         for chunk in chunks:
@@ -568,10 +503,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 # Static subtitle line without karaoke wipes
                 dialogue = (
                     f"Dialogue: 0,{self._format_time(start)},{self._format_time(end)},"
-                    f"Caption,,0,0,0,,{pos_override}{_apply_case(text)}"
+                    f"Caption,,0,0,0,,{pos_override}{glow_tag}{_apply_case(text)}"
                 )
                 lines.append(dialogue)
                 continue
+
+            # Contextual emoji annotations
+            emoji_map = {}
+            if enable_emoji and words_data and len(words_data) > 0:
+                try:
+                    emoji_map, _ = annotate_caption_words(words_data, enable_emoji=True)
+                except Exception:
+                    emoji_map = {}
 
             if words_data and len(words_data) > 0:
                 karaoke_parts = []
@@ -586,8 +529,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 diff = dur_total_cs - sum(scaled_durs)
                 scaled_durs[-1] = max(1, scaled_durs[-1] + diff)
 
-                for w, d_cs in zip(words_data, scaled_durs):
+                for w_idx, (w, d_cs) in enumerate(zip(words_data, scaled_durs)):
                     w_text = _apply_case(w.get("text", "").strip())
+                    if w_idx in emoji_map:
+                        w_text = f"{w_text} {emoji_map[w_idx]}"
                     if w_text:
                         karaoke_parts.append(r"{\k%d}%s" % (d_cs, w_text))
                 karaoke = " ".join(karaoke_parts)
@@ -595,16 +540,27 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 words = text.split()
                 if not words:
                     continue
+                word_dicts = [{"text": w} for w in words]
+                emoji_map = {}
+                if enable_emoji:
+                    try:
+                        emoji_map, _ = annotate_caption_words(word_dicts, enable_emoji=True)
+                    except Exception:
+                        emoji_map = {}
+
                 per_word_cs = max(1, dur_total_cs // len(words))
                 karaoke_parts = []
                 for idx, w in enumerate(words):
                     cs = per_word_cs if idx < len(words) - 1 else max(1, dur_total_cs - per_word_cs * (len(words) - 1))
-                    karaoke_parts.append(r"{\k%d}%s" % (cs, _apply_case(w)))
+                    w_text = _apply_case(w)
+                    if idx in emoji_map:
+                        w_text = f"{w_text} {emoji_map[idx]}"
+                    karaoke_parts.append(r"{\k%d}%s" % (cs, w_text))
                 karaoke = " ".join(karaoke_parts)
 
             dialogue = (
                 f"Dialogue: 0,{self._format_time(start)},{self._format_time(end)},"
-                f"Caption,,0,0,0,,{pos_override}{anim}{karaoke}"
+                f"Caption,,0,0,0,,{pos_override}{glow_tag}{anim}{karaoke}"
             )
             lines.append(dialogue)
 
@@ -616,8 +572,32 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     def build_ass(self, transcript, opts=None, template=None):
         opts = self.resolve_opts(opts, template)
+        hook_title = opts.get("hook_title") or opts.get("headline") or opts.get("hookTitle")
+        hook_style_line = ""
+        hook_dialogue_lines = []
+
+        if hook_title:
+            try:
+                w = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
+                h = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
+                dur = float(opts.get("duration") or 30.0)
+                if transcript and isinstance(transcript, list) and len(transcript) > 0:
+                    last_end = float(transcript[-1].get("end", dur))
+                    dur = max(dur, last_end)
+                hook_style_line, hook_dialogue_lines = build_hook_title_ass(
+                    hook_title, opts, video_width=w, video_height=h, output_duration=dur
+                )
+            except Exception:
+                pass
+
         header = self._build_header(opts)
+        if hook_style_line:
+            header = header.replace("[Events]", f"{hook_style_line}\n[Events]")
+
         dialogue = self._build_dialogue(transcript, opts)
+        if hook_dialogue_lines:
+            dialogue = "\n".join(hook_dialogue_lines) + "\n" + dialogue
+
         return header + "\n" + dialogue + "\n"
 
     # -----------------------------------------------

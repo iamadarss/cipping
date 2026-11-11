@@ -199,20 +199,20 @@
                             </div>
                         </div>
 
-                        <!-- Card 3: Blank Canvas Timeline (Differentiated hierarchy and clear copy) -->
+                        <!-- Card 3: Caption Studio -->
                         <div class="home-action-card">
                             <div class="card-content">
                                 <div class="card-icon">
-                                    <svg data-lucide="layout-template" width="22" height="22" aria-hidden="true"></svg>
+                                    <svg data-lucide="subtitles" width="22" height="22" aria-hidden="true"></svg>
                                 </div>
-                                <h3 class="card-title">Blank Canvas</h3>
-                                <p class="card-desc">Start a blank editing timeline with custom aspect ratios, multi-track audio, and presets.</p>
+                                <h3 class="card-title">Caption Studio</h3>
+                                <p class="card-desc">Design dynamic animated captions, karaoke word highlights, and export styled vertical shorts.</p>
                             </div>
                             <div class="card-action">
-                                <button type="button" class="btn btn-secondary btn-sm w-full" id="btnHomeNewProject">
-                                    <svg data-lucide="plus" width="14" height="14" aria-hidden="true"></svg>
-                                    <span>Open Blank Editor</span>
-                                </button>
+                                <a href="/caption-studio" class="btn btn-secondary btn-sm w-full" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                                    <svg data-lucide="sparkles" width="14" height="14" aria-hidden="true"></svg>
+                                    <span>Open Caption Studio</span>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -259,7 +259,7 @@
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
                             <div>
                                 <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--text-primary); margin:0;">Recent Projects</h2>
-                                <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Pick up right where you left off in the Studio Editor.</p>
+                                <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Pick up right where you left off in your projects.</p>
                             </div>
                             <button class="btn btn-secondary btn-sm" id="btnRefreshProjects" title="Refresh projects list">
                                 <svg data-lucide="refresh-cw" width="13" height="13"></svg>
@@ -329,14 +329,14 @@
 
             <!-- Action Options -->
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <button type="button" class="btn btn-primary w-full" id="btnTemplateOpenEditor">
-                    <svg data-lucide="layout-template" width="16" height="16"></svg>
-                    <span>Open in Timeline Editor</span>
-                </button>
-                <button type="button" class="btn btn-secondary w-full" id="btnTemplateOpenClipStudio">
+                <button type="button" class="btn btn-primary w-full" id="btnTemplateOpenClipStudio">
                     <svg data-lucide="wand-sparkles" width="15" height="15"></svg>
                     <span>Use in AI Clip Studio</span>
                 </button>
+                <a href="/caption-studio" class="btn btn-secondary w-full" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                    <svg data-lucide="subtitles" width="15" height="15"></svg>
+                    <span>Open in Caption Studio</span>
+                </a>
             </div>
         </div>
     </div>

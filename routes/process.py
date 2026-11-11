@@ -801,6 +801,7 @@ def run_pipeline_job(job, app=None):
                     existing_editor_state = json.loads(db_proj.editor_state)
                 except Exception:
                     existing_editor_state = {}
+            existing_editor_state["origin"] = "clip_studio"
             existing_editor_state["clips"] = clips_data
             existing_editor_state["aspect"] = aspect_key
             db_proj.editor_state = json.dumps(existing_editor_state)

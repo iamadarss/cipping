@@ -1120,10 +1120,14 @@
                                     </button>
                                 </div>
                                 
-                                <!-- Select Options -->
+                                <!-- Select & Export Options -->
                                 <div style="display: flex; gap: var(--space-2); align-items: center;">
                                     <button class="btn btn-secondary btn-sm" id="selectAllClipsBtn" type="button">Select All</button>
-                                    <button class="btn btn-secondary btn-sm" id="clearClipSelectionBtn" type="button">Clear Selection</button>
+                                    <button class="btn btn-secondary btn-sm" id="clearClipSelectionBtn" type="button">Clear</button>
+                                    <button class="btn btn-primary btn-sm" id="btnQuickExportAll" type="button" onclick="showStep(5)" style="display:inline-flex; align-items:center; gap:6px;">
+                                        <svg data-lucide="download" width="14" height="14"></svg>
+                                        <span>Export Clips</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -1131,7 +1135,7 @@
                             <div class="batch-actions-bar" id="batchActionsBar" style="display: none; margin-bottom: var(--space-4);">
                                 <span class="selected-count" id="selectedCountText">0 clips selected</span>
                                 <div class="batch-buttons">
-                                    <button class="btn btn-secondary btn-sm" id="batchOpenEditorBtn" type="button"><svg data-lucide="scissors" width="14" height="14"></svg> Open in Editor</button>
+                                    <button class="btn btn-secondary btn-sm" id="batchOpenEditorBtn" type="button"><svg data-lucide="subtitles" width="14" height="14"></svg> Caption Studio</button>
                                     <button class="btn btn-secondary btn-sm" id="batchDownloadBtn" type="button"><svg data-lucide="download" width="14" height="14"></svg> Export</button>
                                     <button class="btn btn-secondary btn-sm danger" id="batchDeleteBtn" type="button"><svg data-lucide="trash" width="14" height="14"></svg> Delete</button>
                                 </div>
@@ -1139,6 +1143,18 @@
 
                             <div class="clips-grid" id="reviewGrid"></div>
                             <div id="countConflict" class="conflict-banner" hidden></div>
+
+                            <!-- Navigation Footer -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border);">
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="showStep(1)" style="display:inline-flex; align-items:center; gap:6px;">
+                                    <svg data-lucide="arrow-left" width="14" height="14"></svg>
+                                    <span>Source Footage</span>
+                                </button>
+                                <button class="btn btn-primary btn-sm" type="button" onclick="showStep(5)" style="display:inline-flex; align-items:center; gap:6px;">
+                                    <svg data-lucide="download" width="14" height="14"></svg>
+                                    <span>Proceed to Export Assets →</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- PANEL 5: EXPORT GENERATED ASSETS -->

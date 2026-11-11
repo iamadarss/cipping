@@ -45,6 +45,16 @@ def caption_studio_page():
         except Exception:
             pass
 
+        if db_project and db_project.get("editor_state"):
+            try:
+                import json
+                ed_state = json.loads(db_project["editor_state"])
+                if isinstance(ed_state, dict):
+                    if not video_to_load:
+                        video_to_load = ed_state.get("video_filename") or ed_state.get("source_video") or ""
+            except Exception:
+                pass
+
         try:
             from core.project_state import project_state
             project = project_state.get_project(project_id)
@@ -59,6 +69,20 @@ def caption_studio_page():
     video_to_load = video_param or filename
     if not video_to_load and db_project:
         video_to_load = db_project.get("source_path") or ""
+
+    saved_captions = []
+    saved_style = None
+    if db_project and db_project.get("editor_state"):
+        try:
+            import json
+            ed_state = json.loads(db_project["editor_state"])
+            if isinstance(ed_state, dict):
+                saved_captions = ed_state.get("captions", [])
+                saved_style = ed_state.get("caption_style")
+                if not video_to_load:
+                    video_to_load = ed_state.get("video_filename") or ed_state.get("source_video") or ""
+        except Exception:
+            pass
 
     if video_to_load:
         # Check input dir first, then clips dir, then final dir
@@ -98,7 +122,9 @@ def caption_studio_page():
         project_id=project_id,
         project=db_project,
         source_filename=video_to_load or filename,
-        inherited_style=inherited_style,
+        inherited_style=inherited_style or saved_style,
+        saved_captions=saved_captions,
+        saved_style=saved_style or inherited_style,
         caption_files=caption_files,
         preload_video=preload_video,
     )
@@ -453,37 +479,75 @@ def save_caption_state():
     project_id = data.get("project_id", "")
     captions = data.get("captions", [])
     style = data.get("style", {})
-
-    if not project_id:
-        return jsonify({"success": False, "error": "No project_id provided"}), 400
+    video_filename = data.get("video_filename") or data.get("filename") or ""
 
     try:
         from models.project import Project
         from extensions import db
-        clean_id = project_id.replace("proj_", "")
-        project = None
-        if clean_id.isdigit():
-            project = Project.query.get(int(clean_id))
-        if not project:
-            project = Project.query.filter_by(name=project_id).first()
+        from core.project_manager import project_manager
+        from datetime import datetime
+        from pathlib import Path
 
-        if project:
-            # Parse existing editor_state or create new dict
-            current_state = {}
-            if project.editor_state:
-                try:
-                    current_state = json.loads(project.editor_state)
-                except Exception:
-                    current_state = {}
-            current_state["captions"] = captions
-            current_state["caption_style"] = style
-            if "state" in data and isinstance(data["state"], dict):
-                current_state.update(data["state"])
-            project.editor_state = json.dumps(current_state)
-            db.session.commit()
-            return jsonify({"success": True, "message": "Caption state saved successfully"})
-        else:
-            return jsonify({"success": True, "message": "State preserved in memory"})
+        project = None
+        if project_id:
+            clean_id = str(project_id).replace("proj_", "")
+            if clean_id.isdigit():
+                project = Project.query.get(int(clean_id))
+            if not project:
+                project = Project.query.filter_by(name=project_id).first()
+
+        # If project does not exist yet, auto-create a Project in SQLite DB
+        if not project:
+            proj_name = Path(video_filename).stem if video_filename else f"Captions {datetime.utcnow().strftime('%b %d, %H:%M')}"
+            thumb_path = f"/download/thumbnail/{Path(video_filename).stem}_thumb.jpg" if video_filename else None
+            project = Project(
+                name=proj_name,
+                source_path=video_filename or None,
+                thumbnail_path=thumb_path,
+                status="ready"
+            )
+            db.session.add(project)
+            db.session.flush()
+
+        # Parse existing editor_state or create new dict
+        current_state = {}
+        if project.editor_state:
+            try:
+                current_state = json.loads(project.editor_state)
+            except Exception:
+                current_state = {}
+
+        current_state["origin"] = "caption_studio"
+        current_state["captions"] = captions
+        current_state["caption_style"] = style
+        if video_filename:
+            current_state["video_filename"] = video_filename
+            if not project.source_path:
+                project.source_path = video_filename
+                project.name = Path(video_filename).stem
+                project.thumbnail_path = f"/download/thumbnail/{Path(video_filename).stem}_thumb.jpg"
+
+        if "state" in data and isinstance(data["state"], dict):
+            current_state.update(data["state"])
+
+        project.editor_state = json.dumps(current_state)
+        project.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        # Record in recent projects for immediate home screen visibility
+        project_manager.record_recent_project(
+            project_id=project.id,
+            name=project.name,
+            source_path=project.source_path or "",
+            thumbnail_path=project.thumbnail_path or ""
+        )
+
+        return jsonify({
+            "success": True,
+            "project_id": str(project.id),
+            "project": project.to_dict(),
+            "message": "Caption state saved successfully"
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -1209,18 +1273,30 @@ def save_caption_style():
     return jsonify({"success": True, "style": {"id": f"cstyle_{int(time.time())}", "name": name, "style": style}})
 
 
+@caption_studio_bp.route("/api/caption-studio/templates", methods=["GET"])
+def list_caption_templates():
+    """Return all creator presets with full metadata and animation flags."""
+    try:
+        from ai.caption_templates import get_template_info
+        return jsonify({"success": True, "templates": get_template_info()})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @caption_studio_bp.route("/api/caption-studio/styles", methods=["GET"])
 def list_caption_styles():
     project_id = request.args.get("project_id", "")
     builtin_presets = [
-        {"id": "cap_clean", "name": "Clean", "category": "Clean", "style": {"font_family": "Inter", "font_size": 32, "font_weight": 700, "text_color": "#FFFFFF", "active_word_color": "#38BDF8", "outline_width": 1, "outline_color": "#000000", "shadow_blur": 2, "shadow_color": "#000000", "animation": "fade_in"}},
-        {"id": "cap_bold", "name": "Bold", "category": "Bold", "style": {"font_family": "Anton", "font_size": 44, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#F43F5E", "outline_width": 4, "outline_color": "#000000", "shadow_blur": 6, "shadow_color": "#000000", "animation": "bounce"}},
-        {"id": "cap_minimal", "name": "Minimal", "category": "Clean", "style": {"font_family": "DM Sans", "font_size": 28, "font_weight": 600, "text_color": "#FFFFFF", "active_word_color": "#FFFFFF", "background_color": "#000000", "background_opacity": 0.0, "outline_width": 0, "animation": "none"}},
-        {"id": "cap_creator", "name": "Creator", "category": "Short-Form", "style": {"font_family": "Poppins", "font_size": 36, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#22D3EE", "background_color": "#0F172A", "background_opacity": 0.5, "outline_width": 2, "animation": "pop"}},
-        {"id": "cap_podcast", "name": "Podcast", "category": "Speech", "style": {"font_family": "Montserrat", "font_size": 34, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#FBBF24", "background_color": "#000000", "background_opacity": 0.7, "outline_width": 0, "animation": "fade_in"}},
+        {"id": "cap_default", "name": "Default (Yellow Pop)", "category": "Viral", "style": {"font_family": "Montserrat", "font_size": 36, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#FFE000", "outline_width": 3, "outline_color": "#000000", "shadow_blur": 4, "shadow_color": "#000000", "animation": "pop", "emoji": True, "word_pop": True}},
+        {"id": "cap_hormozi", "name": "Hormozi (Green Pill)", "category": "Viral", "style": {"font_family": "Arial Black", "font_size": 38, "font_weight": 900, "text_color": "#FFFFFF", "active_word_color": "#00FF66", "word_box": True, "word_box_color": "#00BF49", "uppercase": True, "outline_width": 4, "outline_color": "#000000", "shadow_blur": 4, "shadow_color": "#000000", "animation": "pop", "emoji": True, "word_pop": True}},
+        {"id": "cap_mrbeast", "name": "MrBeast (Red Pop)", "category": "High Energy", "style": {"font_family": "Arial Black", "font_size": 40, "font_weight": 900, "text_color": "#FFFF00", "active_word_color": "#FF2D2D", "uppercase": True, "outline_width": 5, "outline_color": "#000000", "shadow_blur": 6, "shadow_color": "#000000", "animation": "bounce", "emoji": True, "word_pop": True}},
+        {"id": "cap_tiktok", "name": "TikTok (Pink Pop)", "category": "Viral", "style": {"font_family": "Montserrat", "font_size": 34, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#FE2C55", "outline_width": 3, "outline_color": "#000000", "shadow_blur": 4, "shadow_color": "#000000", "animation": "pop", "emoji": True, "word_pop": True}},
+        {"id": "cap_neon", "name": "Neon (Cyan & Magenta)", "category": "Modern", "style": {"font_family": "Montserrat", "font_size": 34, "font_weight": 800, "text_color": "#00FFFF", "active_word_color": "#FF00FF", "outline_width": 2, "outline_color": "#002A6B", "shadow_blur": 5, "shadow_color": "#000000", "animation": "pop", "glow": True, "word_pop": True}},
+        {"id": "cap_podcast", "name": "Podcast (Gold Pill)", "category": "Speech", "style": {"font_family": "Inter", "font_size": 30, "font_weight": 700, "text_color": "#FFFFFF", "active_word_color": "#FFB800", "background_color": "#1A1A1A", "background_opacity": 0.8, "outline_width": 2, "animation": "fade"}},
+        {"id": "cap_minimal", "name": "Minimal (Clean Fade)", "category": "Clean", "style": {"font_family": "Inter", "font_size": 28, "font_weight": 600, "text_color": "#FFFFFF", "active_word_color": "#FFFFFF", "background_color": "#000000", "background_opacity": 0.5, "outline_width": 0, "animation": "fade"}},
+        {"id": "cap_clean", "name": "Clean Blue", "category": "Clean", "style": {"font_family": "Inter", "font_size": 32, "font_weight": 700, "text_color": "#FFFFFF", "active_word_color": "#38BDF8", "outline_width": 1, "outline_color": "#000000", "shadow_blur": 2, "shadow_color": "#000000", "animation": "fade_in"}},
+        {"id": "cap_bold", "name": "Bold Crimson", "category": "Bold", "style": {"font_family": "Anton", "font_size": 44, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#F43F5E", "outline_width": 4, "outline_color": "#000000", "shadow_blur": 6, "shadow_color": "#000000", "animation": "bounce"}},
         {"id": "cap_news", "name": "News", "category": "Editorial", "style": {"font_family": "Arial Black", "font_size": 36, "font_weight": 900, "text_color": "#FFFFFF", "active_word_color": "#EF4444", "background_color": "#1E293B", "background_opacity": 0.85, "outline_width": 2, "animation": "slide_up"}},
-        {"id": "cap_gaming", "name": "Gaming", "category": "High Energy", "style": {"font_family": "Bebas Neue", "font_size": 48, "font_weight": 900, "text_color": "#00FF66", "active_word_color": "#FF0055", "outline_width": 4, "outline_color": "#000000", "shadow_blur": 8, "shadow_color": "#000000", "animation": "pop"}},
-        {"id": "cap_dynamic", "name": "Dynamic", "category": "Modern", "style": {"font_family": "Plus Jakarta Sans", "font_size": 38, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#A855F7", "outline_width": 3, "outline_color": "#000000", "shadow_blur": 5, "shadow_color": "#000000", "animation": "pop"}},
     ]
 
     user_styles = []

@@ -117,6 +117,9 @@
         }
         redoStack.length = 0; // Clear redo on new action
         updateUndoRedoButtonUI();
+        if (typeof debouncedSaveCaptionState === 'function') {
+            debouncedSaveCaptionState();
+        }
     }
 
     function undo() {
@@ -139,6 +142,9 @@
         updateUndoRedoButtonUI();
         isPerformingUndoRedo = false;
         showToast('Undone', 'info', 1000);
+        if (typeof debouncedSaveCaptionState === 'function') {
+            debouncedSaveCaptionState();
+        }
     }
 
     function redo() {
@@ -161,6 +167,9 @@
         updateUndoRedoButtonUI();
         isPerformingUndoRedo = false;
         showToast('Redone', 'info', 1000);
+        if (typeof debouncedSaveCaptionState === 'function') {
+            debouncedSaveCaptionState();
+        }
     }
 
     function updateUndoRedoButtonUI() {
@@ -899,8 +908,11 @@
         .then(res => {
             if (res.success) {
                 state.serverFilename = res.filename;
-                state.projectId = res.project_id || '';
+                state.projectId = res.project_id || state.projectId || '';
                 showToast(`Video ready for AI captioning: ${res.filename}`, 'success', 2500);
+                if (typeof debouncedSaveCaptionState === 'function') {
+                    debouncedSaveCaptionState(400);
+                }
             } else {
                 console.warn('Upload server warning:', res.error);
             }
@@ -1736,6 +1748,9 @@
         }
         updateLiveCaptionOverlay();
         showToast(`✓ Applied ${state.captions.length} captions to video!`, 'success', 3500);
+        if (typeof debouncedSaveCaptionState === 'function') {
+            debouncedSaveCaptionState(300);
+        }
     }
 
     // =========================================================================
@@ -2252,29 +2267,158 @@
     }
 
     // =========================================================================
-    // 15. PRELOAD BACKEND DATA
     // =========================================================================
-    function initPreloadData() {
-        if (!el.captionContextData) return;
+    // 15. PRELOAD BACKEND DATA & AUTO-SAVE ENGINE
+    // =========================================================================
+    let _saveCaptionTimer = null;
+    function debouncedSaveCaptionState(delay = 1200) {
+        clearTimeout(_saveCaptionTimer);
+        _saveCaptionTimer = setTimeout(() => {
+            saveCaptionStateNow();
+        }, delay);
+    }
+
+    async function saveCaptionStateNow(useBeacon = false) {
+        if (!state.serverFilename && (!state.captions || !state.captions.length)) {
+            return;
+        }
+        const payload = {
+            project_id: state.projectId || '',
+            filename: state.serverFilename || '',
+            video_filename: state.serverFilename || '',
+            captions: state.captions || [],
+            style: activeStyle,
+            state: {
+                origin: 'caption_studio',
+                activePresetId: state.activePresetId,
+                viral_enhancements: state.viralEnhancements
+            }
+        };
+
+        if (useBeacon && navigator.sendBeacon) {
+            try {
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                navigator.sendBeacon('/api/caption-studio/save-state', blob);
+                return;
+            } catch (e) {}
+        }
 
         try {
-            const rawPreload = el.captionContextData.getAttribute('data-preload');
-            const sourceFile = el.captionContextData.getAttribute('data-source-file');
-
-            if (sourceFile) {
-                state.serverFilename = sourceFile;
-            }
-
-            if (rawPreload && rawPreload !== 'null') {
-                const preload = JSON.parse(rawPreload);
-                if (preload && preload.video_url) {
-                    state.serverFilename = preload.filename || sourceFile || '';
-                    loadVideoSource(preload.video_url, preload.filename || 'Preloaded Video');
+            const res = await fetch('/api/caption-studio/save-state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success && data.project_id) {
+                state.projectId = data.project_id;
+                const url = new URL(window.location.href);
+                if (!url.searchParams.get('project_id')) {
+                    url.searchParams.set('project_id', data.project_id);
+                    window.history.replaceState({}, '', url.toString());
                 }
             }
         } catch (err) {
-            console.warn('Caption Studio: Preload parse error', err);
+            console.warn('Caption Studio auto-save failed:', err);
         }
+    }
+
+    function initPreloadData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pId = urlParams.get('project_id') || urlParams.get('projectId');
+        if (pId) {
+            state.projectId = pId;
+        }
+
+        if (el.captionContextData) {
+            const ctxProjId = el.captionContextData.getAttribute('data-project-id');
+            if (ctxProjId && !state.projectId) {
+                state.projectId = ctxProjId;
+            }
+
+            const sourceFile = el.captionContextData.getAttribute('data-source-file');
+            if (sourceFile && !state.serverFilename) {
+                state.serverFilename = sourceFile;
+            }
+
+            const rawPreload = el.captionContextData.getAttribute('data-preload');
+            if (rawPreload && rawPreload !== 'null') {
+                try {
+                    const preload = JSON.parse(rawPreload);
+                    if (preload && preload.video_url) {
+                        state.serverFilename = preload.filename || sourceFile || state.serverFilename || '';
+                        loadVideoSource(preload.video_url, preload.filename || 'Preloaded Video');
+                    }
+                } catch (e) {
+                    console.warn('Caption Studio: Preload video parse error', e);
+                }
+            }
+
+            const rawSavedCaptions = el.captionContextData.getAttribute('data-saved-captions');
+            if (rawSavedCaptions && rawSavedCaptions !== 'null') {
+                try {
+                    const savedCaps = JSON.parse(rawSavedCaptions);
+                    if (Array.isArray(savedCaps) && savedCaps.length > 0) {
+                        state.captions = savedCaps;
+                        if (el.captionOverlayContainer) el.captionOverlayContainer.style.display = 'flex';
+                        if (el.videoBottomTransport) el.videoBottomTransport.style.display = 'flex';
+                        updateLiveCaptionOverlay();
+                    }
+                } catch (e) {
+                    console.warn('Caption Studio: Saved captions parse error', e);
+                }
+            }
+
+            const rawSavedStyle = el.captionContextData.getAttribute('data-saved-style');
+            if (rawSavedStyle && rawSavedStyle !== 'null') {
+                try {
+                    const savedSt = JSON.parse(rawSavedStyle);
+                    if (savedSt && typeof savedSt === 'object') {
+                        Object.assign(activeStyle, savedSt);
+                        applyStyleToControls(activeStyle);
+                        updateLiveCaptionOverlay();
+                    }
+                } catch (e) {
+                    console.warn('Caption Studio: Saved style parse error', e);
+                }
+            }
+        }
+
+        // If project_id exists but captions were not preloaded via HTML, fetch state from backend
+        if (state.projectId && (!state.captions || !state.captions.length)) {
+            fetch(`/api/caption-studio/load-state?project_id=${encodeURIComponent(state.projectId)}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success && res.state) {
+                        if (res.state.captions && res.state.captions.length) {
+                            state.captions = res.state.captions;
+                            if (el.captionOverlayContainer) el.captionOverlayContainer.style.display = 'flex';
+                            if (el.videoBottomTransport) el.videoBottomTransport.style.display = 'flex';
+                            updateLiveCaptionOverlay();
+                        }
+                        if (res.state.caption_style) {
+                            Object.assign(activeStyle, res.state.caption_style);
+                            applyStyleToControls(activeStyle);
+                            updateLiveCaptionOverlay();
+                        }
+                        if (res.state.video_filename && !state.videoLoaded) {
+                            state.serverFilename = res.state.video_filename;
+                            loadVideoSource(`/download/input/${encodeURIComponent(res.state.video_filename)}`, res.state.video_filename);
+                        }
+                    }
+                })
+                .catch(err => console.warn('Caption Studio: Load state fetch error', err));
+        }
+
+        // Auto-save listeners on page departure / app switch
+        window.addEventListener('beforeunload', () => {
+            saveCaptionStateNow(true);
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                saveCaptionStateNow(true);
+            }
+        });
     }
 
     // =========================================================================

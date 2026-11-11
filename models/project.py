@@ -68,11 +68,16 @@ class Project(db.Model):
             thumb = "/static/img/default_thumb.png"
 
         clips = []
+        origin = "clip_studio"
         if self.editor_state:
             try:
                 import json
                 state = json.loads(self.editor_state)
                 clips = state.get("clips", [])
+                if state.get("origin"):
+                    origin = state.get("origin")
+                elif state.get("captions") and len(state.get("captions")) > 0 and not clips:
+                    origin = "caption_studio"
             except Exception:
                 clips = []
 
@@ -84,6 +89,7 @@ class Project(db.Model):
             "status": self.status,
             "duration": self.duration,
             "clips": clips,
+            "origin": origin,
             "editor_state": self.editor_state,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

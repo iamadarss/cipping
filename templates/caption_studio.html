@@ -872,8 +872,11 @@
 
     <!-- Hidden Context Data from Flask -->
     <div id="captionContextData"
+         data-project-id="{{ project_id or '' }}"
          data-preload='{% if preload_video %}{{ preload_video|tojson }}{% else %}null{% endif %}'
          data-source-file="{{ source_filename or '' }}"
+         data-saved-captions='{% if saved_captions %}{{ saved_captions|tojson }}{% else %}null{% endif %}'
+         data-saved-style='{% if saved_style %}{{ saved_style|tojson }}{% else %}null{% endif %}'
          style="display:none;"></div>
 
     <!-- Central Toast Container -->

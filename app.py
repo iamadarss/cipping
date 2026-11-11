@@ -281,10 +281,28 @@ def main():
 
 def create_app():
 
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        internal_dir = exe_dir / "_internal"
+        template_dir = (
+            internal_dir / "templates"
+            if (internal_dir / "templates").exists()
+            else (exe_dir / "templates")
+        )
+        static_dir = (
+            internal_dir / "static"
+            if (internal_dir / "static").exists()
+            else (exe_dir / "static")
+        )
+    else:
+        base_dir = Path(__file__).resolve().parent
+        template_dir = base_dir / "templates"
+        static_dir = base_dir / "static"
+
     app = Flask(
         __name__,
-        template_folder="templates",
-        static_folder="static"
+        template_folder=str(template_dir),
+        static_folder=str(static_dir)
     )
 
     app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024  # 1 GB

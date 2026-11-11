@@ -23,8 +23,15 @@ if hasattr(sys.stderr, "reconfigure"):
 # SECTION 2 : PROJECT ROOT
 # ==========================================================
 
-BASE_DIR = Path(__file__).resolve().parent
-ROOT_DIR = Path(__file__).parent
+if getattr(sys, "frozen", False):
+    ROOT_DIR = Path(sys.executable).resolve().parent
+    BASE_DIR = ROOT_DIR
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+    ROOT_DIR = Path(__file__).parent
+
+STATIC_DIR = ROOT_DIR / "static"
+TEMPLATES_DIR = ROOT_DIR / "templates"
 
 # ==========================================================
 # INPUT / OUTPUT

@@ -1918,27 +1918,31 @@ async function loadProjects() {
                 const aspect = (p.settings && p.settings.aspect) || '9:16';
                 const clipCount = (p.clips && p.clips.length) || 0;
                 const safeName = escapeHtml(p.name);
+                const isCaptionStudio = (p.origin === 'caption_studio');
+                const targetUrl = isCaptionStudio ? `/caption-studio?project_id=${p.id}` : `/dashboard?project_id=${p.id}`;
+                const studioLabel = isCaptionStudio ? 'Caption Studio' : 'Clip Studio';
+                const studioIcon = isCaptionStudio ?
+                    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="14" x="3" y="5" rx="2"/><path d="M7 15h4M15 15h2M7 11h2M13 11h4"/></svg>` :
+                    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>`;
+                const metaText = isCaptionStudio ? (dur ? dur + ' • Captions' : 'Captions') : (dur ? dur + ' • ' : '') + `${clipCount} clip${clipCount === 1 ? '' : 's'}`;
+
                 return `
-                <div class="compact-project-card" data-id="${p.id}">
-                    <a href="/dashboard?project_id=${p.id}" class="compact-thumb-wrap" aria-label="Open project ${safeName} in AI Clip Studio">
+                <div class="compact-project-card" data-id="${p.id}" data-origin="${p.origin || ''}">
+                    <a href="${targetUrl}" class="compact-thumb-wrap" aria-label="Open project ${safeName} in ${studioLabel}">
                         <img class="compact-project-thumb" src="${thumb}" alt="${safeName}" loading="lazy" onerror="this.onerror=null; this.src='/static/img/default_thumb.png'">
                         <span class="compact-project-badge">${aspect}</span>
                         ${dur ? `<span class="compact-project-dur">${dur}</span>` : ''}
                     </a>
                     <div class="compact-project-info">
-                        <a href="/dashboard?project_id=${p.id}" class="compact-project-name" title="${safeName}">${safeName}</a>
+                        <a href="${targetUrl}" class="compact-project-name" title="${safeName}">${safeName}</a>
                         <div class="compact-project-meta">
-                            <span class="compact-status-tag ${status.toLowerCase()}">${status}</span>
-                            <span>${dur ? dur + ' • ' : ''}${clipCount} clip${clipCount === 1 ? '' : 's'}</span>
+                            <span class="compact-status-tag ${status.toLowerCase()}">${isCaptionStudio ? 'Captions' : status}</span>
+                            <span>${metaText}</span>
                         </div>
                         <div class="compact-card-actions">
-                            <button type="button" class="btn btn-primary btn-sm btn-action-studio" data-id="${p.id}" title="Open in AI Clip Studio" aria-label="Open in AI Clip Studio">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>
-                                <span>Clip Studio</span>
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm btn-action-editor" data-id="${p.id}" title="Open in Timeline Editor" aria-label="Open in Timeline Editor">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                <span>Editor</span>
+                            <button type="button" class="btn btn-primary btn-sm btn-action-studio" data-id="${p.id}" data-url="${targetUrl}" data-origin="${p.origin || ''}" title="Open in ${studioLabel}" aria-label="Open in ${studioLabel}">
+                                ${studioIcon}
+                                <span>${studioLabel}</span>
                             </button>
                             <button type="button" class="btn btn-ghost btn-action-delete" data-id="${p.id}" title="Delete project" aria-label="Delete project ${safeName}">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -1967,7 +1971,7 @@ async function loadProjects() {
                         });
                         const resData = await res.json();
                         if (resData.success && resData.project) {
-                            window.location.href = `/editor?project_id=${resData.project.id}`;
+                            window.location.href = `/dashboard?project_id=${resData.project.id}`;
                         } else {
                             window.location.href = '/dashboard';
                         }
@@ -2145,19 +2149,82 @@ async function loadActiveProject() {
         // Update project badge in header
         const projectNameText = document.getElementById('projectNameText');
         if (projectNameText) projectNameText.textContent = project.name;
-        
+
+        // Check for generated clips immediately from database project and editor_state
+        let clipsList = [];
+        let edState = null;
+        if (project.editor_state) {
+            try {
+                edState = typeof project.editor_state === 'string' ? JSON.parse(project.editor_state) : project.editor_state;
+            } catch (e) { edState = null; }
+        }
+        if (project.clips && Array.isArray(project.clips) && project.clips.length) {
+            clipsList = project.clips;
+        } else if (edState && Array.isArray(edState.clips) && edState.clips.length) {
+            clipsList = edState.clips;
+        }
+
         if (project.source_path) {
             state.currentFile = project.source_path;
-            
-            // Set source Video URL
             const video = document.getElementById('sourceVideoPlayer');
             if (video) {
                 video.src = `/download/input/${encodeURIComponent(project.source_path)}`;
                 const cont = document.getElementById('sourceVideoContainer');
                 if (cont) cont.hidden = false;
             }
-            
-            // Try fetching metadata
+        }
+
+        // If clips already exist, render Review Grid and IMMEDIATELY show Step 4 (Review Clips & Export)!
+        if (clipsList.length > 0) {
+            state.clips = clipsList.map(c => ({
+                name: c.filename || c.name,
+                url: c.url || `/download/clip/${encodeURIComponent(c.filename || c.name)}`,
+                viral_score: c.viral_score !== undefined ? c.viral_score : c.score,
+                grade: c.grade,
+                rank_badge: c.rank_badge,
+                duration: c.duration,
+                hashtags: c.hashtags || [],
+                keywords: c.keywords || []
+            }));
+            state.result = {
+                project_id: `proj_${project.id}`,
+                clips: state.clips,
+                source_video: project.source_path || (edState ? edState.source_video : ''),
+                srt: edState ? edState.srt : '',
+                vtt: edState ? edState.vtt : '',
+                caption_style: edState ? edState.caption_style : null,
+                clip_subtitle_map: edState ? edState.clip_subtitle_map : {}
+            };
+            renderReviewGrid();
+            showStep(4);
+            return;
+        }
+
+        // Check backend studio state as fallback
+        try {
+            const res = await fetch(`/studio/project/proj_${project.id}`);
+            const data = await res.json();
+            if (data.success && data.project && data.project.clips && data.project.clips.length) {
+                state.clips = data.project.clips.map(c => ({
+                    name: c.filename || c.name,
+                    url: c.url || `/download/clip/${encodeURIComponent(c.filename || c.name)}`,
+                    viral_score: c.viral_score !== undefined ? c.viral_score : c.score,
+                    grade: c.grade,
+                    rank_badge: c.rank_badge,
+                    duration: c.duration,
+                    hashtags: c.hashtags || [],
+                    keywords: c.keywords || []
+                }));
+                state.result = data.project;
+                renderReviewGrid();
+                showStep(4);
+                return;
+            }
+        } catch (e) {
+            console.warn("Could not query /studio/project:", e);
+        }
+
+        if (project.source_path) {
             let meta = null;
             try {
                 const metaRes = await fetch(`/process/metadata/${encodeURIComponent(project.source_path)}`);
@@ -2184,25 +2251,8 @@ async function loadActiveProject() {
             const sourceStem = project.source_path.includes('.') ? project.source_path.substring(0, project.source_path.lastIndexOf('.')) : project.source_path;
             const thumbUrl = project.thumbnail_path ? encodeURI(project.thumbnail_path) : `/download/thumbnail/${encodeURIComponent(sourceStem)}_thumb.jpg`;
 
-            // Display rich metadata in Step 1 (populates #metaThumbImg, badges, etc.)
+            // Display rich metadata in Step 1
             displayVideoMetadata(meta, thumbUrl);
-            
-            // Query for clips of this project
-            try {
-                const res = await fetch(`/studio/project/proj_${project.id}`);
-                const data = await res.json();
-                if (data.success && data.project) {
-                    state.clips = (data.project.clips || []).map(c => ({ name: c.filename, url: c.url }));
-                    if (state.clips.length) {
-                        state.result = data.project;
-                        renderReviewGrid();
-                        showStep(4); // Go straight to review clips step (Step 4, NOT Step 8!)
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.warn("Could not load project clips:", e);
-            }
             
             // Stay on Step 1 with metadata card displayed
             showStep(1);
@@ -2366,21 +2416,17 @@ function initBatchAndRefreshListeners() {
                 return;
             }
 
-            const editorBtn = e.target.closest('.btn-action-editor');
-            if (editorBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                const id = editorBtn.dataset.id;
-                window.location.href = `/editor?project_id=${id}`;
-                return;
-            }
-
             const studioBtn = e.target.closest('.btn-action-studio');
             if (studioBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                const id = studioBtn.dataset.id;
-                window.location.href = `/dashboard?project_id=${id}`;
+                if (studioBtn.dataset.url) {
+                    window.location.href = studioBtn.dataset.url;
+                } else {
+                    const id = studioBtn.dataset.id;
+                    const origin = studioBtn.dataset.origin;
+                    window.location.href = origin === 'caption_studio' ? `/caption-studio?project_id=${id}` : `/dashboard?project_id=${id}`;
+                }
                 return;
             }
 
@@ -2390,19 +2436,21 @@ function initBatchAndRefreshListeners() {
                 return;
             }
 
-            const card = e.target.closest('.project-card');
+            const card = e.target.closest('.compact-project-card, .project-card');
             if (card) {
                 const id = card.dataset.id;
-                window.location.href = `/dashboard?project_id=${id}`;
+                const origin = card.dataset.origin;
+                window.location.href = origin === 'caption_studio' ? `/caption-studio?project_id=${id}` : `/dashboard?project_id=${id}`;
             }
         });
         pGrid.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-                const card = e.target.closest('.project-card');
+                const card = e.target.closest('.compact-project-card, .project-card');
                 if (card && !e.target.closest('button') && !e.target.closest('a')) {
                     e.preventDefault();
                     const id = card.dataset.id;
-                    window.location.href = `/dashboard?project_id=${id}`;
+                    const origin = card.dataset.origin;
+                    window.location.href = origin === 'caption_studio' ? `/caption-studio?project_id=${id}` : `/dashboard?project_id=${id}`;
                 }
             }
         });
@@ -2482,12 +2530,12 @@ function initHomePageActions() {
                 });
                 const data = await res.json();
                 if (data.success && data.project) {
-                    window.location.href = `/editor?project_id=${data.project.id}`;
+                    window.location.href = `/caption-studio?project_id=${data.project.id}`;
                 } else {
-                    window.location.href = '/editor';
+                    window.location.href = '/caption-studio';
                 }
             } catch (e) {
-                window.location.href = '/editor';
+                window.location.href = '/caption-studio';
             }
         });
     }
