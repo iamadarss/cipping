@@ -36,9 +36,21 @@ import {
   Split,
   FileText,
   Eraser,
+  Grid,
+  Sparkles,
 } from "lucide-react";
 import { useEditorStore } from "../store/editorStore";
 import type { CaptionStyle } from "../types";
+
+const PRESET_CATEGORIES = [
+  "All",
+  "Minimal & Luxury",
+  "Podcast",
+  "Kinetic",
+  "Cinematic",
+  "Special",
+  "Custom",
+];
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -71,6 +83,8 @@ export default function Editor() {
   const [projectId, setProjectId] = useState("");
   const [inheritedStyle, setInheritedStyle] = useState<CaptionStyle | null>(null);
   const [navSource, setNavSource] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [showSafeZone, setShowSafeZone] = useState(false);
 
   const {
     videoUrl,
@@ -506,16 +520,21 @@ export default function Editor() {
     };
   }, [dragState, duration]);
 
-  const captionStyle = selectedStyle
+  const captionStyle: React.CSSProperties = selectedStyle
     ? {
-        fontFamily: selectedStyle.fontFamily,
+        fontFamily: `${selectedStyle.fontFamily}, 'Noto Sans Devanagari', 'Segoe UI', Arial, sans-serif`,
         fontWeight: selectedStyle.fontWeight,
-        fontSize: selectedStyle.fontSize,
-        letterSpacing: selectedStyle.letterSpacing,
+        fontSize: `${selectedStyle.fontSize}px`,
+        letterSpacing: `${selectedStyle.letterSpacing}px`,
         lineHeight: selectedStyle.lineHeight,
         color: selectedStyle.textColor,
-        textShadow: `${selectedStyle.shadowOffsetY}px ${selectedStyle.shadowBlur}px ${selectedStyle.shadowBlur}px ${selectedStyle.shadowColor}`,
-        WebkitTextStroke: `${selectedStyle.outlineWidth}px ${selectedStyle.outlineColor}`,
+        textTransform: selectedStyle.uppercase ? "uppercase" : "none",
+        textShadow: selectedStyle.shadowEnabled !== false && selectedStyle.shadowBlur > 0
+          ? `0px ${selectedStyle.shadowOffsetY || 1}px ${selectedStyle.shadowBlur}px ${selectedStyle.shadowColor || "#000000"}`
+          : "none",
+        WebkitTextStroke: selectedStyle.outlineWidth > 0
+          ? `${selectedStyle.outlineWidth}px ${selectedStyle.outlineColor}`
+          : "none",
       }
     : {};
 
@@ -588,22 +607,117 @@ export default function Editor() {
         <aside className="w-72 border-r border-white/5 bg-black/10 overflow-y-auto hidden md:flex flex-col">
           <div className="p-4 space-y-4">
             <div>
-              <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">Style Presets</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {styles.map((style) => (
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider">Caption Presets</h3>
+                <span className="text-[10px] text-white/40">{styles.length} styles</span>
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex flex-wrap gap-1 mb-3">
+                {PRESET_CATEGORIES.map((cat) => (
                   <button
-                    key={style.id}
-                    onClick={() => useEditorStore.getState().setSelectedStyle(style.id)}
-                    className={`p-3 rounded-xl text-left transition-all ${
-                      selectedStyleId === style.id
-                        ? "bg-brand-primary/20 border border-brand-primary/40"
-                        : "bg-white/5 border border-white/10 hover:border-white/20"
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                      selectedCategory === cat
+                        ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/40"
+                        : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <span className="text-sm font-medium">{style.name}</span>
-                    <span className="block text-[10px] text-white/40 mt-0.5 capitalize">{style.animation}</span>
+                    {cat}
                   </button>
                 ))}
+              </div>
+
+              {/* Presets Grid */}
+              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                {styles
+                  .filter((s) => {
+                    if (selectedCategory === "All") return true;
+                    if (selectedCategory === "Custom") return s.isCustom;
+                    return s.category?.toLowerCase() === selectedCategory.toLowerCase();
+                  })
+                  .map((style) => {
+                    const isSelected = selectedStyleId === style.id;
+                    return (
+                      <button
+                        key={style.id}
+                        onClick={() => useEditorStore.getState().setSelectedStyle(style.id)}
+                        className={`p-2.5 rounded-xl text-left transition-all relative overflow-hidden group ${
+                          isSelected
+                            ? "bg-brand-primary/20 border-2 border-brand-primary shadow-md shadow-brand-primary/20"
+                            : "bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold truncate text-white">{style.name}</span>
+                          {style.isCustom && (
+                            <span className="text-[8px] px-1 rounded bg-amber-500/20 text-amber-300 font-mono">Custom</span>
+                          )}
+                        </div>
+                        <span className="block text-[10px] text-white/40 mt-0.5 truncate">{style.category || "Style"}</span>
+                        {/* Mini Typography Visual Preview */}
+                        <div
+                          className="mt-2 px-1.5 py-1 rounded bg-black/50 text-center text-[11px] font-bold truncate tracking-wide"
+                          style={{
+                            fontFamily: style.fontFamily,
+                            color: style.textColor,
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: style.wordBox ? "#FFFFFF" : style.activeWordColor,
+                              backgroundColor: style.wordBox ? (style.wordBoxColor || "#4F46E5") : undefined,
+                              borderRadius: style.wordBox ? 3 : 0,
+                              padding: style.wordBox ? "1px 3px" : 0,
+                            }}
+                          >
+                            WORD
+                          </span>{" "}
+                          <span>POP</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Preset Management Actions */}
+              <div className="mt-2.5 flex items-center gap-1.5 pt-2 border-t border-white/5">
+                <button
+                  onClick={async () => {
+                    const name = prompt("Enter a name for this custom preset:", `${selectedStyle?.name || "Style"} (Custom)`);
+                    if (name) {
+                      await useEditorStore.getState().saveCustomPreset(name);
+                      setSelectedCategory("Custom");
+                    }
+                  }}
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-primary border border-brand-primary/30 text-[11px] font-medium transition-all text-center"
+                >
+                  Save Custom
+                </button>
+                {selectedStyle?.isCustom && (
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Delete custom preset "${selectedStyle.name}"?`)) {
+                        await useEditorStore.getState().deleteCustomPreset(selectedStyle.id);
+                      }
+                    }}
+                    className="py-1.5 px-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-[11px] font-medium transition-all"
+                  >
+                    Delete
+                  </button>
+                )}
+                <button
+                  onClick={async () => {
+                    if (selectedStyle) {
+                      await useEditorStore.getState().resetPreset(selectedStyle.id);
+                    }
+                  }}
+                  className="py-1.5 px-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 text-[11px] font-medium transition-all"
+                  title="Reset to system defaults"
+                >
+                  Reset
+                </button>
               </div>
             </div>
 
@@ -656,6 +770,32 @@ export default function Editor() {
                 onEnded={() => setIsPlaying(false)}
                 className="w-full h-full object-contain"
               />
+              {/* Safe Zone Grid Overlay */}
+              {showSafeZone && (
+                <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between">
+                  {/* Top Safe Area (Header / Status bar) */}
+                  <div className="h-[12%] border-b border-dashed border-red-500/60 bg-red-500/5 flex items-start justify-center pt-2">
+                    <span className="text-[10px] font-mono text-red-300 bg-black/70 px-2 py-0.5 rounded border border-red-500/30">
+                      Top Safe Zone (avoid header)
+                    </span>
+                  </div>
+                  {/* Middle area with right-side action margin */}
+                  <div className="flex-1 flex justify-end">
+                    <div className="w-[14%] h-full border-l border-dashed border-red-500/40 bg-red-500/5 flex items-center justify-center">
+                      <span className="text-[9px] font-mono text-red-300 -rotate-90 bg-black/70 px-1.5 py-0.5 rounded border border-red-500/30">
+                        Right Icons
+                      </span>
+                    </div>
+                  </div>
+                  {/* Bottom Safe Area (Captions / Sound / Bottom bar) */}
+                  <div className="h-[16%] border-t border-dashed border-red-500/60 bg-red-500/5 flex items-end justify-center pb-2">
+                    <span className="text-[10px] font-mono text-red-300 bg-black/70 px-2 py-0.5 rounded border border-red-500/30">
+                      Bottom Safe Zone (avoid sound pill & description)
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-8">
                 <AnimatePresence>
                   {activeCaptions.map((caption) => {
@@ -664,30 +804,77 @@ export default function Editor() {
                       if (typeof w === "string") return false;
                       return currentTime >= w.start && currentTime <= w.end;
                     });
+                    const pos = selectedStyle?.position || "bottom";
+                    const posStyle: React.CSSProperties =
+                      pos === "center"
+                        ? { top: "50%", transform: "translate(-50%, -50%)" }
+                        : pos === "top"
+                        ? { top: "14%", transform: "translateX(-50%)" }
+                        : pos === "upper_center"
+                        ? { top: "24%", transform: "translateX(-50%)" }
+                        : pos === "lower_third"
+                        ? { bottom: "24%", transform: "translateX(-50%)" }
+                        : { bottom: "14%", transform: "translateX(-50%)" };
+
+                    const bgOpacity = selectedStyle?.backgroundOpacity ?? 0;
+                    const bgStyle: React.CSSProperties =
+                      bgOpacity > 0.05
+                        ? {
+                            backgroundColor: `${selectedStyle?.backgroundColor || "#000000"}${Math.round(
+                              bgOpacity * 255
+                            )
+                              .toString(16)
+                              .padStart(2, "0")}`,
+                            borderRadius: 8,
+                            padding: "6px 14px",
+                          }
+                        : {};
+
                     return (
                       <motion.div
                         key={caption.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="text-center px-4 py-2"
-                        style={selectedStyle?.position === "center" ? { top: "50%", transform: "translateY(-50%)" } : selectedStyle?.position === "top" ? { top: "10%" } : { bottom: "10%" }}
+                        className="text-center px-4 py-2 absolute left-1/2"
+                        style={{ ...posStyle, ...bgStyle }}
                       >
-                        <div className="flex flex-wrap justify-center gap-x-1" style={captionStyle}>
+                        <div className="flex flex-wrap justify-center gap-x-1.5" style={captionStyle}>
                           {words.map((word, i) => {
                             const isActive = i === currentWordIndex;
                             const wordText = typeof word === "string" ? word : word.text;
+                            const hasWordBox = selectedStyle?.wordBox && isActive;
                             return (
                               <span
                                 key={i}
-                                className="transition-all duration-200"
+                                className="transition-all duration-150 inline-block"
                                 style={{
-                                  color: isActive ? selectedStyle?.activeWordColor : selectedStyle?.textColor,
-                                  transform: isActive ? "scale(1.1)" : "scale(1)",
-                                  textShadow: isActive ? `0 0 20px ${selectedStyle?.activeWordColor}40` : selectedStyle?.textColor ? undefined : undefined,
+                                  color: hasWordBox
+                                    ? "#FFFFFF"
+                                    : isActive
+                                    ? selectedStyle?.activeWordColor
+                                    : selectedStyle?.textColor,
+                                  backgroundColor: hasWordBox
+                                    ? selectedStyle?.wordBoxColor || "#4F46E5"
+                                    : undefined,
+                                  borderRadius: hasWordBox
+                                    ? `${selectedStyle?.wordBoxRadius || 6}px`
+                                    : undefined,
+                                  padding: hasWordBox ? "2px 8px" : "0 2px",
+                                  transform:
+                                    isActive &&
+                                    (selectedStyle?.animation === "soft_pop" ||
+                                      selectedStyle?.animation === "pop" ||
+                                      selectedStyle?.animation === "emphasis_scale")
+                                      ? "scale(1.08)"
+                                      : "scale(1)",
+                                  textShadow:
+                                    isActive && selectedStyle?.glow
+                                      ? `0 0 15px ${selectedStyle?.activeWordColor}`
+                                      : undefined,
                                 }}
                               >
-                                {wordText}
+                                {selectedStyle?.uppercase ? wordText.toUpperCase() : wordText}
                               </span>
                             );
                           })}
@@ -712,6 +899,18 @@ export default function Editor() {
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
               <div className="flex-1" />
+              <button
+                onClick={() => setShowSafeZone(!showSafeZone)}
+                className={`p-2 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium ${
+                  showSafeZone
+                    ? "bg-brand-primary/30 text-brand-primary border border-brand-primary/50"
+                    : "bg-white/5 text-white/70 hover:bg-white/10"
+                }`}
+                title="Toggle 9:16 Social Safe Zone Overlays"
+              >
+                <Grid className="w-4 h-4" />
+                <span className="hidden sm:inline">Safe Zone</span>
+              </button>
               <div className="flex items-center gap-2">
                 <Gauge className="w-4 h-4 text-white/40" />
                 <input
@@ -945,15 +1144,18 @@ export default function Editor() {
                         onChange={(e) => { useEditorStore.getState().updateStyle(selectedStyleId, { fontFamily: e.target.value }); pushHistory(); }}
                         className="input-field text-sm"
                       >
-                        <option value="Arial Black">Arial Black</option>
                         <option value="Inter">Inter</option>
-                        <option value="Courier New">Courier New</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Impact">Impact</option>
-                        <option value="Roboto">Roboto</option>
-                        <option value="Poppins">Poppins</option>
+                        <option value="Manrope">Manrope</option>
                         <option value="Montserrat">Montserrat</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="Poppins">Poppins</option>
                         <option value="Anton">Anton</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Arial Black">Arial Black</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Noto Sans Devanagari">Noto Sans Devanagari (Hindi)</option>
                         <option value="Bebas Neue">Bebas Neue</option>
                         <option value="Oswald">Oswald</option>
                       </select>
@@ -1002,6 +1204,18 @@ export default function Editor() {
                         />
                       </div>
                     </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <label className="text-xs text-white/60">Uppercase (ALL CAPS)</label>
+                      <input
+                        type="checkbox"
+                        checked={!!selectedStyle.uppercase}
+                        onChange={(e) => {
+                          useEditorStore.getState().updateStyle(selectedStyleId, { uppercase: e.target.checked });
+                          pushHistory();
+                        }}
+                        className="w-4 h-4 rounded accent-brand-primary"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1018,7 +1232,7 @@ export default function Editor() {
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-xs text-white/40 w-20">Active</label>
+                      <label className="text-xs text-white/40 w-20">Active Word</label>
                       <input
                         type="color"
                         value={selectedStyle.activeWordColor}
@@ -1035,7 +1249,52 @@ export default function Editor() {
                         className="w-10 h-8 rounded-lg cursor-pointer bg-transparent border border-white/10"
                       />
                     </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-white/40 w-20">Bg Opacity</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={selectedStyle.backgroundOpacity ?? 0}
+                        onChange={(e) => {
+                          useEditorStore.getState().updateStyle(selectedStyleId, { backgroundOpacity: Number(e.target.value) });
+                          pushHistory();
+                        }}
+                        className="flex-1 accent-brand-primary"
+                      />
+                      <span className="text-[10px] text-white/50 w-8">{Math.round((selectedStyle.backgroundOpacity ?? 0) * 100)}%</span>
+                    </div>
                   </div>
+                </div>
+
+                <div className="pt-2 border-t border-white/5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-white/60">Active Word Pill (Box)</label>
+                    <input
+                      type="checkbox"
+                      checked={!!selectedStyle.wordBox}
+                      onChange={(e) => {
+                        useEditorStore.getState().updateStyle(selectedStyleId, { wordBox: e.target.checked });
+                        pushHistory();
+                      }}
+                      className="w-4 h-4 rounded accent-brand-primary"
+                    />
+                  </div>
+                  {selectedStyle.wordBox && (
+                    <div className="flex items-center gap-2 pl-2">
+                      <label className="text-xs text-white/40 w-20">Pill Color</label>
+                      <input
+                        type="color"
+                        value={selectedStyle.wordBoxColor || "#4F46E5"}
+                        onChange={(e) => {
+                          useEditorStore.getState().updateStyle(selectedStyleId, { wordBoxColor: e.target.value });
+                          pushHistory();
+                        }}
+                        className="w-10 h-8 rounded-lg cursor-pointer bg-transparent border border-white/10"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1102,36 +1361,41 @@ export default function Editor() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-2">Animation</label>
+                  <label className="block text-xs font-medium text-white/50 mb-2">Animation Engine</label>
                   <select
                     value={selectedStyle.animation}
                     onChange={(e) => { useEditorStore.getState().updateStyle(selectedStyleId, { animation: e.target.value as CaptionStyle["animation"] }); pushHistory(); }}
                     className="input-field text-sm"
                   >
-                    <option value="pop">Pop</option>
-                    <option value="fade">Fade</option>
-                    <option value="bounce">Bounce</option>
-                    <option value="slide">Slide</option>
-                    <option value="zoom">Zoom</option>
-                    <option value="word-highlight">Word Highlight</option>
+                    <option value="color_karaoke">Color Karaoke (Sweep)</option>
+                    <option value="smooth_fade">Smooth Fade</option>
+                    <option value="soft_pop">Soft Pop (Gentle)</option>
+                    <option value="active_word_pill">Active Word Pill</option>
+                    <option value="slide_up">Slide Up</option>
+                    <option value="slide_down">Slide Down</option>
                     <option value="typewriter">Typewriter</option>
-                    <option value="none">None</option>
+                    <option value="emphasis_scale">Emphasis Scale</option>
+                    <option value="word_highlight">Word Highlight</option>
+                    <option value="sentence_fade">Sentence Fade</option>
+                    <option value="bounce">Bounce</option>
+                    <option value="pop">Pop (Legacy)</option>
+                    <option value="none">None (Static)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-2">Position</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["top", "center", "bottom"] as const).map((pos) => (
+                  <label className="block text-xs font-medium text-white/50 mb-2">Screen Position</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["top", "upper_center", "center", "lower_third", "bottom"] as const).map((pos) => (
                       <button
                         key={pos}
                         onClick={() => { useEditorStore.getState().updateStyle(selectedStyleId, { position: pos }); pushHistory(); }}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all capitalize ${
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all capitalize truncate ${
                           selectedStyle.position === pos
-                            ? "bg-brand-primary/20 border border-brand-primary/40"
-                            : "bg-white/5 border border-white/10 hover:border-white/20"
+                            ? "bg-brand-primary/20 border border-brand-primary/40 text-brand-primary"
+                            : "bg-white/5 border border-white/10 hover:border-white/20 text-white/70"
                         }`}
                       >
-                        {pos}
+                        {pos.replace("_", " ")}
                       </button>
                     ))}
                   </div>

@@ -23,14 +23,17 @@ from pathlib import Path
 import re
 
 from ai.emoji_captions import normalize_token, POWER_WORDS
+from ai.caption_presets.defaults import CANONICAL_PRESETS
 
 # ---------------------------------------------------------------------------
-# The 7 Production Creator Presets
+# The 7 Production Creator Presets + 20 Canonical Premium Presets
 # ---------------------------------------------------------------------------
 CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
+    # Legacy Creator Presets (Preserved 100% for Backward-Compatibility)
     "default": {
         "id": "default",
         "name": "Default",
+        "category": "Kinetic",
         "description": "Punchy word-by-word captions with yellow pop highlight and emojis",
         "font_family": "Montserrat",
         "font_size": 36,
@@ -55,6 +58,7 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "hormozi": {
         "id": "hormozi",
         "name": "Hormozi",
+        "category": "Kinetic",
         "description": "Alex Hormozi Viral Style — Green highlight with rounded pill backing box",
         "font_family": "Arial Black",
         "font_size": 38,
@@ -79,6 +83,7 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "mrbeast": {
         "id": "mrbeast",
         "name": "MrBeast",
+        "category": "Kinetic",
         "description": "MrBeast Style — Large yellow text with red pop highlights & heavy stroke",
         "font_family": "Arial Black",
         "font_size": 40,
@@ -103,6 +108,7 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "minimal": {
         "id": "minimal",
         "name": "Minimal",
+        "category": "Minimal & Luxury",
         "description": "Clean, subtle captions with soft semi-transparent background",
         "font_family": "Inter",
         "font_size": 28,
@@ -127,6 +133,7 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "tiktok": {
         "id": "tiktok",
         "name": "TikTok",
+        "category": "Kinetic",
         "description": "Official TikTok-style captions with crimson pink pop highlights",
         "font_family": "Montserrat",
         "font_size": 34,
@@ -151,6 +158,7 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "neon": {
         "id": "neon",
         "name": "Neon",
+        "category": "Special",
         "description": "Glowing cyberpunk neon text with magenta highlights & blur glow",
         "font_family": "Montserrat",
         "font_size": 34,
@@ -175,6 +183,7 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "podcast": {
         "id": "podcast",
         "name": "Podcast",
+        "category": "Podcast",
         "description": "Professional podcast captions with warm gold highlight on dark backdrop",
         "font_family": "Inter",
         "font_size": 30,
@@ -198,6 +207,45 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
     },
 }
 
+# Ingest all 20 Canonical Presets into CAPTION_TEMPLATES
+for _cid, _preset in CANONICAL_PRESETS.items():
+    if _cid not in CAPTION_TEMPLATES:
+        CAPTION_TEMPLATES[_cid] = {
+            "id": _preset.id,
+            "name": _preset.name,
+            "category": _preset.category,
+            "description": _preset.description,
+            "font_family": _preset.font_family,
+            "font_size": _preset.font_size,
+            "font_weight": _preset.font_weight,
+            "letter_spacing": _preset.letter_spacing,
+            "line_height": _preset.line_height,
+            "font_color": _preset.text_color,
+            "highlight_color": _preset.active_word_color,
+            "emphasis_color": _preset.emphasis_color,
+            "stroke_color": _preset.outline_color if _preset.outline_enabled else None,
+            "stroke_width": _preset.outline_width if _preset.outline_enabled else 0,
+            "background": _preset.background,
+            "background_color": _preset.background_color,
+            "background_opacity": _preset.background_opacity,
+            "word_box": _preset.word_box,
+            "word_box_color": _preset.word_box_color,
+            "word_box_radius": _preset.word_box_radius,
+            "animation": _preset.animation,
+            "word_pop": _preset.word_pop,
+            "emoji": _preset.emoji,
+            "uppercase": _preset.uppercase,
+            "shadow": _preset.shadow_enabled,
+            "shadow_blur": _preset.shadow_blur,
+            "shadow_offset_y": _preset.shadow_offset_y,
+            "glow": _preset.glow,
+            "max_words_per_line": _preset.max_words_per_line,
+            "max_lines": _preset.max_lines,
+            "position": _preset.position,
+            "position_y": _preset.position_y,
+            "alignment": _preset.alignment,
+        }
+
 # Backward-compatibility aliases for existing UpClipStudio preset names
 ALIASES: Dict[str, str] = {
     "hormozi_pop": "hormozi",
@@ -207,9 +255,24 @@ ALIASES: Dict[str, str] = {
     "neon_cyber": "neon",
     "karaoke_pill": "hormozi",
     "tiktok_pop": "tiktok",
+    "tiktok-pop": "tiktok",
     "clean": "minimal",
     "bold": "hormozi",
     "creator": "default",
+    "karaoke": "karaoke_clean",
+    "cap_clean": "pure_white",
+    "cap_bold": "punch_orange",
+    "cap_minimal": "pure_white",
+    "cap_creator": "modern_creator",
+    "cap_podcast": "podcast_gold",
+    "cap_news": "monochrome",
+    "cap_gaming": "punch_orange",
+    "cap_dynamic": "modern_creator",
+    "cap_default": "default",
+    "cap_hormozi": "hormozi",
+    "cap_mrbeast": "mrbeast",
+    "cap_tiktok": "tiktok",
+    "cap_neon": "neon",
 }
 
 TEMPLATE_DEFAULTS: Dict[str, Any] = {
@@ -273,17 +336,23 @@ def get_template_info() -> List[Dict[str, Any]]:
         result.append({
             "id": name,
             "name": t.get("name", name.title()),
+            "category": t.get("category", "Minimal & Luxury"),
             "description": t.get("description", ""),
             "animation": t.get("animation", "pop"),
             "font_family": t.get("font_family", "Montserrat"),
+            "font_weight": t.get("font_weight", 700),
             "font_size": t.get("font_size", 34),
             "font_color": t.get("font_color", "#FFFFFF"),
             "highlight_color": t.get("highlight_color", "#FFE000"),
+            "active_word_color": t.get("highlight_color", "#FFE000"),
+            "emphasis_color": t.get("emphasis_color"),
             "word_box": t.get("word_box", False),
             "word_box_color": t.get("word_box_color"),
             "glow": t.get("glow", False),
             "emoji": t.get("emoji", True),
             "uppercase": t.get("uppercase", False),
+            "position": t.get("position", "bottom"),
+            "position_y": t.get("position_y", 0.80),
         })
     return result
 

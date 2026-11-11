@@ -46,11 +46,14 @@ assets/music/
 .DS_Store
 Thumbs.db
 oauth_client_secrets.json
-oauth_client_secrets.json
+.pytest_temp/
+custom_caption_presets.json
 
 # Builds & Packaging
 build/
 dist/
+!caption_studio/dist/
+!caption_studio/dist/**
 *.spec
 
 # User uploads & temporary files

@@ -56,26 +56,39 @@ class AnimatedCaptionRenderer:
     # -----------------------------------------------
 
     @staticmethod
-    def _animation_block(style, duration_ms=300):
-        style = (style or "pop").lower().replace("-", "_")
-        if style in ("fade", "fade_in"):
+    def _animation_block(style, duration_ms=200):
+        style = (style or "color_karaoke").lower().replace("-", "_").strip()
+        # Canonical 10 Animations
+        if style == "color_karaoke":
+            return r"{\fad(80,80)}"
+        if style in ("smooth_fade", "fade", "fade_in"):
             return r"{\fad(150,150)}"
+        if style in ("sentence_fade",):
+            return r"{\fad(200,200)}"
         if style == "fade_out":
             return r"{\fad(0,250)}"
-        if style == "bounce":
-            return r"{\move(0,0)\t(0,200,\fay-0.08)\t(200,400,\fay0)}"
+        if style in ("soft_pop", "pop"):
+            return r"{\fscx92\fscy92\t(0,120,\fscx100\fscy100)}"
+        if style in ("emphasis_scale",):
+            return r"{\fscx95\fscy95\t(0,100,\fscx100\fscy100)}"
+        if style in ("active_word_pill", "word_pill"):
+            return r"{\fad(90,90)}"
+        if style in ("word_highlight",):
+            return r"{\fad(60,60)}"
+        if style in ("typewriter",):
+            return r"{\fad(50,50)}"
         if style in ("slide", "slide_up"):
-            return r"{\move(0,35,0,0,0,200)}"
+            return r"{\move(0,30,0,0,0,180)}"
         if style == "slide_down":
-            return r"{\move(0,-35,0,0,0,200)}"
+            return r"{\move(0,-30,0,0,0,180)}"
         if style == "slide_left":
-            return r"{\move(40,0,0,0,0,200)}"
+            return r"{\move(40,0,0,0,0,180)}"
         if style == "slide_right":
-            return r"{\move(-40,0,0,0,0,200)}"
+            return r"{\move(-40,0,0,0,0,180)}"
+        if style == "bounce":
+            return r"{\move(0,0)\t(0,150,\fay-0.06)\t(150,300,\fay0)}"
         if style in ("scale_in", "zoom"):
-            return r"{\fscx75\fscy75\t(0,180,\fscx100\fscy100)}"
-        if style == "pop":
-            return r"{\fscx80\fscy80\t(0,120,\fscx112\fscy112)\t(120,200,\fscx100\fscy100)}"
+            return r"{\fscx82\fscy82\t(0,140,\fscx100\fscy100)}"
         if style in ("word_reveal", "word_by_word"):
             return r"{\k80}"
         if style in ("character_reveal", "character_by_character"):
@@ -84,8 +97,8 @@ class AnimatedCaptionRenderer:
             return r"{\alpha&HFF&\t(0,250,\alpha&H00&)}"
         if style == "none":
             return ""
-        # Default fallback: pop
-        return r"{\fscx82\fscy82\t(0,140,\fscx100\fscy100)}"
+        # Default fallback
+        return r"{\fad(80,80)}"
 
     # -----------------------------------------------
     # Template -> preset options
@@ -112,7 +125,7 @@ class AnimatedCaptionRenderer:
     # Build ASS header with configurable style
     # -----------------------------------------------
 
-    def _build_header(self, opts):
+    def _build_header(self, opts, transcript=None):
         opts = opts or {}
         font = (
             opts.get("font_family")
@@ -120,6 +133,22 @@ class AnimatedCaptionRenderer:
             or opts.get("font")
             or config.SUBTITLE_FONT
         )
+
+        # Detect Hindi / Devanagari Unicode codepoints and inject font fallback
+        has_devanagari = False
+        if transcript and isinstance(transcript, list):
+            for item in transcript:
+                t_str = str(item.get("text", ""))
+                if any('\u0900' <= c <= '\u097f' for c in t_str):
+                    has_devanagari = True
+                    break
+                for w in item.get("words", []):
+                    w_str = str(w.get("text", ""))
+                    if any('\u0900' <= c <= '\u097f' for c in w_str):
+                        has_devanagari = True
+                        break
+        if has_devanagari and "devanagari" not in font.lower() and "segoe" not in font.lower():
+            font = f"{font}, Segoe UI, Arial"
 
         play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
         play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
@@ -604,7 +633,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             except Exception:
                 pass
 
-        header = self._build_header(opts)
+        header = self._build_header(opts, transcript=transcript)
         extra_styles = []
         if hook_style_line:
             extra_styles.append(hook_style_line)

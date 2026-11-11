@@ -1092,8 +1092,54 @@
     }
 
     // =========================================================================
-    // 9. COLUMN 1: TRENDING PRESETS IMPLEMENTATION
+    // 9. COLUMN 1: CANONICAL PRESETS IMPLEMENTATION
     // =========================================================================
+    let canonicalApiPresets = [];
+
+    async function loadCanonicalPresets() {
+        try {
+            const res = await fetch('/api/caption-studio/presets/canonical');
+            const data = await res.json();
+            if (data.success && Array.isArray(data.presets)) {
+                canonicalApiPresets = data.presets.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    category: (p.category || 'Minimal & Luxury').toLowerCase(),
+                    platform: p.category || 'Creator Style',
+                    tagClass: p.category === 'Minimal & Luxury' ? 'tag-instagram' : p.category === 'Podcast' ? 'tag-youtube' : p.category === 'Kinetic' ? 'tag-viral' : 'tag-tiktok',
+                    previewWord1: 'CREATOR',
+                    previewWord2: 'PRESET',
+                    style: {
+                        fontFamily: p.fontFamily || p.font_family || 'Inter',
+                        fontWeight: String(p.fontWeight || p.font_weight || 700),
+                        fontSize: p.fontSize || p.font_size || 36,
+                        textColor: p.textColor || p.text_color || '#FFFFFF',
+                        activeWordColor: p.activeWordColor || p.active_word_color || '#FFE000',
+                        textCase: p.uppercase ? 'uppercase' : 'normal',
+                        strokeEnabled: Boolean(p.outlineEnabled || (p.outlineWidth && p.outlineWidth > 0)),
+                        strokeColor: p.outlineColor || '#000000',
+                        strokeWidth: p.outlineWidth || 0,
+                        shadowEnabled: p.shadowEnabled !== false,
+                        shadowColor: p.shadowColor || '#000000',
+                        shadowBlur: p.shadowBlur || 2,
+                        shadowY: p.shadowOffsetY || 1,
+                        glowEnabled: Boolean(p.glow),
+                        glowColor: p.activeWordColor || '#FFE000',
+                        wordBox: Boolean(p.wordBox),
+                        wordBoxColor: p.wordBoxColor || '#4F46E5',
+                        bgMode: p.bgMode || (p.backgroundOpacity > 0 ? 'semi' : 'none'),
+                        bgColor: p.backgroundColor || '#000000',
+                        animation: p.animation || 'color_karaoke',
+                        position: p.position || 'bottom',
+                    }
+                }));
+                renderPresets();
+            }
+        } catch (e) {
+            console.warn('Could not load canonical presets from API, using defaults:', e);
+        }
+    }
+
     function initPresetsColumn() {
         if (!el.presetsGrid) return;
 
@@ -1110,6 +1156,7 @@
             });
         }
 
+        loadCanonicalPresets();
         renderPresets();
     }
 
@@ -1117,10 +1164,10 @@
         if (!el.presetsGrid) return;
         el.presetsGrid.innerHTML = '';
 
-        const allPresets = [...PRESETS, ...customPresets];
+        const allPresets = (canonicalApiPresets.length > 0 ? canonicalApiPresets : PRESETS).concat(customPresets);
         const filtered = allPresets.filter(p => {
             if (state.activeCategory === 'all') return true;
-            return p.category === state.activeCategory;
+            return (p.category || '').toLowerCase() === state.activeCategory.toLowerCase();
         });
 
         filtered.forEach(preset => {
@@ -1141,6 +1188,10 @@
             const bgCss = st.bgMode === 'semi' ? `background: rgba(15,23,42,0.7); border-radius: 6px; padding: 4px 8px;` :
                           st.bgMode === 'solid' ? `background: ${st.bgColor || '#000000'}; border-radius: 4px; padding: 4px 8px;` : '';
 
+            const word2Style = st.wordBox
+                ? `background: ${st.wordBoxColor || '#4F46E5'}; color: #FFFFFF; border-radius: 4px; padding: 2px 6px;`
+                : `color:${st.activeWordColor};`;
+
             card.innerHTML = `
                 <div class="preset-card-header">
                     <span class="preset-card-title">${preset.name}</span>
@@ -1158,7 +1209,7 @@
                         ${bgCss}
                         letter-spacing: 0.5px;
                     ">
-                        ${preset.previewWord1} <span style="color:${st.activeWordColor};">${preset.previewWord2}</span>
+                        ${preset.previewWord1} <span style="${word2Style}">${preset.previewWord2}</span>
                     </span>
                 </div>
             `;

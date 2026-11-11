@@ -1283,20 +1283,38 @@ def list_caption_templates():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@caption_studio_bp.route("/api/caption-studio/presets/canonical", methods=["GET"])
+def list_canonical_presets():
+    """Return all 20 canonical creator presets with category taxonomy."""
+    try:
+        from ai.caption_presets import caption_registry
+        category = request.args.get("category")
+        presets = caption_registry.list_presets_dict(category=category)
+        categories = caption_registry.get_categories()
+        return jsonify({
+            "success": True,
+            "presets": presets,
+            "categories": categories,
+            "count": len(presets),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @caption_studio_bp.route("/api/caption-studio/styles", methods=["GET"])
 def list_caption_styles():
     project_id = request.args.get("project_id", "")
+    from ai.caption_presets import caption_registry
+    
+    canonical_list = caption_registry.list_presets()
     builtin_presets = [
-        {"id": "cap_default", "name": "Default (Yellow Pop)", "category": "Viral", "style": {"font_family": "Montserrat", "font_size": 36, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#FFE000", "outline_width": 3, "outline_color": "#000000", "shadow_blur": 4, "shadow_color": "#000000", "animation": "pop", "emoji": True, "word_pop": True}},
-        {"id": "cap_hormozi", "name": "Hormozi (Green Pill)", "category": "Viral", "style": {"font_family": "Arial Black", "font_size": 38, "font_weight": 900, "text_color": "#FFFFFF", "active_word_color": "#00FF66", "word_box": True, "word_box_color": "#00BF49", "uppercase": True, "outline_width": 4, "outline_color": "#000000", "shadow_blur": 4, "shadow_color": "#000000", "animation": "pop", "emoji": True, "word_pop": True}},
-        {"id": "cap_mrbeast", "name": "MrBeast (Red Pop)", "category": "High Energy", "style": {"font_family": "Arial Black", "font_size": 40, "font_weight": 900, "text_color": "#FFFF00", "active_word_color": "#FF2D2D", "uppercase": True, "outline_width": 5, "outline_color": "#000000", "shadow_blur": 6, "shadow_color": "#000000", "animation": "bounce", "emoji": True, "word_pop": True}},
-        {"id": "cap_tiktok", "name": "TikTok (Pink Pop)", "category": "Viral", "style": {"font_family": "Montserrat", "font_size": 34, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#FE2C55", "outline_width": 3, "outline_color": "#000000", "shadow_blur": 4, "shadow_color": "#000000", "animation": "pop", "emoji": True, "word_pop": True}},
-        {"id": "cap_neon", "name": "Neon (Cyan & Magenta)", "category": "Modern", "style": {"font_family": "Montserrat", "font_size": 34, "font_weight": 800, "text_color": "#00FFFF", "active_word_color": "#FF00FF", "outline_width": 2, "outline_color": "#002A6B", "shadow_blur": 5, "shadow_color": "#000000", "animation": "pop", "glow": True, "word_pop": True}},
-        {"id": "cap_podcast", "name": "Podcast (Gold Pill)", "category": "Speech", "style": {"font_family": "Inter", "font_size": 30, "font_weight": 700, "text_color": "#FFFFFF", "active_word_color": "#FFB800", "background_color": "#1A1A1A", "background_opacity": 0.8, "outline_width": 2, "animation": "fade"}},
-        {"id": "cap_minimal", "name": "Minimal (Clean Fade)", "category": "Clean", "style": {"font_family": "Inter", "font_size": 28, "font_weight": 600, "text_color": "#FFFFFF", "active_word_color": "#FFFFFF", "background_color": "#000000", "background_opacity": 0.5, "outline_width": 0, "animation": "fade"}},
-        {"id": "cap_clean", "name": "Clean Blue", "category": "Clean", "style": {"font_family": "Inter", "font_size": 32, "font_weight": 700, "text_color": "#FFFFFF", "active_word_color": "#38BDF8", "outline_width": 1, "outline_color": "#000000", "shadow_blur": 2, "shadow_color": "#000000", "animation": "fade_in"}},
-        {"id": "cap_bold", "name": "Bold Crimson", "category": "Bold", "style": {"font_family": "Anton", "font_size": 44, "font_weight": 800, "text_color": "#FFFFFF", "active_word_color": "#F43F5E", "outline_width": 4, "outline_color": "#000000", "shadow_blur": 6, "shadow_color": "#000000", "animation": "bounce"}},
-        {"id": "cap_news", "name": "News", "category": "Editorial", "style": {"font_family": "Arial Black", "font_size": 36, "font_weight": 900, "text_color": "#FFFFFF", "active_word_color": "#EF4444", "background_color": "#1E293B", "background_opacity": 0.85, "outline_width": 2, "animation": "slide_up"}},
+        {
+            "id": p.id,
+            "name": p.name,
+            "category": p.category,
+            "style": p.to_dict()
+        }
+        for p in canonical_list
     ]
 
     user_styles = []
@@ -1313,7 +1331,7 @@ def list_caption_styles():
 
 
 # =========================================================================
-# CUSTOM CAPTION PRESETS (SAVE / LIST / DELETE)
+# CUSTOM CAPTION PRESETS (SAVE / LIST / DELETE / RESET)
 # =========================================================================
 _PRESETS_FILE = config.DATA_DIR / "custom_caption_presets.json"
 
@@ -1337,7 +1355,7 @@ def _save_custom_presets(presets):
 
 @caption_studio_bp.route("/api/caption-studio/presets/save", methods=["POST"])
 def save_custom_preset():
-    """Save a user-designed caption preset."""
+    """Save a user-designed caption preset using canonical registry."""
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip() or "My Custom Style"
     style = data.get("style") or data.get("styling") or {}
@@ -1345,29 +1363,53 @@ def save_custom_preset():
     if not style:
         return jsonify({"success": False, "error": "Style payload required"}), 400
 
-    presets = _load_custom_presets()
-    preset_id = f"custom_{int(time.time() * 1000)}"
-    new_preset = {
-        "id": preset_id,
+    from ai.caption_presets import caption_registry
+    saved_preset = caption_registry.save_custom_preset({
         "name": name,
+        "style": style,
+        "id": data.get("id"),
+    })
+
+    # Prepare response format compatible with existing tests and React store
+    p_dict = saved_preset.to_dict()
+    response_preset = {
+        "id": p_dict["id"],
+        "name": p_dict["name"],
         "category": "custom",
         "platform": "Custom Preset",
         "tagClass": "tag-custom",
         "created_at": int(time.time()),
-        "style": style,
+        "style": p_dict,
     }
-    # Prepend newest
-    presets.insert(0, new_preset)
-    _save_custom_presets(presets)
 
-    return jsonify({"success": True, "preset": new_preset, "presets": presets})
+    all_custom = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "category": "custom",
+            "style": p.to_dict(),
+        }
+        for p in caption_registry.list_presets("Custom")
+    ]
+
+    return jsonify({"success": True, "preset": response_preset, "presets": all_custom})
 
 
 @caption_studio_bp.route("/api/caption-studio/presets/list", methods=["GET"])
 def list_custom_presets():
-    """List all saved custom presets."""
-    presets = _load_custom_presets()
-    return jsonify({"success": True, "presets": presets})
+    """List all saved custom presets from canonical registry."""
+    from ai.caption_presets import caption_registry
+    all_custom = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "category": "custom",
+            "platform": "Custom Preset",
+            "style": p.to_dict(),
+        }
+        for p in caption_registry.list_presets("Custom")
+    ]
+    return jsonify({"success": True, "presets": all_custom})
 
 
 @caption_studio_bp.route("/api/caption-studio/presets/delete", methods=["POST"])
@@ -1379,11 +1421,36 @@ def delete_custom_preset():
     if not preset_id:
         return jsonify({"success": False, "error": "Preset id required"}), 400
 
-    presets = _load_custom_presets()
-    filtered = [p for p in presets if p.get("id") != preset_id]
-    _save_custom_presets(filtered)
+    from ai.caption_presets import caption_registry
+    caption_registry.delete_custom_preset(preset_id)
 
-    return jsonify({"success": True, "deleted_id": preset_id, "presets": filtered})
+    all_custom = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "category": "custom",
+            "style": p.to_dict(),
+        }
+        for p in caption_registry.list_presets("Custom")
+    ]
+
+    return jsonify({"success": True, "deleted_id": preset_id, "presets": all_custom})
+
+
+@caption_studio_bp.route("/api/caption-studio/presets/reset", methods=["POST"])
+def reset_custom_preset():
+    """Reset a preset to system default."""
+    data = request.get_json(silent=True) or {}
+    preset_id = data.get("id")
+    if not preset_id:
+        return jsonify({"success": False, "error": "Preset id required"}), 400
+
+    from ai.caption_presets import caption_registry
+    system_preset = caption_registry.reset_preset(preset_id)
+    return jsonify({
+        "success": True,
+        "preset": system_preset.to_dict() if system_preset else None
+    })
 
 
 @caption_studio_bp.route("/api/caption-studio/upload-logo", methods=["POST"])

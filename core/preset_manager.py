@@ -555,8 +555,16 @@ class PresetManager:
         except Exception:
             pass
 
+        caption_presets = []
+        try:
+            from ai.caption_presets import list_presets
+            for p in list_presets():
+                caption_presets.append(p.to_dict())
+        except Exception:
+            caption_presets = list(DEFAULT_PRESETS["captions"])
+
         return {
-            "captions": DEFAULT_PRESETS["captions"] + custom.get("captions", []),
+            "captions": caption_presets + custom.get("captions", []),
             "graphics": DEFAULT_PRESETS["graphics"] + custom.get("graphics", []),
             "audio": DEFAULT_PRESETS["audio"] + custom.get("audio", []),
             "export": DEFAULT_PRESETS["export"] + custom.get("export", []),

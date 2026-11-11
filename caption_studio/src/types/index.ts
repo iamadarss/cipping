@@ -15,6 +15,8 @@ export type CaptionSegment = {
 export type CaptionStyle = {
   id: string;
   name: string;
+  category?: string;
+  description?: string;
   fontFamily: string;
   fontWeight: number;
   fontSize: number;
@@ -22,21 +24,58 @@ export type CaptionStyle = {
   lineHeight: number;
   textColor: string;
   activeWordColor: string;
+  emphasisColor?: string;
   backgroundColor: string;
   backgroundOpacity: number;
+  bgMode?: "none" | "semi" | "solid" | "glass";
+  wordBox?: boolean;
+  wordBoxColor?: string;
+  wordBoxRadius?: number;
   outlineColor: string;
   outlineWidth: number;
+  outlineEnabled?: boolean;
   shadowColor: string;
   shadowBlur: number;
   shadowOffsetY: number;
-  position: "top" | "center" | "bottom";
+  shadowEnabled?: boolean;
+  position: "top" | "center" | "bottom" | "lower_third" | "upper_center";
   x: number;
   y: number;
   maxWidth: number;
   padding: number;
-  animation: "pop" | "fade" | "bounce" | "slide" | "zoom" | "word-highlight" | "typewriter" | "glow" | "none" | "float" | "glitch" | "wave" | "neon-flicker" | "retro";
+  animation:
+    | "color_karaoke"
+    | "smooth_fade"
+    | "soft_pop"
+    | "active_word_pill"
+    | "slide_up"
+    | "slide_down"
+    | "typewriter"
+    | "emphasis_scale"
+    | "word_highlight"
+    | "sentence_fade"
+    | "pop"
+    | "fade"
+    | "bounce"
+    | "slide"
+    | "zoom"
+    | "glow"
+    | "none"
+    | "float"
+    | "glitch"
+    | "wave"
+    | "neon-flicker"
+    | "retro";
   animationSpeed: number;
   maxLines: number;
+  maxWordsPerLine?: number;
+  uppercase?: boolean;
+  wordPop?: boolean;
+  glow?: boolean;
+  emoji?: boolean;
+  isSystem?: boolean;
+  isCustom?: boolean;
+  favorite?: boolean;
 };
 
 export type ProjectState = {
