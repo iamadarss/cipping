@@ -626,3 +626,4 @@ CANONICAL_PRESETS: Dict[str, CaptionPresetSchema] = {
         is_system=True,
     ),
 }
+

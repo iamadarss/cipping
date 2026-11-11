@@ -94,3 +94,4 @@ def migrate_legacy_style(style_dict: Dict[str, Any]) -> Dict[str, Any]:
         migrated["active_word_color"] = active_col
 
     return migrated
+

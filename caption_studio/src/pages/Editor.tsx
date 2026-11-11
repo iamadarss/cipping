@@ -651,9 +651,16 @@ export default function Editor() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-semibold truncate text-white">{style.name}</span>
-                          {style.isCustom && (
-                            <span className="text-[8px] px-1 rounded bg-amber-500/20 text-amber-300 font-mono">Custom</span>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {style.animation && (
+                              <span className="text-[8px] px-1 rounded bg-white/10 text-white/70 font-mono">
+                                {style.animation.replace("_", " ")}
+                              </span>
+                            )}
+                            {style.isCustom && (
+                              <span className="text-[8px] px-1 rounded bg-amber-500/20 text-amber-300 font-mono">Custom</span>
+                            )}
+                          </div>
                         </div>
                         <span className="block text-[10px] text-white/40 mt-0.5 truncate">{style.category || "Style"}</span>
                         {/* Mini Typography Visual Preview */}
@@ -864,10 +871,19 @@ export default function Editor() {
                                   transform:
                                     isActive &&
                                     (selectedStyle?.animation === "soft_pop" ||
-                                      selectedStyle?.animation === "pop" ||
-                                      selectedStyle?.animation === "emphasis_scale")
-                                      ? "scale(1.08)"
+                                      selectedStyle?.animation === "pop")
+                                      ? "scale(1.10)"
+                                      : isActive && selectedStyle?.animation === "emphasis_scale"
+                                      ? "scale(1.18)"
+                                      : isActive && selectedStyle?.animation === "slide_up"
+                                      ? "translateY(-4px)"
+                                      : isActive && selectedStyle?.animation === "slide_down"
+                                      ? "translateY(4px)"
                                       : "scale(1)",
+                                  opacity:
+                                    !isActive && selectedStyle?.animation === "smooth_fade"
+                                      ? 0.55
+                                      : undefined,
                                   textShadow:
                                     isActive && selectedStyle?.glow
                                       ? `0 0 15px ${selectedStyle?.activeWordColor}`

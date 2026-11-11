@@ -277,3 +277,4 @@ class CaptionPresetSchema:
             favorite=bool(data.get("favorite", False)),
         )
         return instance.validate_and_normalize()
+

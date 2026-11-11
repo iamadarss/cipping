@@ -707,7 +707,11 @@
             bgPaddingDisplay: document.getElementById('bgPaddingDisplay'),
             bgRadiusRange: document.getElementById('bgRadiusRange'),
             bgRadiusDisplay: document.getElementById('bgRadiusDisplay'),
+            wordBoxColorPicker: document.getElementById('wordBoxColorPicker'),
+            wordBoxColorHex: document.getElementById('wordBoxColorHex'),
             animationTypeSelect: document.getElementById('animationTypeSelect'),
+            animationSpeedRange: document.getElementById('animationSpeedRange'),
+            animationSpeedDisplay: document.getElementById('animationSpeedDisplay'),
             caseUpperBtn: document.getElementById('caseUpperBtn'),
             caseTitleBtn: document.getElementById('caseTitleBtn'),
             caseNormalBtn: document.getElementById('caseNormalBtn'),
@@ -1192,10 +1196,28 @@
                 ? `background: ${st.wordBoxColor || '#4F46E5'}; color: #FFFFFF; border-radius: 4px; padding: 2px 6px;`
                 : `color:${st.activeWordColor};`;
 
+            const animLabelMap = {
+                'color_karaoke': '✨ Karaoke',
+                'smooth_fade': '🌊 Fade',
+                'soft_pop': '💥 Pop',
+                'active_word_pill': '💊 Pill',
+                'slide_up': '⬆️ Slide',
+                'slide_down': '⬇️ Drop',
+                'typewriter': '⌨️ Type',
+                'emphasis_scale': '🎯 Punch',
+                'word_highlight': '🖍️ Highlight',
+                'sentence_fade': '🌫️ Flow',
+                'none': '⏹️ Static'
+            };
+            const animBadgeText = animLabelMap[st.animation] || (st.animation ? st.animation.replace('_', ' ') : '✨ Karaoke');
+
             card.innerHTML = `
                 <div class="preset-card-header">
                     <span class="preset-card-title">${preset.name}</span>
-                    <span class="preset-platform-tag ${preset.tagClass || ''}">${preset.platform}</span>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <span class="preset-anim-tag" style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.08); color:var(--text-secondary);">${animBadgeText}</span>
+                        <span class="preset-platform-tag ${preset.tagClass || ''}">${preset.platform}</span>
+                    </div>
                 </div>
                 <div class="preset-preview-box">
                     <span style="
@@ -1571,13 +1593,38 @@
             });
         });
 
+        // Word Pill Accent Color
+        if (el.wordBoxColorPicker) {
+            el.wordBoxColorPicker.addEventListener('input', (e) => {
+                activeStyle.wordBoxColor = e.target.value;
+                if (el.wordBoxColorHex) {
+                    el.wordBoxColorHex.textContent = e.target.value.toUpperCase();
+                    el.wordBoxColorHex.style.color = e.target.value;
+                }
+                updateLiveCaptionOverlay();
+            });
+            el.wordBoxColorPicker.addEventListener('change', () => pushHistory());
+        }
+
         // Animation
         if (el.animationTypeSelect) {
             el.animationTypeSelect.addEventListener('change', (e) => {
                 pushHistory();
                 activeStyle.animation = e.target.value;
                 updateLiveCaptionOverlay();
+                showToast(`Animation: ${e.target.options[e.target.selectedIndex].text}`, 'info', 1200);
             });
+        }
+
+        // Animation Speed
+        if (el.animationSpeedRange) {
+            el.animationSpeedRange.addEventListener('input', (e) => {
+                const spd = parseFloat(e.target.value) || 1.0;
+                activeStyle.animationSpeed = spd;
+                if (el.animationSpeedDisplay) el.animationSpeedDisplay.textContent = spd.toFixed(1);
+                updateLiveCaptionOverlay();
+            });
+            el.animationSpeedRange.addEventListener('change', () => pushHistory());
         }
     }
 
@@ -1598,8 +1645,52 @@
             el.activeWordColorHex.textContent = (st.activeWordColor || '#10B981').toUpperCase();
             el.activeWordColorHex.style.color = st.activeWordColor || '#10B981';
         }
+        if (el.wordBoxColorPicker) el.wordBoxColorPicker.value = st.wordBoxColor || '#10B981';
+        if (el.wordBoxColorHex) {
+            el.wordBoxColorHex.textContent = (st.wordBoxColor || '#10B981').toUpperCase();
+            el.wordBoxColorHex.style.color = st.wordBoxColor || '#10B981';
+        }
         if (el.textOpacityRange) el.textOpacityRange.value = st.textOpacity !== undefined ? st.textOpacity : 100;
         if (el.textOpacityDisplay) el.textOpacityDisplay.textContent = st.textOpacity !== undefined ? st.textOpacity : 100;
+
+        // Animation selection mapping
+        if (el.animationTypeSelect) {
+            const rawAnim = (st.animation || 'color_karaoke').toLowerCase().replace('-', '_');
+            const animAliases = {
+                'pop': 'soft_pop',
+                'fade_in': 'smooth_fade',
+                'fade': 'smooth_fade',
+                'bounce': 'soft_pop',
+                'karaoke': 'color_karaoke',
+                'word_pill': 'active_word_pill',
+                'zoom': 'emphasis_scale',
+                'scale': 'emphasis_scale'
+            };
+            const targetVal = animAliases[rawAnim] || rawAnim;
+            let matched = false;
+            for (let i = 0; i < el.animationTypeSelect.options.length; i++) {
+                if (el.animationTypeSelect.options[i].value === targetVal) {
+                    el.animationTypeSelect.selectedIndex = i;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched && el.animationTypeSelect.options.length > 0) {
+                el.animationTypeSelect.value = 'color_karaoke';
+            }
+        }
+
+        if (el.animationSpeedRange) {
+            const spd = st.animationSpeed || st.animation_speed || 1.0;
+            el.animationSpeedRange.value = spd;
+            if (el.animationSpeedDisplay) el.animationSpeedDisplay.textContent = Number(spd).toFixed(1);
+        }
+
+        // Casing buttons
+        const currentCase = (st.textCase || 'uppercase').toLowerCase();
+        if (el.caseUpperBtn) el.caseUpperBtn.classList.toggle('active', currentCase === 'uppercase');
+        if (el.caseTitleBtn) el.caseTitleBtn.classList.toggle('active', currentCase === 'capitalize' || currentCase === 'title');
+        if (el.caseNormalBtn) el.caseNormalBtn.classList.toggle('active', currentCase === 'normal' || currentCase === 'lowercase');
 
         if (el.strokeColorPicker) el.strokeColorPicker.value = st.strokeColor || '#000000';
         if (el.strokeColorHex) el.strokeColorHex.textContent = (st.strokeColor || '#000000').toUpperCase();
@@ -2286,6 +2377,9 @@
         // Opacity
         const alpha = (activeStyle.textOpacity !== undefined ? activeStyle.textOpacity : 100) / 100;
 
+        // Animation name normalization
+        const anim = (activeStyle.animation || 'color_karaoke').toLowerCase().replace('-', '_');
+
         // Typography styling for all word tokens
         const words = box.querySelectorAll('.caption-word-token');
         words.forEach(w => {
@@ -2297,22 +2391,98 @@
             w.style.textTransform = textTransform;
             w.style.webkitTextStroke = textStroke;
             w.style.textShadow = textShadow;
-            w.style.opacity = alpha;
+            w.style.display = 'inline-block';
+            w.style.margin = '0 3px';
+            w.style.transition = 'all 0.16s cubic-bezier(0.16, 1, 0.3, 1)';
 
-            if (w.classList.contains('active-karaoke-word')) {
-                w.style.color = activeStyle.activeWordColor || '#22C55E';
-                if (activeStyle.bgMode === 'highlight') {
-                    w.style.background = 'rgba(0,0,0,0.85)';
-                    w.style.padding = '2px 8px';
-                    w.style.borderRadius = '6px';
-                } else {
+            const isActive = w.classList.contains('active-karaoke-word');
+            if (isActive) {
+                if (anim === 'active_word_pill' || activeStyle.wordBox) {
+                    const pillBg = activeStyle.wordBoxColor || activeStyle.activeWordColor || '#10B981';
+                    w.style.color = '#FFFFFF';
+                    w.style.background = pillBg;
+                    w.style.padding = '3px 12px';
+                    w.style.borderRadius = `${activeStyle.wordBoxRadius || 8}px`;
+                    w.style.boxShadow = '0 4px 14px rgba(0,0,0,0.38)';
+                    w.style.transform = 'scale(1.04)';
+                    w.style.opacity = '1';
+                } else if (anim === 'soft_pop' || anim === 'pop') {
+                    w.style.color = activeStyle.activeWordColor || '#22C55E';
                     w.style.background = 'transparent';
                     w.style.padding = '0';
+                    w.style.borderRadius = '0';
+                    w.style.boxShadow = 'none';
+                    w.style.transform = 'scale(1.10)';
+                    w.style.opacity = '1';
+                } else if (anim === 'emphasis_scale') {
+                    w.style.color = activeStyle.activeWordColor || '#22C55E';
+                    w.style.background = 'transparent';
+                    w.style.padding = '0';
+                    w.style.borderRadius = '0';
+                    w.style.boxShadow = 'none';
+                    w.style.transform = 'scale(1.18)';
+                    w.style.fontWeight = '800';
+                    w.style.opacity = '1';
+                } else if (anim === 'slide_up') {
+                    w.style.color = activeStyle.activeWordColor || '#22C55E';
+                    w.style.background = 'transparent';
+                    w.style.padding = '0';
+                    w.style.borderRadius = '0';
+                    w.style.boxShadow = 'none';
+                    w.style.transform = 'translateY(-5px)';
+                    w.style.opacity = '1';
+                } else if (anim === 'slide_down') {
+                    w.style.color = activeStyle.activeWordColor || '#22C55E';
+                    w.style.background = 'transparent';
+                    w.style.padding = '0';
+                    w.style.borderRadius = '0';
+                    w.style.boxShadow = 'none';
+                    w.style.transform = 'translateY(5px)';
+                    w.style.opacity = '1';
+                } else if (anim === 'word_highlight') {
+                    w.style.color = activeStyle.activeWordColor || '#22C55E';
+                    w.style.background = 'rgba(255, 230, 0, 0.28)';
+                    w.style.padding = '2px 8px';
+                    w.style.borderRadius = '4px';
+                    w.style.boxShadow = 'none';
+                    w.style.transform = 'none';
+                    w.style.opacity = '1';
+                } else if (anim === 'smooth_fade') {
+                    w.style.color = activeStyle.activeWordColor || '#22C55E';
+                    w.style.background = 'transparent';
+                    w.style.padding = '0';
+                    w.style.borderRadius = '0';
+                    w.style.boxShadow = 'none';
+                    w.style.transform = 'none';
+                    w.style.opacity = '1';
+                } else {
+                    // Default color_karaoke / typewriter / sentence_fade / none
+                    w.style.color = activeStyle.activeWordColor || '#22C55E';
+                    w.style.borderRadius = '0';
+                    w.style.boxShadow = 'none';
+                    if (activeStyle.bgMode === 'highlight') {
+                        w.style.background = 'rgba(0,0,0,0.85)';
+                        w.style.padding = '2px 8px';
+                        w.style.borderRadius = '6px';
+                    } else {
+                        w.style.background = 'transparent';
+                        w.style.padding = '0';
+                    }
+                    w.style.transform = 'none';
+                    w.style.opacity = '1';
                 }
             } else {
                 w.style.color = activeStyle.textColor || '#FFFFFF';
                 w.style.background = 'transparent';
                 w.style.padding = '0';
+                w.style.borderRadius = '0';
+                w.style.transform = 'none';
+                w.style.boxShadow = 'none';
+                if (anim === 'smooth_fade') {
+                    w.style.opacity = Math.max(0.40, alpha * 0.65);
+                } else {
+                    w.style.opacity = alpha;
+                }
             }
         });
     }

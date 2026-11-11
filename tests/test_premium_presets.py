@@ -311,3 +311,4 @@ def test_caption_studio_canonical_presets_api():
     assert res_kinetic.status_code == 200
     data_kinetic = res_kinetic.get_json()
     assert all(p["category"] == "Kinetic" for p in data_kinetic["presets"])
+

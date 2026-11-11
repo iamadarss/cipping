@@ -78,13 +78,13 @@ class AnimatedCaptionRenderer:
         if style in ("typewriter",):
             return r"{\fad(50,50)}"
         if style in ("slide", "slide_up"):
-            return r"{\move(0,30,0,0,0,180)}"
+            return r"{\fad(80,60)\fscy88\t(0,150,\fscy100)}"
         if style == "slide_down":
-            return r"{\move(0,-30,0,0,0,180)}"
+            return r"{\fad(80,60)\fscy112\t(0,150,\fscy100)}"
         if style == "slide_left":
-            return r"{\move(40,0,0,0,0,180)}"
+            return r"{\fad(80,60)\fscx88\t(0,150,\fscx100)}"
         if style == "slide_right":
-            return r"{\move(-40,0,0,0,0,180)}"
+            return r"{\fad(80,60)\fscx112\t(0,150,\fscx100)}"
         if style == "bounce":
             return r"{\move(0,0)\t(0,150,\fay-0.06)\t(150,300,\fay0)}"
         if style in ("scale_in", "zoom"):

@@ -179,3 +179,4 @@ def get_preset(preset_id: Optional[str] = None) -> CaptionPresetSchema:
 def list_presets(category: Optional[str] = None) -> List[CaptionPresetSchema]:
     """Convenience accessor for preset list."""
     return caption_registry.list_presets(category)
+

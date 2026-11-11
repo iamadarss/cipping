@@ -451,6 +451,15 @@
                                         </div>
                                     </div>
 
+                                    <!-- Word Pill Box Color (Active Word Pill Animation) -->
+                                    <div class="setting-row" id="rowWordPillColor">
+                                        <span class="setting-label">Word Pill Accent</span>
+                                        <div class="color-picker-wrap">
+                                            <input type="color" id="wordBoxColorPicker" value="#10B981" class="color-swatch-input">
+                                            <span class="color-hex-text" id="wordBoxColorHex" style="color:var(--primary); font-weight:700;">#10B981</span>
+                                        </div>
+                                    </div>
+
                                     <!-- Text Opacity -->
                                     <div class="setting-row">
                                         <span class="setting-label">Opacity</span>
@@ -635,11 +644,27 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Animation</span>
                                         <select id="animationTypeSelect" class="setting-select">
-                                            <option value="pop" selected>Pop (Zoom Bounce)</option>
-                                            <option value="fade_in">Smooth Fade In</option>
-                                            <option value="slide_up">Slide Up</option>
-                                            <option value="none">None (Static)</option>
+                                            <option value="color_karaoke" selected>✨ Color Karaoke (Sweep)</option>
+                                            <option value="smooth_fade">🌊 Smooth Fade (Subtle Focus)</option>
+                                            <option value="soft_pop">💥 Soft Pop (Gentle Bounce)</option>
+                                            <option value="active_word_pill">💊 Active Word Pill (Box Highlight)</option>
+                                            <option value="slide_up">⬆️ Slide Up (Kinetic Rise)</option>
+                                            <option value="slide_down">⬇️ Slide Down (Top Drop)</option>
+                                            <option value="typewriter">⌨️ Typewriter (Crisp Cut)</option>
+                                            <option value="emphasis_scale">🎯 Emphasis Scale (Punch)</option>
+                                            <option value="word_highlight">🖍️ Word Highlight (Gaze Focus)</option>
+                                            <option value="sentence_fade">🌫️ Sentence Fade (Clean Flow)</option>
+                                            <option value="none">⏹️ None (Static / Clean)</option>
                                         </select>
+                                    </div>
+
+                                    <!-- Animation Speed -->
+                                    <div class="setting-row" id="rowAnimationSpeed">
+                                        <span class="setting-label">Motion Speed</span>
+                                        <div class="slider-control">
+                                            <input type="range" id="animationSpeedRange" class="emerald-range-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+                                            <span class="value-badge"><span id="animationSpeedDisplay">1.0</span>x</span>
+                                        </div>
                                     </div>
 
                                     <!-- Casing -->

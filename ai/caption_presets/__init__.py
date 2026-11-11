@@ -38,3 +38,4 @@ __all__ = [
     "resolve_canonical_id",
     "migrate_legacy_style",
 ]
+
