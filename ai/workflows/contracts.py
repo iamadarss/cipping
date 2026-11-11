@@ -199,3 +199,4 @@ class WorkflowResult:
             "key_topics": self.key_topics,
             "spec_fingerprint": self.spec_fingerprint,
         }
+

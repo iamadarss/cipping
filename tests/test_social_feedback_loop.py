@@ -141,3 +141,4 @@ def test_social_publisher_schedule_and_sync():
     )
     assert sync_res["success"] is True
     assert sync_res["metrics"]["views"] == 25000
+

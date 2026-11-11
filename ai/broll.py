@@ -305,3 +305,4 @@ def build_ffmpeg_broll_filter(
         current_stream = next_stream
 
     return inputs, ";".join(filter_parts)
+

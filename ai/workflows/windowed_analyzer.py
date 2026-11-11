@@ -192,3 +192,4 @@ class WindowedAnalyzer:
             key_topics=[c.hook_type for c in final_cands],
             spec_fingerprint=self.spec.fingerprint(),
         )
+

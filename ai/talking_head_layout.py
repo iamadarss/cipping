@@ -255,3 +255,4 @@ def analyze_layout_for_faces(
             return build_stage_plan(width, height, med_box)
 
     return None
+

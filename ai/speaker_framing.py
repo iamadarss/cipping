@@ -129,3 +129,4 @@ def compute_speaker_cuts(
         })
 
     return cut_plan
+

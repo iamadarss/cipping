@@ -54,3 +54,4 @@ def test_build_ffmpeg_broll_filter():
     assert "scale=1080:1920" in filter_str
     assert "overlay=0:0" in filter_str
     assert "between(t,4.0,6.5)" in filter_str
+

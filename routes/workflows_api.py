@@ -232,3 +232,4 @@ def sync_social_metrics():
 
     res = social_publisher.sync_metrics_from_platform(post_id, body.get("metrics"))
     return jsonify(res)
+

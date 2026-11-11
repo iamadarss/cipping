@@ -142,3 +142,4 @@ def snap_segment_boundaries(
     text = " ".join(str(w.get("word", "")).strip() for w in snapped_words if str(w.get("word", "")).strip())
 
     return (snapped_start, snapped_end, text)
+

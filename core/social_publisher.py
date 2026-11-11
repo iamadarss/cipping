@@ -355,3 +355,4 @@ class SocialPublisher:
     def get_steering_context(self) -> Optional[str]:
         """Retrieve audience feedback context to steer AI clip selector algorithms."""
         return self.store.build_performance_context()
+

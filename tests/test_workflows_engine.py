@@ -203,3 +203,4 @@ def test_windowed_analyzer_and_deduplication():
     assert len(deduped) == 2
     assert deduped[0].virality_score == 90
     assert deduped[1].virality_score == 85
+
