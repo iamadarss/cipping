@@ -70,6 +70,10 @@ export type CaptionStyle = {
   maxLines: number;
   maxWordsPerLine?: number;
   uppercase?: boolean;
+  isItalic?: boolean;
+  isTilted?: boolean;
+  tiltAngle?: number;
+  threeDShadow?: boolean;
   wordPop?: boolean;
   glow?: boolean;
   emoji?: boolean;

@@ -63,10 +63,10 @@ class CaptionPresetRegistry:
     def get_preset(self, preset_id: Optional[str]) -> CaptionPresetSchema:
         """
         Retrieve preset by ID or legacy alias.
-        Falls back to 'pure_white' if not found.
+        Falls back to 'boxed' if not found.
         """
         if not preset_id:
-            return self._system_presets["pure_white"]
+            return self._system_presets.get("boxed") or list(self._system_presets.values())[0]
 
         canonical_id = resolve_canonical_id(preset_id)
 
@@ -83,7 +83,7 @@ class CaptionPresetRegistry:
             return self._system_presets[preset_id]
 
         # Fallback default
-        return self._system_presets["pure_white"]
+        return self._system_presets.get("boxed") or list(self._system_presets.values())[0]
 
     def list_presets(self, category: Optional[str] = None) -> List[CaptionPresetSchema]:
         """Return all system and custom presets, optionally filtered by category."""
@@ -100,11 +100,8 @@ class CaptionPresetRegistry:
     def get_categories(self) -> List[str]:
         """Return list of distinct categories in display order."""
         return [
-            "Minimal & Luxury",
-            "Podcast",
-            "Kinetic",
-            "Cinematic",
-            "Special",
+            "Card & Aesthetic",
+            "Loud Captions",
             "Custom",
         ]
 

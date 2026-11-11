@@ -1108,11 +1108,12 @@
                 canonicalApiPresets = data.presets.map(p => ({
                     id: p.id,
                     name: p.name,
-                    category: (p.category || 'Minimal & Luxury').toLowerCase(),
+                    category: (p.category || 'Card & Aesthetic').toLowerCase(),
+                    description: p.description || '',
                     platform: p.category || 'Creator Style',
-                    tagClass: p.category === 'Minimal & Luxury' ? 'tag-instagram' : p.category === 'Podcast' ? 'tag-youtube' : p.category === 'Kinetic' ? 'tag-viral' : 'tag-tiktok',
-                    previewWord1: 'CREATOR',
-                    previewWord2: 'PRESET',
+                    tagClass: p.category === 'Loud Captions' ? 'tag-viral' : 'tag-instagram',
+                    previewWord1: p.id === 'terminal' ? '> morning' : p.id === 'one_word' ? 'MATCHA' : 'morning',
+                    previewWord2: p.id === 'one_word' ? '' : 'matcha',
                     style: {
                         fontFamily: p.fontFamily || p.font_family || 'Inter',
                         fontWeight: String(p.fontWeight || p.font_weight || 700),
@@ -1120,6 +1121,10 @@
                         textColor: p.textColor || p.text_color || '#FFFFFF',
                         activeWordColor: p.activeWordColor || p.active_word_color || '#FFE000',
                         textCase: p.uppercase ? 'uppercase' : 'normal',
+                        isItalic: Boolean(p.isItalic || p.is_italic),
+                        isTilted: Boolean(p.isTilted || p.is_tilted),
+                        tiltAngle: p.tiltAngle || p.tilt_angle || 0,
+                        threeDShadow: Boolean(p.threeDShadow || p.three_d_shadow),
                         strokeEnabled: Boolean(p.outlineEnabled || (p.outlineWidth && p.outlineWidth > 0)),
                         strokeColor: p.outlineColor || '#000000',
                         strokeWidth: p.outlineWidth || 0,
@@ -1131,6 +1136,7 @@
                         glowColor: p.activeWordColor || '#FFE000',
                         wordBox: Boolean(p.wordBox),
                         wordBoxColor: p.wordBoxColor || '#4F46E5',
+                        wordBoxRadius: p.wordBoxRadius || 6,
                         bgMode: p.bgMode || (p.backgroundOpacity > 0 ? 'semi' : 'none'),
                         bgColor: p.backgroundColor || '#000000',
                         animation: p.animation || 'color_karaoke',
@@ -1211,28 +1217,36 @@
             };
             const animBadgeText = animLabelMap[st.animation] || (st.animation ? st.animation.replace('_', ' ') : '✨ Karaoke');
 
+            const tiltTransform = st.isTilted ? `transform: rotate(${st.tiltAngle || -1.5}deg);` : '';
+            const fontStyleCss = st.isItalic ? 'font-style: italic;' : '';
+            const threeDShadowCss = st.threeDShadow ? 'text-shadow: 2px 2px 0px #000000, 4px 4px 0px #000000;' : `text-shadow: ${textShadow};`;
+            const comicBorder = preset.id === 'comic' ? 'border: 2px solid #000000; box-shadow: 3px 3px 0 #000000;' : '';
+
             card.innerHTML = `
-                <div class="preset-card-header">
-                    <span class="preset-card-title">${preset.name}</span>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <span class="preset-anim-tag" style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.08); color:var(--text-secondary);">${animBadgeText}</span>
-                        <span class="preset-platform-tag ${preset.tagClass || ''}">${preset.platform}</span>
-                    </div>
-                </div>
-                <div class="preset-preview-box">
+                <div class="preset-preview-box" style="${tiltTransform}">
                     <span style="
                         font-family: '${st.fontFamily}', sans-serif;
                         font-weight: ${st.fontWeight};
-                        font-size: 16px;
+                        font-size: 15px;
                         color: ${st.textColor};
                         text-transform: ${st.textCase || 'uppercase'};
                         -webkit-text-stroke: ${textStroke};
-                        text-shadow: ${textShadow};
+                        ${threeDShadowCss}
+                        ${fontStyleCss}
                         ${bgCss}
+                        ${comicBorder}
                         letter-spacing: 0.5px;
+                        display: inline-block;
                     ">
-                        ${preset.previewWord1} <span style="${word2Style}">${preset.previewWord2}</span>
+                        ${preset.previewWord1 || 'morning'} <span style="${word2Style}">${preset.previewWord2 || 'matcha'}</span>
                     </span>
+                </div>
+                <div class="preset-card-meta">
+                    <div class="preset-card-header">
+                        <span class="preset-card-title">${preset.name}</span>
+                        <span class="preset-anim-tag" style="font-size:9.5px; font-weight:600; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,0.08); color:var(--text-secondary);">${animBadgeText}</span>
+                    </div>
+                    ${preset.description ? `<p class="preset-card-desc" style="font-size:10.5px; color:var(--text-muted); margin:3px 0 0 0; line-height:1.35;">${preset.description}</p>` : ''}
                 </div>
             `;
 
@@ -2329,7 +2343,8 @@
         const scaleVal = (activeStyle.scale || 100) / 100;
 
         // Box & Alignment
-        box.style.transform = `scale(${scaleVal})`;
+        const rotateStr = activeStyle.isTilted ? ` rotate(${activeStyle.tiltAngle || -1.5}deg)` : '';
+        box.style.transform = `scale(${scaleVal})${rotateStr}`;
         box.style.justifyContent = activeStyle.textAlign === 'left' ? 'flex-start' :
                                    activeStyle.textAlign === 'right' ? 'flex-end' : 'center';
 
@@ -2338,17 +2353,35 @@
             box.style.background = `rgba(15, 23, 42, ${(activeStyle.bgOpacity || 65) / 100})`;
             box.style.borderRadius = `${activeStyle.bgRadius || 8}px`;
             box.style.padding = `${activeStyle.bgPadding || 8}px 14px`;
+        } else if (activeStyle.bgMode === 'glass') {
+            box.style.background = 'rgba(255, 255, 255, 0.18)';
+            box.style.backdropFilter = 'blur(10px)';
+            box.style.borderRadius = '24px';
+            box.style.padding = '8px 18px';
+            box.style.border = '1px solid rgba(255, 255, 255, 0.25)';
+            box.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.37)';
         } else if (activeStyle.bgMode === 'solid') {
             const hex = activeStyle.bgColor || '#000000';
             box.style.background = hex;
             box.style.borderRadius = `${activeStyle.bgRadius || 6}px`;
             box.style.padding = `${activeStyle.bgPadding || 6}px 12px`;
+            if (activeStyle.id === 'comic') {
+                box.style.border = '2.5px solid #000000';
+                box.style.boxShadow = '4px 4px 0px #000000';
+            } else {
+                box.style.border = 'none';
+                box.style.boxShadow = 'none';
+            }
         } else if (activeStyle.bgMode === 'highlight') {
             box.style.background = 'transparent';
             box.style.padding = '4px';
+            box.style.border = 'none';
+            box.style.boxShadow = 'none';
         } else {
             box.style.background = 'transparent';
             box.style.padding = '0';
+            box.style.border = 'none';
+            box.style.boxShadow = 'none';
         }
 
         applyActiveStyleToDOM();
@@ -2362,9 +2395,11 @@
         const textStroke = (activeStyle.strokeEnabled && activeStyle.strokeWidth > 0) ?
                            `${activeStyle.strokeWidth}px ${activeStyle.strokeColor || '#000000'}` : 'none';
 
-        // Text Shadow / Glow
+        // Text Shadow / Glow / 3D Shadow
         let textShadow = 'none';
-        if (activeStyle.glowEnabled) {
+        if (activeStyle.threeDShadow) {
+            textShadow = '2px 2px 0px #000000, 4px 4px 0px #000000';
+        } else if (activeStyle.glowEnabled) {
             textShadow = `0 0 ${activeStyle.glowIntensity || 14}px ${activeStyle.glowColor || '#10B981'}`;
         } else if (activeStyle.shadowEnabled) {
             textShadow = `0 ${activeStyle.shadowY || 2}px ${activeStyle.shadowBlur || 6}px ${activeStyle.shadowColor || '#000000'}`;

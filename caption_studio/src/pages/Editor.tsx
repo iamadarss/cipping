@@ -44,11 +44,8 @@ import type { CaptionStyle } from "../types";
 
 const PRESET_CATEGORIES = [
   "All",
-  "Minimal & Luxury",
-  "Podcast",
-  "Kinetic",
-  "Cinematic",
-  "Special",
+  "Card & Aesthetic",
+  "Loud Captions",
   "Custom",
 ];
 
@@ -529,7 +526,10 @@ export default function Editor() {
         lineHeight: selectedStyle.lineHeight,
         color: selectedStyle.textColor,
         textTransform: selectedStyle.uppercase ? "uppercase" : "none",
-        textShadow: selectedStyle.shadowEnabled !== false && selectedStyle.shadowBlur > 0
+        fontStyle: selectedStyle.isItalic ? "italic" : "normal",
+        textShadow: selectedStyle.threeDShadow
+          ? "2px 2px 0px #000000, 4px 4px 0px #000000"
+          : selectedStyle.shadowEnabled !== false && selectedStyle.shadowBlur > 0
           ? `0px ${selectedStyle.shadowOffsetY || 1}px ${selectedStyle.shadowBlur}px ${selectedStyle.shadowColor || "#000000"}`
           : "none",
         WebkitTextStroke: selectedStyle.outlineWidth > 0
@@ -665,23 +665,28 @@ export default function Editor() {
                         <span className="block text-[10px] text-white/40 mt-0.5 truncate">{style.category || "Style"}</span>
                         {/* Mini Typography Visual Preview */}
                         <div
-                          className="mt-2 px-1.5 py-1 rounded bg-black/50 text-center text-[11px] font-bold truncate tracking-wide"
+                          className="mt-2 px-1.5 py-1 rounded text-center text-[11px] font-bold truncate tracking-wide"
                           style={{
                             fontFamily: style.fontFamily,
                             color: style.textColor,
+                            backgroundColor: style.backgroundColor && (style.backgroundOpacity || 0) > 0.05 ? style.backgroundColor : "rgba(0,0,0,0.5)",
+                            fontStyle: style.isItalic ? "italic" : "normal",
+                            transform: style.isTilted ? `rotate(${style.tiltAngle || -1.5}deg)` : undefined,
+                            border: style.id === "comic" ? "1.5px solid #000000" : undefined,
+                            boxShadow: style.threeDShadow ? "2px 2px 0px #000000" : undefined,
                           }}
                         >
                           <span
                             style={{
                               color: style.wordBox ? "#FFFFFF" : style.activeWordColor,
                               backgroundColor: style.wordBox ? (style.wordBoxColor || "#4F46E5") : undefined,
-                              borderRadius: style.wordBox ? 3 : 0,
-                              padding: style.wordBox ? "1px 3px" : 0,
+                              borderRadius: style.wordBox ? (style.wordBoxRadius || 4) : 0,
+                              padding: style.wordBox ? "1px 4px" : 0,
                             }}
                           >
-                            WORD
+                            {style.id === "terminal" ? "> MORNING" : "MORNING"}
                           </span>{" "}
-                          <span>POP</span>
+                          <span>{style.id === "one_word" ? "" : "MATCHA"}</span>
                         </div>
                       </button>
                     );
@@ -812,18 +817,22 @@ export default function Editor() {
                       return currentTime >= w.start && currentTime <= w.end;
                     });
                     const pos = selectedStyle?.position || "bottom";
+                    const tiltAngle = selectedStyle?.isTilted ? (selectedStyle?.tiltAngle || -1.5) : 0;
+                    const rotateStr = tiltAngle ? ` rotate(${tiltAngle}deg)` : "";
                     const posStyle: React.CSSProperties =
                       pos === "center"
-                        ? { top: "50%", transform: "translate(-50%, -50%)" }
+                        ? { top: "50%", transform: `translate(-50%, -50%)${rotateStr}` }
                         : pos === "top"
-                        ? { top: "14%", transform: "translateX(-50%)" }
+                        ? { top: "14%", transform: `translateX(-50%)${rotateStr}` }
                         : pos === "upper_center"
-                        ? { top: "24%", transform: "translateX(-50%)" }
+                        ? { top: "24%", transform: `translateX(-50%)${rotateStr}` }
                         : pos === "lower_third"
-                        ? { bottom: "24%", transform: "translateX(-50%)" }
-                        : { bottom: "14%", transform: "translateX(-50%)" };
+                        ? { bottom: "24%", transform: `translateX(-50%)${rotateStr}` }
+                        : { bottom: "14%", transform: `translateX(-50%)${rotateStr}` };
 
                     const bgOpacity = selectedStyle?.backgroundOpacity ?? 0;
+                    const isGlass = selectedStyle?.bgMode === "glass";
+                    const isComic = selectedStyle?.id === "comic";
                     const bgStyle: React.CSSProperties =
                       bgOpacity > 0.05
                         ? {
@@ -832,8 +841,19 @@ export default function Editor() {
                             )
                               .toString(16)
                               .padStart(2, "0")}`,
-                            borderRadius: 8,
+                            borderRadius: isGlass ? 24 : 8,
                             padding: "6px 14px",
+                            border: isGlass
+                              ? "1px solid rgba(255, 255, 255, 0.25)"
+                              : isComic
+                              ? "2px solid #000000"
+                              : undefined,
+                            boxShadow: isComic
+                              ? "4px 4px 0px #000000"
+                              : isGlass
+                              ? "0 4px 20px rgba(0,0,0,0.3)"
+                              : undefined,
+                            backdropFilter: isGlass ? "blur(8px)" : undefined,
                           }
                         : {};
 

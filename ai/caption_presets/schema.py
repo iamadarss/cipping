@@ -11,6 +11,8 @@ import re
 
 
 VALID_CATEGORIES = {
+    "Card & Aesthetic",
+    "Loud Captions",
     "Minimal & Luxury",
     "Podcast",
     "Kinetic",
@@ -78,6 +80,9 @@ class CaptionPresetSchema:
     line_height: float = 1.25
     text_case: str = "normal"  # normal, uppercase, lowercase, capitalize
     uppercase: bool = False
+    is_italic: bool = False
+    is_tilted: bool = False
+    tilt_angle: float = 0.0
 
     # Colors
     text_color: str = "#FFFFFF"
@@ -99,6 +104,7 @@ class CaptionPresetSchema:
     shadow_color: str = "#000000"
     shadow_blur: float = 1.5
     shadow_offset_y: float = 1.5
+    three_d_shadow: bool = False
 
     # Background Block
     background: bool = False
@@ -184,6 +190,9 @@ class CaptionPresetSchema:
         self.animation = anim
         self.animation_duration = max(0.05, min(1.0, float(self.animation_duration)))
 
+        # Tilt angle clamping
+        self.tilt_angle = max(-8.0, min(8.0, float(self.tilt_angle)))
+
         # Layout & Alignment
         if self.position not in VALID_POSITIONS:
             self.position = "bottom"
@@ -243,6 +252,9 @@ class CaptionPresetSchema:
             line_height=float(data.get("line_height") or data.get("lineHeight") or 1.25),
             text_case=str(data.get("text_case") or data.get("textCase") or ("uppercase" if data.get("uppercase") else "normal")),
             uppercase=bool(data.get("uppercase", False)),
+            is_italic=bool(data.get("is_italic") or data.get("isItalic") or data.get("italic", False)),
+            is_tilted=bool(data.get("is_tilted") or data.get("isTilted") or data.get("tilted", False)),
+            tilt_angle=float(data.get("tilt_angle") or data.get("tiltAngle") or 0.0),
             text_color=str(data.get("text_color") or data.get("textColor") or data.get("color") or "#FFFFFF"),
             active_word_color=str(data.get("active_word_color") or data.get("activeWordColor") or data.get("highlight_color") or "#FFE000"),
             emphasis_color=data.get("emphasis_color") or data.get("emphasisColor"),
@@ -256,6 +268,7 @@ class CaptionPresetSchema:
             shadow_color=str(data.get("shadow_color") or data.get("shadowColor") or "#000000"),
             shadow_blur=float(data.get("shadow_blur") or data.get("shadowBlur") or 1.5),
             shadow_offset_y=float(data.get("shadow_offset_y") or data.get("shadowOffsetY") or 1.5),
+            three_d_shadow=bool(data.get("three_d_shadow") or data.get("threeDShadow", False)),
             background=bool(data.get("background", False)),
             background_color=data.get("background_color") or data.get("backgroundColor"),
             background_opacity=float(data.get("background_opacity") or data.get("backgroundOpacity") or 0.0),

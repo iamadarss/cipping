@@ -2,7 +2,7 @@
 Comprehensive tests for UpClip Studio Premium Caption Engine & Creator Preset Library.
 Verifies:
   - Phase 2: Centralized Preset Registry CRUD & Persistence
-  - Phase 3: All 20 Canonical Presets Across 5 Categories
+  - Phase 3: All 19 Benchmark Creator Presets ("Card & Aesthetic" + "Loud Captions")
   - Phase 4: 10-Animation Engine in ASS
   - Phase 5: Normalized Style Schema Validation
   - Phase 7: Hindi / Hinglish / Devanagari Unicode Text Shaping & Font Fallback
@@ -30,39 +30,35 @@ from ai.animated_caption_renderer import AnimatedCaptionRenderer
 from app import create_app
 
 
-EXPECTED_20_PRESET_IDS = [
-    # Minimal & Luxury
-    "pure_white",
-    "soft_highlight",
-    "luxury_editorial",
-    "modern_creator",
-    # Podcast
-    "podcast_gold",
-    "podcast_teal",
-    "glass_caption",
-    "speaker_focus",
-    # Kinetic
-    "karaoke_clean",
-    "word_pill",
-    "punch_orange",
-    "creator_pink",
-    # Cinematic
-    "cinema_classic",
-    "documentary",
-    "editorial_gold",
-    "top_clean",
-    # Special
-    "fresh_green",
-    "lavender",
-    "focus_red",
-    "monochrome",
+EXPECTED_19_PRESET_IDS = [
+    # Card & Aesthetic (11 styles)
+    "boxed",
+    "subtitle",
+    "highlight",
+    "comic",
+    "terminal",
+    "soft_glass",
+    "magazine",
+    "highlighter",
+    "paper",
+    "label",
+    "sticker",
+    # Loud Captions (8 styles)
+    "bold_pop",
+    "karaoke",
+    "typewriter",
+    "one_word",
+    "neon",
+    "pop_3d",
+    "gradient",
+    "beast",
 ]
 
 
-def test_20_canonical_presets_registered():
-    """Verify all 20 specified premium presets are registered with exact IDs."""
-    assert len(CANONICAL_PRESETS) == 20
-    for preset_id in EXPECTED_20_PRESET_IDS:
+def test_19_canonical_presets_registered():
+    """Verify all 19 benchmark creator presets are registered with exact IDs."""
+    assert len(CANONICAL_PRESETS) == 19
+    for preset_id in EXPECTED_19_PRESET_IDS:
         assert preset_id in CANONICAL_PRESETS, f"Missing canonical preset: {preset_id}"
         preset = get_preset(preset_id)
         assert preset.id == preset_id
@@ -77,38 +73,34 @@ def test_20_canonical_presets_registered():
 
 
 def test_preset_categories_taxonomy():
-    """Verify presets are correctly distributed across the 5 canonical categories."""
+    """Verify presets are correctly distributed across Card & Aesthetic and Loud Captions."""
     categories = caption_registry.get_categories()
-    assert "Minimal & Luxury" in categories
-    assert "Podcast" in categories
-    assert "Kinetic" in categories
-    assert "Cinematic" in categories
-    assert "Special" in categories
+    assert "Card & Aesthetic" in categories
+    assert "Loud Captions" in categories
 
-    minimal = list_presets("Minimal & Luxury")
-    assert len(minimal) >= 4
-    assert any(p.id == "pure_white" for p in minimal)
-    assert any(p.id == "luxury_editorial" for p in minimal)
+    card_aesthetic = list_presets("Card & Aesthetic")
+    assert len(card_aesthetic) == 11
+    assert any(p.id == "boxed" for p in card_aesthetic)
+    assert any(p.id == "comic" for p in card_aesthetic)
+    assert any(p.id == "highlight" for p in card_aesthetic)
+    assert any(p.id == "terminal" for p in card_aesthetic)
+    assert any(p.id == "soft_glass" for p in card_aesthetic)
+    assert any(p.id == "magazine" for p in card_aesthetic)
+    assert any(p.id == "highlighter" for p in card_aesthetic)
+    assert any(p.id == "paper" for p in card_aesthetic)
+    assert any(p.id == "label" for p in card_aesthetic)
+    assert any(p.id == "sticker" for p in card_aesthetic)
 
-    podcast = list_presets("Podcast")
-    assert len(podcast) >= 4
-    assert any(p.id == "podcast_gold" for p in podcast)
-    assert any(p.id == "glass_caption" for p in podcast)
-
-    kinetic = list_presets("Kinetic")
-    assert len(kinetic) >= 4
-    assert any(p.id == "karaoke_clean" for p in kinetic)
-    assert any(p.id == "word_pill" for p in kinetic)
-
-    cinematic = list_presets("Cinematic")
-    assert len(cinematic) >= 4
-    assert any(p.id == "cinema_classic" for p in cinematic)
-    assert any(p.id == "top_clean" for p in cinematic)
-
-    special = list_presets("Special")
-    assert len(special) >= 4
-    assert any(p.id == "fresh_green" for p in special)
-    assert any(p.id == "monochrome" for p in special)
+    loud = list_presets("Loud Captions")
+    assert len(loud) == 8
+    assert any(p.id == "bold_pop" for p in loud)
+    assert any(p.id == "karaoke" for p in loud)
+    assert any(p.id == "typewriter" for p in loud)
+    assert any(p.id == "one_word" for p in loud)
+    assert any(p.id == "neon" for p in loud)
+    assert any(p.id == "pop_3d" for p in loud)
+    assert any(p.id == "gradient" for p in loud)
+    assert any(p.id == "beast" for p in loud)
 
 
 def test_schema_validation_and_normalization():
@@ -125,6 +117,9 @@ def test_schema_validation_and_normalization():
         "background_opacity": 1.5, # Clamped to 1.0
         "animation": "pop",
         "uppercase": True,
+        "is_tilted": True,
+        "tilt_angle": -15,        # Clamped to -8.0
+        "three_d_shadow": True,
     }
     schema = CaptionPresetSchema.from_dict(raw)
     assert schema.id == "custom_super_style_"
@@ -135,6 +130,9 @@ def test_schema_validation_and_normalization():
     assert schema.background_opacity == 1.0
     assert schema.text_case == "uppercase"
     assert schema.animation == "pop"
+    assert schema.is_tilted is True
+    assert schema.tilt_angle == -8.0
+    assert schema.three_d_shadow is True
 
 
 def test_custom_preset_crud_and_persistence(tmp_path):
@@ -174,18 +172,20 @@ def test_custom_preset_crud_and_persistence(tmp_path):
     deleted = registry.delete_custom_preset("my_brand_style")
     assert deleted is True
     fallback = registry.get_preset("my_brand_style")
-    assert fallback.id == "pure_white"  # Defaults cleanly
+    assert fallback.id == "boxed"  # Defaults cleanly to boxed
 
 
 def test_legacy_migrations():
-    """Verify legacy preset names and aliases resolve seamlessly to canonical IDs."""
-    assert resolve_canonical_id("hormozi") == "word_pill"
-    assert resolve_canonical_id("hormozi_pop") == "word_pill"
-    assert resolve_canonical_id("mrbeast") == "focus_red"
-    assert resolve_canonical_id("beast_glow") == "focus_red"
-    assert resolve_canonical_id("tiktok-pop") == "creator_pink"
-    assert resolve_canonical_id("cap_clean") == "pure_white"
-    assert resolve_canonical_id("cap_podcast") == "podcast_gold"
+    """Verify legacy preset names and aliases resolve seamlessly to new benchmark IDs."""
+    assert resolve_canonical_id("hormozi") == "bold_pop"
+    assert resolve_canonical_id("hormozi_pop") == "bold_pop"
+    assert resolve_canonical_id("mrbeast") == "beast"
+    assert resolve_canonical_id("beast_glow") == "beast"
+    assert resolve_canonical_id("tiktok-pop") == "bold_pop"
+    assert resolve_canonical_id("cap_clean") == "boxed"
+    assert resolve_canonical_id("cap_podcast") == "karaoke"
+    assert resolve_canonical_id("pure_white") == "boxed"
+    assert resolve_canonical_id("podcast_gold") == "karaoke"
 
     # Test dictionary style migration
     legacy_style = {
@@ -196,7 +196,7 @@ def test_legacy_migrations():
         "activeWordColor": "#00FF66",
     }
     migrated = migrate_legacy_style(legacy_style)
-    assert migrated["id"] == "word_pill"
+    assert migrated["id"] == "bold_pop"
     assert migrated["font_family"] == "Inter"
     assert migrated["font_size"] == 42
     assert migrated["text_color"] == "#FFFFFF"
@@ -290,7 +290,7 @@ def test_safe_margins_in_ass():
 
 
 def test_caption_studio_canonical_presets_api():
-    """Verify REST endpoint /api/caption-studio/presets/canonical returns all 20 presets."""
+    """Verify REST endpoint /api/caption-studio/presets/canonical returns all 19 presets."""
     app = create_app()
     client = app.test_client()
 
@@ -298,17 +298,19 @@ def test_caption_studio_canonical_presets_api():
     assert res.status_code == 200
     data = res.get_json()
     assert data["success"] is True
-    assert data["count"] >= 20
-    assert len(data["categories"]) >= 5
-    assert any(p["id"] == "pure_white" for p in data["presets"])
-    assert any(p["id"] == "podcast_gold" for p in data["presets"])
-    assert any(p["id"] == "word_pill" for p in data["presets"])
-    assert any(p["id"] == "punch_orange" for p in data["presets"])
-    assert any(p["id"] == "monochrome" for p in data["presets"])
+    assert data["count"] >= 19
+    assert len(data["categories"]) >= 2
+    assert any(p["id"] == "boxed" for p in data["presets"])
+    assert any(p["id"] == "subtitle" for p in data["presets"])
+    assert any(p["id"] == "highlight" for p in data["presets"])
+    assert any(p["id"] == "comic" for p in data["presets"])
+    assert any(p["id"] == "bold_pop" for p in data["presets"])
+    assert any(p["id"] == "karaoke" for p in data["presets"])
+    assert any(p["id"] == "beast" for p in data["presets"])
 
     # Test category filter
-    res_kinetic = client.get("/api/caption-studio/presets/canonical?category=Kinetic")
-    assert res_kinetic.status_code == 200
-    data_kinetic = res_kinetic.get_json()
-    assert all(p["category"] == "Kinetic" for p in data_kinetic["presets"])
-
+    res_loud = client.get("/api/caption-studio/presets/canonical?category=Loud%20Captions")
+    assert res_loud.status_code == 200
+    data_loud = res_loud.get_json()
+    assert len(data_loud["presets"]) == 8
+    assert all(p["category"] == "Loud Captions" for p in data_loud["presets"])

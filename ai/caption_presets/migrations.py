@@ -9,55 +9,79 @@ from typing import Dict, Any, Optional
 
 LEGACY_ID_MAP: Dict[str, str] = {
     # 7 Original Creator Presets
-    "default": "soft_highlight",
-    "hormozi": "word_pill",
-    "mrbeast": "focus_red",
-    "minimal": "pure_white",
-    "tiktok": "creator_pink",
-    "neon": "podcast_teal",
-    "podcast": "podcast_gold",
+    "default": "boxed",
+    "hormozi": "bold_pop",
+    "mrbeast": "beast",
+    "minimal": "subtitle",
+    "tiktok": "bold_pop",
+    "neon": "neon",
+    "podcast": "karaoke",
+
+    # Previous 20 Presets -> New 19 Creator Benchmarks
+    "pure_white": "boxed",
+    "soft_highlight": "highlighter",
+    "luxury_editorial": "magazine",
+    "modern_creator": "soft_glass",
+    "podcast_gold": "karaoke",
+    "podcast_teal": "neon",
+    "glass_caption": "soft_glass",
+    "speaker_focus": "highlight",
+    "karaoke_clean": "karaoke",
+    "word_pill": "highlight",
+    "punch_orange": "comic",
+    "creator_pink": "sticker",
+    "cinema_classic": "subtitle",
+    "documentary": "paper",
+    "editorial_gold": "magazine",
+    "top_clean": "label",
+    "fresh_green": "terminal",
+    "lavender": "highlight",
+    "focus_red": "comic",
+    "monochrome": "label",
 
     # Aliases from original caption_templates.py
-    "hormozi_pop": "word_pill",
-    "beast_glow": "focus_red",
-    "red_punch": "focus_red",
-    "clean_gold": "podcast_gold",
-    "neon_cyber": "podcast_teal",
-    "karaoke_pill": "word_pill",
-    "tiktok_pop": "creator_pink",
-    "tiktok-pop": "creator_pink",
-    "clean": "pure_white",
-    "bold": "punch_orange",
-    "creator": "modern_creator",
+    "hormozi_pop": "bold_pop",
+    "beast_glow": "beast",
+    "red_punch": "comic",
+    "clean_gold": "karaoke",
+    "neon_cyber": "neon",
+    "karaoke_pill": "highlight",
+    "tiktok_pop": "bold_pop",
+    "tiktok-pop": "bold_pop",
+    "clean": "boxed",
+    "bold": "bold_pop",
+    "creator": "soft_glass",
 
     # Aliases from preset_manager.py DEFAULT_PRESETS["captions"]
-    "cap_clean": "pure_white",
-    "cap_bold": "punch_orange",
-    "cap_minimal": "pure_white",
-    "cap_creator": "modern_creator",
-    "cap_podcast": "podcast_gold",
-    "cap_news": "monochrome",
-    "cap_gaming": "punch_orange",
-    "cap_dynamic": "modern_creator",
-    "cap_default": "soft_highlight",
-    "cap_hormozi": "word_pill",
-    "cap_mrbeast": "focus_red",
-    "cap_tiktok": "creator_pink",
-    "cap_neon": "podcast_teal",
+    "cap_clean": "boxed",
+    "cap_bold": "bold_pop",
+    "cap_minimal": "subtitle",
+    "cap_creator": "soft_glass",
+    "cap_podcast": "karaoke",
+    "cap_news": "label",
+    "cap_gaming": "comic",
+    "cap_dynamic": "bold_pop",
+    "cap_default": "boxed",
+    "cap_hormozi": "bold_pop",
+    "cap_mrbeast": "beast",
+    "cap_tiktok": "bold_pop",
+    "cap_neon": "neon",
 
-    # Editor.tsx / editorStore.ts legacy IDs
-    "karaoke": "karaoke_clean",
+    # Alternate naming
+    "3d_pop": "pop_3d",
+    "three_d_pop": "pop_3d",
+    "softglass": "soft_glass",
 }
 
 
 def resolve_canonical_id(preset_id_or_name: Optional[str]) -> str:
     """
     Resolve any legacy identifier or name to a canonical preset ID.
-    Defaults to 'pure_white' if unresolvable.
+    Defaults to 'boxed' if unresolvable.
     """
     if not preset_id_or_name:
-        return "pure_white"
-    raw = str(preset_id_or_name).lower().strip().replace(" ", "_")
+        return "boxed"
+    raw = str(preset_id_or_name).lower().strip().replace(" ", "_").replace("-", "_")
     return LEGACY_ID_MAP.get(raw, raw)
 
 
