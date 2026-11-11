@@ -211,13 +211,76 @@ if (captionEnabled) {
 
 // ---------- Trending Caption Preset Auto-Configurator ----------
 const CAPTION_PRESET_CONFIGS = {
+    hormozi: {
+        font: 'Arial Black',
+        size: 38,
+        animation: 'pop',
+        color: '#FFFFFF',
+        highlightColor: '#00FF66',
+        outline: 4,
+        position: 'bottom'
+    },
+    mrbeast: {
+        font: 'Arial Black',
+        size: 40,
+        animation: 'bounce',
+        color: '#FFFF00',
+        highlightColor: '#FF2D2D',
+        outline: 5,
+        position: 'bottom'
+    },
+    tiktok: {
+        font: 'TikTokSans-Bold',
+        size: 34,
+        animation: 'pop',
+        color: '#FFFFFF',
+        highlightColor: '#FE2C55',
+        outline: 3,
+        position: 'bottom'
+    },
+    neon: {
+        font: 'Montserrat',
+        size: 36,
+        animation: 'pop',
+        color: '#00FFFF',
+        highlightColor: '#FF00FF',
+        outline: 2,
+        position: 'bottom'
+    },
+    minimal: {
+        font: 'Montserrat',
+        size: 30,
+        animation: 'fade',
+        color: '#FFFFFF',
+        highlightColor: '#FFFFFF',
+        outline: 0,
+        position: 'bottom'
+    },
+    podcast: {
+        font: 'Montserrat',
+        size: 32,
+        animation: 'fade',
+        color: '#FFF8E7',
+        highlightColor: '#FFE082',
+        outline: 2,
+        position: 'bottom'
+    },
+    default: {
+        font: 'Montserrat',
+        size: 36,
+        animation: 'pop',
+        color: '#FFFFFF',
+        highlightColor: '#FFE000',
+        outline: 3,
+        position: 'bottom'
+    },
     hormozi_pop: {
         font: 'Arial Black',
         size: 38,
         animation: 'pop',
         color: '#FFFFFF',
-        highlightColor: '#FBBF24',
-        outline: 3,
+        highlightColor: '#00FF66',
+        outline: 4,
         position: 'bottom'
     },
     beast_glow: {
@@ -360,6 +423,9 @@ const ENGINE_SWITCH_CONFIG = [
     { toggle: 'captionEnabled', status: 'captionEnabledStatus', subfields: 'animatedCaptionsSubfields', onChange: () => {
         updateCaptionOptions();
     }},
+    { toggle: 'hookTitleToggle', status: 'hookTitleStatus', subfields: null },
+    { toggle: 'contextualEmojiToggle', status: 'contextualEmojiStatus', subfields: null },
+    { toggle: 'brollToggle', status: 'brollStatus', subfields: null },
     { toggle: 'audioNormalizationToggle', status: 'audioNormalizationStatus', subfields: null },
 ];
 
@@ -1049,6 +1115,14 @@ function collectSettings() {
 
         // 10. Audio Loudness Normalization
         audio_normalization_enabled: document.getElementById('audioNormalizationToggle') ? document.getElementById('audioNormalizationToggle').checked : true,
+
+        // 11. SupoClip AI Workflows & Advanced Features
+        workflow: document.getElementById('selectedWorkflow') ? document.getElementById('selectedWorkflow').value : 'highlights',
+        workflow_topic: document.getElementById('workflowTopicInput') ? document.getElementById('workflowTopicInput').value : '',
+        workflow_part_count: document.getElementById('workflowPartCountSelect') ? parseInt(document.getElementById('workflowPartCountSelect').value, 10) : 3,
+        hook_title_enabled: document.getElementById('hookTitleToggle') ? document.getElementById('hookTitleToggle').checked : true,
+        contextual_emoji_enabled: document.getElementById('contextualEmojiToggle') ? document.getElementById('contextualEmojiToggle').checked : true,
+        broll_enabled: document.getElementById('brollToggle') ? document.getElementById('brollToggle').checked : true,
     };
 
     if (mode === 'duration') {
@@ -3588,5 +3662,142 @@ if (previewLink) {
         if (state.result) showStep(5);
     });
 }
+
+// -------------------------------------------------------------
+// SupoClip 5-Mode Workflows & 1-Click Social Publishing Engine
+// -------------------------------------------------------------
+(function initSupoClipWorkflowsAndSocial() {
+    // 1. Workflow Cards Selection
+    const cards = document.querySelectorAll('.workflow-card');
+    cards.forEach(card => {
+        card.addEventListener('click', () => {
+            cards.forEach(c => {
+                c.classList.remove('active');
+                c.style.border = '1px solid var(--border)';
+                c.style.background = 'var(--surface-2)';
+            });
+            card.classList.add('active');
+            card.style.border = '2px solid var(--primary)';
+            card.style.background = 'rgba(238, 77, 45, 0.08)';
+
+            const wf = card.getAttribute('data-workflow');
+            const selInput = document.getElementById('selectedWorkflow');
+            if (selInput) selInput.value = wf;
+
+            const badge = document.getElementById('activeWorkflowBadge');
+            if (badge) {
+                const icons = { highlights: '🌟', series: '📖', topic: '🎯', recap: '📋', trailer: '🎬' };
+                badge.textContent = `${icons[wf] || '★'} ${wf.charAt(0).toUpperCase() + wf.slice(1)} Mode`;
+            }
+
+            const topicRow = document.getElementById('workflowTopicRow');
+            if (topicRow) topicRow.style.display = wf === 'topic' ? 'block' : 'none';
+
+            const seriesRow = document.getElementById('workflowSeriesRow');
+            if (seriesRow) seriesRow.style.display = wf === 'series' ? 'flex' : 'none';
+        });
+    });
+
+    // 2. Social Publishing & Feedback Loop
+    const socialModal = document.getElementById('socialPublishModal');
+    const openSocialBtn = document.getElementById('btnOpenSocialPublishModal');
+    const closeSocialBtn = document.getElementById('closeSocialModalBtn');
+    const cancelSocialBtn = document.getElementById('cancelSocialBtn');
+    const confirmSocialBtn = document.getElementById('confirmSocialPublishBtn');
+
+    let activeSocialPlatform = 'youtube';
+
+    if (openSocialBtn) {
+        openSocialBtn.addEventListener('click', () => {
+            if (socialModal) {
+                socialModal.hidden = false;
+                socialModal.style.display = 'flex';
+            }
+        });
+    }
+
+    const hideSocialModal = () => {
+        if (socialModal) {
+            socialModal.hidden = true;
+            socialModal.style.display = 'none';
+        }
+    };
+
+    if (closeSocialBtn) closeSocialBtn.addEventListener('click', hideSocialModal);
+    if (cancelSocialBtn) cancelSocialBtn.addEventListener('click', hideSocialModal);
+
+    // Platform switcher
+    ['youtube', 'tiktok', 'instagram'].forEach(p => {
+        const btn = document.getElementById(`socialPlatform${p.charAt(0).toUpperCase() + p.slice(1)}`);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                activeSocialPlatform = p;
+                ['youtube', 'tiktok', 'instagram'].forEach(other => {
+                    const oBtn = document.getElementById(`socialPlatform${other.charAt(0).toUpperCase() + other.slice(1)}`);
+                    if (oBtn) {
+                        if (other === p) {
+                            oBtn.style.background = p === 'youtube' ? '#FF0000' : (p === 'tiktok' ? '#FE2C55' : '#E1306C');
+                            oBtn.style.color = '#fff';
+                            oBtn.style.border = 'none';
+                        } else {
+                            oBtn.style.background = 'var(--surface-2)';
+                            oBtn.style.color = 'var(--text-secondary)';
+                            oBtn.style.border = '1px solid var(--border)';
+                        }
+                    }
+                });
+            });
+        }
+    });
+
+    // Timing dropdown toggle
+    const schedSelect = document.getElementById('socialScheduleType');
+    const schedWrap = document.getElementById('socialScheduleTimeWrap');
+    if (schedSelect && schedWrap) {
+        schedSelect.addEventListener('change', () => {
+            schedWrap.style.display = schedSelect.value === 'schedule' ? 'block' : 'none';
+        });
+    }
+
+    // Direct publish action
+    if (confirmSocialBtn) {
+        confirmSocialBtn.addEventListener('click', async () => {
+            const title = document.getElementById('socialPostTitle')?.value || 'Viral Shorts Video';
+            const desc = document.getElementById('socialPostDesc')?.value || '';
+            const isSchedule = schedSelect?.value === 'schedule';
+            const scheduleTime = isSchedule ? document.getElementById('socialScheduleDatetime')?.value : null;
+
+            confirmSocialBtn.disabled = true;
+            confirmSocialBtn.textContent = 'Publishing...';
+
+            try {
+                const resp = await fetch('/api/social/publish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        platform: activeSocialPlatform,
+                        video_path: 'output/final/clip_sample.mp4',
+                        title: title,
+                        description: desc,
+                        schedule_time: scheduleTime,
+                    })
+                });
+                const resData = await resp.json();
+                if (resData.success) {
+                    alert(`🚀 Video successfully ${scheduleTime ? 'scheduled' : 'published'} to ${activeSocialPlatform.toUpperCase()}!\nPost ID: ${resData.post_id}\nRetention metrics will be pulled automatically into the AI feedback loop.`);
+                    hideSocialModal();
+                } else {
+                    alert('Publishing error: ' + (resData.error || 'Server error'));
+                }
+            } catch (err) {
+                alert('Connection error: ' + err.message);
+            } finally {
+                confirmSocialBtn.disabled = false;
+                confirmSocialBtn.textContent = '🚀 Publish Now';
+            }
+        });
+    }
+})();
+
 
 

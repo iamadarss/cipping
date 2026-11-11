@@ -308,6 +308,9 @@ def run_pipeline_job(job, app=None):
             if hasattr(job.caption_style, "animation") and job.caption_style.animation:
                 caption_opts["animation"] = job.caption_style.animation
         caption_template = settings.get("caption_template")
+        hook_title_enabled = settings.get("hook_title_enabled", True)
+        contextual_emoji_enabled = settings.get("contextual_emoji_enabled", True)
+        broll_enabled = settings.get("broll_enabled", True)
 
         # 1. FFmpeg check
         job.set_step(1, "Checking FFmpeg")
@@ -682,12 +685,20 @@ def run_pipeline_job(job, app=None):
                 # Slice transcript specifically for this clip with relative timestamps starting at 0.0s!
                 clip_sub_segments = transcript_mgr.slice(c_start, c_end, relative_timestamps=True)
 
+                cur_opts = dict(effective_opts)
+                if hook_title_enabled:
+                    hook_t = seg.get("hook_title") or seg.get("title")
+                    if hook_t:
+                        cur_opts["hook_title"] = hook_t
+                if seg.get("point_labels"):
+                    cur_opts["point_labels"] = seg.get("point_labels")
+
                 try:
                     rendered = caption_renderer.render(
                         input_video=clip_path,
                         transcript=clip_sub_segments,
                         output_video=temp_output,
-                        opts=effective_opts,
+                        opts=cur_opts,
                         template=caption_template,
                     )
                     if rendered and rendered.exists():

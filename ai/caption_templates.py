@@ -413,3 +413,82 @@ def build_hook_title_ass(
     )
 
     return style_line, [dialogue_line]
+
+
+# ---------------------------------------------------------------------------
+# Point Label ASS Builder (for Recap / Series Workflow on-screen points)
+# ---------------------------------------------------------------------------
+
+POINT_LABEL_SECONDS = 3.0
+POINT_LABEL_MIN_SECONDS = 1.0
+
+
+def build_point_label_ass(
+    labels: List[Dict[str, Any]],
+    template: Dict[str, Any],
+    video_width: int = 1080,
+    video_height: int = 1920,
+    output_duration: float = 30.0,
+    caption_font_px: int = 40,
+    position_y: Optional[float] = None,
+    hook_end: float = 0.0,
+) -> Tuple[str, List[str]]:
+    """
+    Build on-screen point label badges (e.g. 'POINT 1: THE HOOK', 'KEY TAKEAWAY')
+    for Recap and Series workflows, sitting in the top safe zone on a dark pill backing.
+    """
+    if not labels:
+        return "", []
+
+    font_name = template.get("font_family") or "Montserrat"
+    primary = hex_to_ass_color(template.get("font_color"), "#FFFFFF")
+    highlight = hex_to_ass_color(
+        template.get("emphasis_color") or template.get("highlight_color"), "#FFE000"
+    )
+    outline = hex_to_ass_color(template.get("stroke_color") or "#000000", "#000000")
+    back_color = hex_to_ass_color(template.get("background_color"), "#00000080")
+
+    base_px = min(60, max(28, int(round(caption_font_px * 0.85))))
+    stroke_width = max(2, int(round(base_px * 0.08)))
+    margin_v = max(40, int(video_height * 0.09))
+
+    style_line = (
+        f"Style: Point,{font_name},{base_px},{primary},&H000000FF,{outline},{back_color},"
+        f"1,0,0,0,100,100,0,0,1,{stroke_width},2,8,50,50,{margin_v},1"
+    )
+
+    events: List[str] = []
+    starts = [max(0.0, float(label.get("start", 0.0))) for label in labels]
+
+    for position, label in enumerate(labels):
+        raw = " ".join(str(label.get("text") or "").split())
+        if not raw:
+            continue
+        text_val = raw.upper() if template.get("uppercase") else raw
+
+        start = max(starts[position], hook_end)
+        next_start = starts[position + 1] if position + 1 < len(starts) else output_duration
+        duration_allocated = float(label.get("duration", POINT_LABEL_SECONDS))
+        end = min(start + duration_allocated, output_duration, max(start + POINT_LABEL_MIN_SECONDS, next_start - 0.1))
+
+        if end - start < POINT_LABEL_MIN_SECONDS:
+            continue
+
+        words = text_val.split()
+        styled_words = []
+        for word in words:
+            norm = normalize_token(word)
+            accented = norm in POWER_WORDS or any(c.isdigit() for c in norm)
+            col = highlight if accented else primary
+            styled_words.append(f"{{\\c{col}}}{escape_ass_text(word)}")
+
+        body = " ".join(styled_words)
+        entrance = r"{\fad(120,180)\fscx95\fscy95\t(0,120,\fscx100\fscy100)}"
+        placement = f"\\pos({video_width // 2},{round(video_height * position_y)})" if position_y is not None else ""
+        events.append(
+            f"Dialogue: 1,{ass_timestamp(start)},{ass_timestamp(end)},Point,,0,0,0,,"
+            f"{entrance}{placement}{body}"
+        )
+
+    return style_line, events
+

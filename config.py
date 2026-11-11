@@ -55,7 +55,12 @@ FRAMES_DIR = OUTPUT_DIR / "frames"
 
 THUMBNAIL_DIR = OUTPUT_DIR / "thumbnails"
 
+BROLL_CACHE_DIR = OUTPUT_DIR / "broll_cache"
+
 LOG_DIR = ROOT_DIR / "logs"
+
+# External API Keys (SupoClip features)
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
 
 # Directory that holds user-imported media files (videos, images, audio)
 MEDIA_ROOT = INPUT_DIR

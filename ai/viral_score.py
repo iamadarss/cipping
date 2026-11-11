@@ -5,11 +5,13 @@ Speech Pacing, Audio Energy, Visual Dynamics, and Duration Optimization.
 """
 
 from pathlib import Path
+from typing import Optional
+from ai.workflows.virality_engine import classify_hook_type
 
 
 class ViralScoreCalculator:
-    def __init__(self):
-        pass
+    def __init__(self, performance_context: Optional[str] = None):
+        self.performance_context = performance_context
 
     def calculate_score(
         self,
@@ -19,7 +21,8 @@ class ViralScoreCalculator:
         audio_energy=60.0,
         motion_score=60.0,
         face_score=70.0,
-        keywords_matched=None
+        keywords_matched=None,
+        performance_context=None,
     ):
         """
         Compute an explainable viral score (0-100) for a short-form video clip.
@@ -29,6 +32,8 @@ class ViralScoreCalculator:
                 "viral_score": int (0-100),
                 "rating": str,
                 "badge": str,
+                "hook_type": str,
+                "four_pillars": dict,
                 "breakdown": dict,
                 "tips": list of str
             }
@@ -37,6 +42,10 @@ class ViralScoreCalculator:
         text = text or ""
         opening_text = opening_text or text[:120]
         keywords_matched = keywords_matched or []
+        ctx = performance_context or self.performance_context or ""
+
+        # Hook type classification
+        hook_type, hook_title = classify_hook_type(opening_text or text)
 
         # 1. Hook Strength (0 - 25 pts)
         hook_score = 12
@@ -47,6 +56,13 @@ class ViralScoreCalculator:
         # Curiosity/High-stake words
         if any(w in opening_lower for w in ["secret", "never", "mistake", "stop", "best", "warning", "truth", "money"]):
             hook_score += 7
+
+        # Bias from creator's audience history
+        if ctx:
+            ctx_lower = ctx.lower()
+            if hook_type in ctx_lower and ("highest" in ctx_lower or "top" in ctx_lower):
+                hook_score += 3
+
         hook_score = min(25, max(5, hook_score))
 
         # 2. Pacing & Speech Density (0 - 20 pts)
@@ -112,10 +128,19 @@ class ViralScoreCalculator:
         if not tips:
             tips.append("High-quality clip parameters ready for YouTube Shorts and Instagram Reels.")
 
+        four_pillars = {
+            "hook": hook_score,
+            "engagement": min(25, pacing_score + int(round(audio_score * 0.25))),
+            "value": min(25, int(round(pacing_score * 0.75)) + (6 if len(keywords_matched) > 0 else 0)),
+            "shareability": min(25, duration_score + int(round(visual_score * 0.5))),
+        }
+
         return {
             "viral_score": total_score,
             "rating": rating,
             "badge": badge,
+            "hook_type": hook_type,
+            "four_pillars": four_pillars,
             "words_per_sec": round(words_per_sec, 2),
             "breakdown": {
                 "hook_score": hook_score,

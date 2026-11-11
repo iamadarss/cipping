@@ -329,8 +329,10 @@ def create_app():
     from routes.projects import projects_bp
     from routes.editor import editor_bp
     from routes.media_thumbnail import media_thumbnail_bp
+    from routes.workflows_api import workflows_bp
     app.register_blueprint(media_thumbnail_bp)
     app.register_blueprint(editor_bp)
+    app.register_blueprint(workflows_bp)
 
     app.register_blueprint(home_bp)
     app.register_blueprint(upload_bp)

@@ -288,6 +288,88 @@
                                     </button>
                                 </div>
 
+                                <!-- SupoClip 5-Mode AI Workflow Selector -->
+                                <div class="card" style="margin-bottom: var(--space-4); padding: var(--space-4); border: 1px solid var(--border-strong); background: var(--surface-1);">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                                        <div>
+                                            <h3 style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin:0; display:flex; align-items:center; gap:8px;">
+                                                <span style="color:var(--primary);">★</span> AI Clipping Workflow Modes
+                                            </h3>
+                                            <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Select your production goal: highlights, multi-part series, topic focus, recap, or trailer.</p>
+                                        </div>
+                                        <span class="badge badge-primary" id="activeWorkflowBadge">🌟 Highlights Mode</span>
+                                    </div>
+
+                                    <div class="workflow-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+                                        <div class="workflow-card active" data-workflow="highlights" id="wfCardHighlights" style="cursor:pointer; padding:12px; border-radius:8px; border:2px solid var(--primary); background:rgba(238, 77, 45, 0.08); transition:all 0.2s ease;">
+                                            <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--primary);">
+                                                <span>STANDALONE</span>
+                                                <span style="background:var(--primary); color:#fff; border-radius:10px; padding:1px 6px;">VIRAL</span>
+                                            </div>
+                                            <div style="font-size:20px; margin:6px 0 2px 0;">🌟</div>
+                                            <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Highlights</div>
+                                            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Top standalone viral moments with 4-pillar scoring.</div>
+                                        </div>
+
+                                        <div class="workflow-card" data-workflow="series" id="wfCardSeries" style="cursor:pointer; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); transition:all 0.2s ease;">
+                                            <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--text-muted);">
+                                                <span>EPISODIC</span>
+                                                <span style="background:var(--surface-3); color:var(--text-secondary); border-radius:10px; padding:1px 6px;">PARTS</span>
+                                            </div>
+                                            <div style="font-size:20px; margin:6px 0 2px 0;">📖</div>
+                                            <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Series</div>
+                                            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Chronological numbered episodes (Part 1, 2...).</div>
+                                        </div>
+
+                                        <div class="workflow-card" data-workflow="topic" id="wfCardTopic" style="cursor:pointer; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); transition:all 0.2s ease;">
+                                            <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--text-muted);">
+                                                <span>KEYWORD</span>
+                                                <span style="background:var(--surface-3); color:var(--text-secondary); border-radius:10px; padding:1px 6px;">FILTER</span>
+                                            </div>
+                                            <div style="font-size:20px; margin:6px 0 2px 0;">🎯</div>
+                                            <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Topic Focus</div>
+                                            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Targeted clips on your specific topic or subject.</div>
+                                        </div>
+
+                                        <div class="workflow-card" data-workflow="recap" id="wfCardRecap" style="cursor:pointer; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); transition:all 0.2s ease;">
+                                            <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--text-muted);">
+                                                <span>SUMMARY</span>
+                                                <span style="background:var(--surface-3); color:var(--text-secondary); border-radius:10px; padding:1px 6px;">BADGES</span>
+                                            </div>
+                                            <div style="font-size:20px; margin:6px 0 2px 0;">📋</div>
+                                            <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Recap</div>
+                                            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Key points with on-screen point badges (Point 1, 2).</div>
+                                        </div>
+
+                                        <div class="workflow-card" data-workflow="trailer" id="wfCardTrailer" style="cursor:pointer; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); transition:all 0.2s ease;">
+                                            <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--text-muted);">
+                                                <span>HYPE</span>
+                                                <span style="background:var(--surface-3); color:var(--text-secondary); border-radius:10px; padding:1px 6px;">TEASER</span>
+                                            </div>
+                                            <div style="font-size:20px; margin:6px 0 2px 0;">🎬</div>
+                                            <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Trailer</div>
+                                            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Fast-cut hype teaser (15-35s) to drive full views.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Workflow Dynamic Inputs -->
+                                    <div id="workflowTopicRow" style="display:none; margin-top: 12px; padding: 10px; background: var(--surface-2); border-radius: 6px; border: 1px solid var(--border);">
+                                        <label style="font-size: 12px; font-weight: 700; color: var(--text-primary); display:block; margin-bottom:4px;">🎯 Specify Topic / Keyword Filter:</label>
+                                        <input type="text" id="workflowTopicInput" class="form-control" placeholder="e.g. AI Technology, Bitcoin, Productivity, Diet" style="padding: 8px 12px; font-weight: 600;">
+                                    </div>
+
+                                    <div id="workflowSeriesRow" style="display:none; margin-top: 12px; padding: 10px; background: var(--surface-2); border-radius: 6px; border: 1px solid var(--border); display:none; align-items:center; gap: 12px;">
+                                        <label style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin:0;">📖 Series Episodes Count:</label>
+                                        <select id="workflowPartCountSelect" class="form-control" style="width: 130px; font-weight: 700;">
+                                            <option value="2">2 Parts</option>
+                                            <option value="3" selected>3 Parts</option>
+                                            <option value="4">4 Parts</option>
+                                            <option value="5">5 Parts</option>
+                                        </select>
+                                    </div>
+                                    <input type="hidden" id="selectedWorkflow" value="highlights">
+                                </div>
+
                                 <!-- 2-Column Balanced Settings Grid -->
                                 <!-- 2-Column Balanced Settings Grid -->
                                 <div class="settings-studio-grid">
@@ -361,9 +443,12 @@
                                                     </div>
                                                     <div id="smartReframeOptions" class="engine-subfields-wrapper" style="margin-top:10px;">
                                                         <div class="form-group">
-                                                            <label>Framing Strategy</label>
-                                                            <select id="faceTrackingMode" class="form-control">
-                                                                <option value="smart" selected>Smart Subject Centering (CV Face Tracking)</option>
+                                                            <label>Video Layout &amp; Framing Strategy</label>
+                                                            <select id="faceTrackingMode" class="form-control" style="font-weight: 700;">
+                                                                <option value="smart" selected>🎯 Single Dynamic Face Tracking (YuNet ONNX Neural Tracking)</option>
+                                                                <option value="stacked">👥 Stacked 2-Tile Call (Top Speaker 1, Bottom Speaker 2 + Subtitle Gap)</option>
+                                                                <option value="reaction">🎮 Reaction Corner (Reactor Webcam Top + Content Bottom)</option>
+                                                                <option value="blur_padded">🖼️ Stage Blur Padding (Downscale on Gaussian Blur Fallback)</option>
                                                                 <option value="center">Static Center Crop (No Dynamic Panning)</option>
                                                             </select>
                                                         </div>
@@ -956,17 +1041,26 @@
                                             <div class="settings-accordion-content" style="display:block;">
                                                     <div class="form-group" style="margin-top: var(--space-2);">
                                                         <label style="display:flex; justify-content:space-between; align-items:center;">
-                                                            <span>Trending Viral Preset</span>
-                                                            <span style="font-size:11px; color:var(--primary); font-weight:700;">★ 2026 Viral Pack</span>
+                                                            <span>Viral Caption Preset</span>
+                                                            <span style="font-size:11px; color:var(--primary); font-weight:700;">★ 7 SupoClip Presets</span>
                                                         </label>
                                                         <select id="captionTemplate" class="form-control" style="font-weight:700;">
-                                                            <optgroup label="⚡ Built-In Viral Presets">
-                                                                <option value="hormozi_pop" selected>🔥 Hormozi Pop (Bold Yellow Punch + High-Energy Pop)</option>
-                                                                <option value="beast_glow">⚡ MrBeast Glow (Electric Lime Neon + Bounce)</option>
-                                                                <option value="red_punch">💥 Red Punch (High Drama / Breaking News Fiery)</option>
-                                                                <option value="clean_gold">✨ Clean Gold (Luxury Minimal Podcast Amber)</option>
-                                                                <option value="neon_cyber">🟣 Cyberpunk Neon (Vibrant Fuchsia Glow)</option>
-                                                                <option value="karaoke_pill">💊 Karaoke Pill (Translucent Pill Container + Cyan Wipes)</option>
+                                                            <optgroup label="🚀 SupoClip Production Presets">
+                                                                <option value="hormozi" selected>🔥 Hormozi (Bold Neon Green Pill + High Energy)</option>
+                                                                <option value="mrbeast">⚡ MrBeast (Large Yellow + Red Pop Highlight)</option>
+                                                                <option value="tiktok">💖 TikTok (Official Crimson Pink Pop)</option>
+                                                                <option value="neon">🟣 Neon (Electric Cyan Outline + Magenta Glow)</option>
+                                                                <option value="minimal">🤍 Minimal (Clean Translucent Subtitle)</option>
+                                                                <option value="podcast">🎙️ Podcast (Warm Ivory / Conversational)</option>
+                                                                <option value="default">✨ Default (Punchy Yellow Karaoke Pop + Emojis)</option>
+                                                            </optgroup>
+                                                            <optgroup label="⚡ Legacy Viral Presets">
+                                                                <option value="hormozi_pop">🔥 Hormozi Pop Legacy</option>
+                                                                <option value="beast_glow">⚡ MrBeast Glow Legacy</option>
+                                                                <option value="red_punch">💥 Red Punch (High Drama)</option>
+                                                                <option value="clean_gold">✨ Clean Gold (Luxury Minimal)</option>
+                                                                <option value="neon_cyber">🟣 Cyberpunk Neon</option>
+                                                                <option value="karaoke_pill">💊 Karaoke Pill</option>
                                                                 <option value="classic">Standard White Outline</option>
                                                             </optgroup>
                                                             <optgroup label="💾 Saved Caption Studio Presets" id="captionStudioSavedPresetsGroup">
@@ -1042,6 +1136,45 @@
                                                                 <option value="middle">Center Screen</option>
                                                                 <option value="top">Top</option>
                                                             </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- SupoClip Advanced Caption Enhancements -->
+                                                    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px;">
+                                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                            <div>
+                                                                <div style="font-size:12px; font-weight:700; color:var(--text-primary);">🔥 Burned Hook Title Banner</div>
+                                                                <div style="font-size:11px; color:var(--text-muted);">Displays a punchy 3-8 word headline in top safe zone for first 3-4s</div>
+                                                            </div>
+                                                            <label class="switch-control">
+                                                                <input type="checkbox" id="hookTitleToggle" checked>
+                                                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                                <span class="switch-status-pill active" id="hookTitleStatus">ON</span>
+                                                            </label>
+                                                        </div>
+
+                                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                            <div>
+                                                                <div style="font-size:12px; font-weight:700; color:var(--text-primary);">😀 Contextual Emojis &amp; Power Words</div>
+                                                                <div style="font-size:11px; color:var(--text-muted);">Auto-detects 150+ keywords and injects emojis with rate-limiting</div>
+                                                            </div>
+                                                            <label class="switch-control">
+                                                                <input type="checkbox" id="contextualEmojiToggle" checked>
+                                                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                                <span class="switch-status-pill active" id="contextualEmojiStatus">ON</span>
+                                                            </label>
+                                                        </div>
+
+                                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                            <div>
+                                                                <div style="font-size:12px; font-weight:700; color:var(--text-primary);">🎬 Pexels B-Roll Cutaways</div>
+                                                                <div style="font-size:11px; color:var(--text-muted);">Auto-overlays portrait stock video cutaways for spoken objects/nouns</div>
+                                                            </div>
+                                                            <label class="switch-control">
+                                                                <input type="checkbox" id="brollToggle" checked>
+                                                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                                                                <span class="switch-status-pill active" id="brollStatus">ON</span>
+                                                            </label>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1124,6 +1257,10 @@
                                 <div style="display: flex; gap: var(--space-2); align-items: center;">
                                     <button class="btn btn-secondary btn-sm" id="selectAllClipsBtn" type="button">Select All</button>
                                     <button class="btn btn-secondary btn-sm" id="clearClipSelectionBtn" type="button">Clear</button>
+                                    <button class="btn btn-secondary btn-sm" id="btnOpenSocialPublishModal" type="button" style="display:inline-flex; align-items:center; gap:6px; color:#FE2C55; border-color:rgba(254,44,85,0.3);">
+                                        <svg data-lucide="share-2" width="14" height="14"></svg>
+                                        <span>⚡ 1-Click Social Publish</span>
+                                    </button>
                                     <button class="btn btn-primary btn-sm" id="btnQuickExportAll" type="button" onclick="showStep(5)" style="display:inline-flex; align-items:center; gap:6px;">
                                         <svg data-lucide="download" width="14" height="14"></svg>
                                         <span>Export Clips</span>
@@ -1219,6 +1356,60 @@
             <p style="text-align: center; color: var(--text-secondary); font-size: 13px;">Please sign in to access AI Clip Studio and create viral shorts.</p>
             <div class="modal-actions">
                 <a href="/" class="btn btn-secondary btn-block">Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Direct Publishing & Analytics Feedback Modal -->
+    <div class="modal-overlay" id="socialPublishModal" hidden style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:9999;">
+        <div class="modal card" style="max-width:520px; width:92%; padding:20px; border-radius:12px; border:1px solid var(--border-strong); background:var(--surface-1); box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <h3 style="font-size:16px; font-weight:800; margin:0; display:flex; align-items:center; gap:8px;">
+                    <span>🚀</span> 1-Click Social Publish &amp; Feedback Loop
+                </h3>
+                <button type="button" class="btn btn-secondary btn-icon" id="closeSocialModalBtn" style="padding:4px 8px; border:none; background:transparent; font-size:16px; cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Target Platform Tabs -->
+            <div style="display:flex; gap:8px; margin-bottom:14px;">
+                <button type="button" class="btn btn-sm active-platform-btn" id="socialPlatformYoutube" data-platform="youtube" style="flex:1; font-weight:700; background:#FF0000; color:#fff; border:none;">YouTube Shorts</button>
+                <button type="button" class="btn btn-sm" id="socialPlatformTiktok" data-platform="tiktok" style="flex:1; font-weight:700; background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border);">TikTok</button>
+                <button type="button" class="btn btn-sm" id="socialPlatformInstagram" data-platform="instagram" style="flex:1; font-weight:700; background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border);">Instagram Reels</button>
+            </div>
+
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="font-size:12px; font-weight:700;">Clip Title &amp; Viral Hook</label>
+                <input type="text" id="socialPostTitle" class="form-control" placeholder="Catchy hook title with tags #Shorts #Viral" style="padding:8px 12px; font-weight:600;">
+            </div>
+
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="font-size:12px; font-weight:700;">Description &amp; Hashtags</label>
+                <textarea id="socialPostDesc" class="form-control" rows="2" placeholder="Video description and keywords..."></textarea>
+            </div>
+
+            <div class="form-row" style="margin-bottom:14px; display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;">
+                    <label style="font-size:12px; font-weight:700;">Publish Timing</label>
+                    <select id="socialScheduleType" class="form-control">
+                        <option value="now" selected>⚡ Publish Immediately</option>
+                        <option value="schedule">📅 Schedule Peak Time</option>
+                    </select>
+                </div>
+                <div class="form-group" id="socialScheduleTimeWrap" style="flex:1; display:none;">
+                    <label style="font-size:12px; font-weight:700;">Datetime</label>
+                    <input type="datetime-local" id="socialScheduleDatetime" class="form-control">
+                </div>
+            </div>
+
+            <!-- Audience Steering Banner -->
+            <div style="background:rgba(238,77,45,0.08); border:1px solid rgba(238,77,45,0.25); border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+                <div style="font-size:11px; font-weight:800; color:var(--primary); margin-bottom:2px;">🧠 AI Retention Feedback Loop Active</div>
+                <div style="font-size:11px; color:var(--text-secondary);" id="socialSteeringNotice">Published video views &amp; retention data synchronize back into future clip selection algorithms!</div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="cancelSocialBtn">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="confirmSocialPublishBtn" style="padding:8px 18px; font-weight:700;">🚀 Publish Now</button>
             </div>
         </div>
     </div>

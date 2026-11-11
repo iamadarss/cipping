@@ -5,6 +5,7 @@ from ai.caption_templates import (
     get_template,
     get_all_templates,
     build_hook_title_ass,
+    build_point_label_ass,
     hex_to_ass_color,
     CAPTION_TEMPLATES,
 )
@@ -573,30 +574,53 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     def build_ass(self, transcript, opts=None, template=None):
         opts = self.resolve_opts(opts, template)
         hook_title = opts.get("hook_title") or opts.get("headline") or opts.get("hookTitle")
+        point_labels = opts.get("point_labels") or opts.get("points") or []
         hook_style_line = ""
         hook_dialogue_lines = []
+        point_style_line = ""
+        point_dialogue_lines = []
+
+        w = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
+        h = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
+        dur = float(opts.get("duration") or 30.0)
+        if transcript and isinstance(transcript, list) and len(transcript) > 0:
+            last_end = float(transcript[-1].get("end", dur))
+            dur = max(dur, last_end)
 
         if hook_title:
             try:
-                w = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
-                h = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
-                dur = float(opts.get("duration") or 30.0)
-                if transcript and isinstance(transcript, list) and len(transcript) > 0:
-                    last_end = float(transcript[-1].get("end", dur))
-                    dur = max(dur, last_end)
                 hook_style_line, hook_dialogue_lines = build_hook_title_ass(
                     hook_title, opts, video_width=w, video_height=h, output_duration=dur
                 )
             except Exception:
                 pass
 
+        if point_labels:
+            try:
+                point_style_line, point_dialogue_lines = build_point_label_ass(
+                    point_labels, opts, video_width=w, video_height=h, output_duration=dur,
+                    hook_end=4.0 if hook_title else 0.0
+                )
+            except Exception:
+                pass
+
         header = self._build_header(opts)
+        extra_styles = []
         if hook_style_line:
-            header = header.replace("[Events]", f"{hook_style_line}\n[Events]")
+            extra_styles.append(hook_style_line)
+        if point_style_line:
+            extra_styles.append(point_style_line)
+        if extra_styles:
+            header = header.replace("[Events]", "\n".join(extra_styles) + "\n[Events]")
 
         dialogue = self._build_dialogue(transcript, opts)
+        top_lines = []
         if hook_dialogue_lines:
-            dialogue = "\n".join(hook_dialogue_lines) + "\n" + dialogue
+            top_lines.extend(hook_dialogue_lines)
+        if point_dialogue_lines:
+            top_lines.extend(point_dialogue_lines)
+        if top_lines:
+            dialogue = "\n".join(top_lines) + "\n" + dialogue
 
         return header + "\n" + dialogue + "\n"
 
