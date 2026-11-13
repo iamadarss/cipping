@@ -126,98 +126,69 @@
                         </div>
                     </div>
 
-                    <!-- Quick Stats Banner (Subtle, non-bordered chips to eliminate false affordances) -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3); margin-top: var(--space-4);">
-                        <div class="stat-chip" style="background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); display: flex; align-items: center; gap: var(--space-3);">
-                            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                <svg data-lucide="cpu" width="16" height="16" aria-hidden="true"></svg>
-                            </div>
-                            <div>
-                                <div style="font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Engine</div>
-                                <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-primary);">FFmpeg + PyTorch</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-chip" style="background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); display: flex; align-items: center; gap: var(--space-3);">
-                            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                <svg data-lucide="mic" width="16" height="16" aria-hidden="true"></svg>
-                            </div>
-                            <div>
-                                <div style="font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Audio AI</div>
-                                <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-primary);">Whisper Engine</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-chip" style="background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); display: flex; align-items: center; gap: var(--space-3);">
-                            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                <svg data-lucide="scissors" width="16" height="16" aria-hidden="true"></svg>
-                            </div>
-                            <div>
-                                <div style="font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Clipping</div>
-                                <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-primary);">Smart Scene Cuts</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-chip" style="background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); display: flex; align-items: center; gap: var(--space-3);">
-                            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                                <svg data-lucide="shield-check" width="16" height="16" aria-hidden="true"></svg>
-                            </div>
-                            <div>
-                                <div style="font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Privacy</div>
-                                <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-primary);">100% Local Run</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Primary Action Cards (Desktop 3-col, Tablet 2-col, Mobile 1-col) -->
+                    <!-- Primary Action Cards (Desktop 2-col, Tablet 2-col, Mobile 1-col) -->
                     <!-- Visually hidden H2 to restore valid document outline (H1 -> H2 -> H3) -->
                     <h2 class="sr-only">Quick Actions</h2>
-                    <div class="home-action-grid">
-                        <!-- Card 1: FFmpeg Engine -->
-                        <div class="home-action-card">
+                    <div class="home-action-grid" style="margin-top: var(--space-5);">
+                        <!-- Card 1: Upload Your Media -->
+                        <div class="home-action-card" id="homeDropTarget" style="display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; transition: all var(--transition-fast);">
                             <div class="card-content">
-                                <div class="card-icon">
-                                    <svg data-lucide="cpu" width="22" height="22" aria-hidden="true"></svg>
+                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-3);">
+                                    <div class="card-icon" style="margin-bottom:0;">
+                                        <svg data-lucide="upload-cloud" width="22" height="22" aria-hidden="true"></svg>
+                                    </div>
+                                    <div style="display:flex; gap:4px;">
+                                        <span class="file-chip">MP4</span>
+                                        <span class="file-chip">MOV</span>
+                                        <span class="file-chip">AUDIO</span>
+                                    </div>
                                 </div>
-                                <h3 class="card-title">FFmpeg</h3>
-                                <p class="card-desc">Local video processing engine. Fast clipping, high-fidelity audio extraction, and subtitle rendering.</p>
-                            </div>
-                            <div class="card-action">
-                                <button type="button" class="btn btn-secondary btn-sm w-full" id="btnOpenFfmpegDiag">
-                                    <svg data-lucide="terminal" width="14" height="14" aria-hidden="true"></svg>
-                                    <span>Open Diagnostics</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Card 2: Import File -->
-                        <div class="home-action-card">
-                            <div class="card-content">
-                                <div class="card-icon">
-                                    <svg data-lucide="upload-cloud" width="22" height="22" aria-hidden="true"></svg>
+                                <h3 class="card-title">UPLOAD YOUR MEDIA</h3>
+                                <p class="card-desc">Drag &amp; drop any long-form video or audio file here, or click to browse from your device.</p>
+                                
+                                <div id="homeSelectedFilename" style="display:none; font-size: var(--text-xs); color: var(--primary); font-weight: 600; font-family: var(--font-mono); margin-top: 8px; word-break: break-all;"></div>
+                                
+                                <div id="homeUploadProgressWrap" style="display:none; width: 100%; margin-top: 10px;">
+                                    <div style="display:flex; justify-content:space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                                        <span id="homeUploadStatusText">Uploading media...</span>
+                                        <span id="homeUploadPercent" style="font-family: var(--font-mono); font-weight: 700; color: var(--primary);">0%</span>
+                                    </div>
+                                    <div style="height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden;">
+                                        <div id="homeUploadProgressBar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.15s ease;"></div>
+                                    </div>
                                 </div>
-                                <h3 class="card-title">Import File</h3>
-                                <p class="card-desc">Select any video or audio file from your device to begin intelligent clipping or captioning.</p>
                             </div>
-                            <div class="card-action">
-                                <input type="file" id="homeFileInput" accept="video/*,audio/*" style="display:none;">
-                                <button type="button" class="btn btn-secondary btn-sm w-full" id="btnHomeImportFile">
+                            <div class="card-action" style="margin-top: var(--space-3);">
+                                <input type="file" id="homeFileInput" accept="video/mp4,video/quicktime,video/webm,video/*,audio/*" style="display:none;">
+                                <button type="button" class="btn btn-primary btn-sm w-full" id="btnHomeImportFile">
                                     <svg data-lucide="folder-open" width="14" height="14" aria-hidden="true"></svg>
-                                    <span>Import File</span>
+                                    <span>Select File to Upload</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Card 3: Caption Studio -->
-                        <div class="home-action-card">
+                        <!-- Card 2: Premium Caption Studio -->
+                        <div class="home-action-card" style="display:flex; flex-direction:column; justify-content:space-between;">
                             <div class="card-content">
-                                <div class="card-icon">
-                                    <svg data-lucide="subtitles" width="22" height="22" aria-hidden="true"></svg>
+                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-3);">
+                                    <div class="card-icon" style="margin-bottom:0;">
+                                        <svg data-lucide="subtitles" width="22" height="22" aria-hidden="true"></svg>
+                                    </div>
+                                    <span style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-full); background: rgba(16, 185, 129, 0.12); color: var(--primary); border: 1px solid rgba(16, 185, 129, 0.25);">NEW PRESETS</span>
                                 </div>
-                                <h3 class="card-title">Caption Studio</h3>
-                                <p class="card-desc">Design dynamic animated captions, karaoke word highlights, and export styled vertical shorts.</p>
+                                <h3 class="card-title">PREMIUM CAPTION STUDIO</h3>
+                                <p class="card-desc">Create engaging animated captions for Reels &amp; Shorts with 24 viral creator presets and karaoke word highlighting.</p>
+                                
+                                <!-- Visual Style Preview Chips -->
+                                <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top: var(--space-3);">
+                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0, 136, 255, 0.12); border: 1px solid rgba(0, 136, 255, 0.35); color: #80D8FF;">✨ Ice Blue Glow</span>
+                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(255, 234, 0, 0.12); border: 1px solid rgba(255, 234, 0, 0.35); color: #FFEA00;">⚡ Bold Yellow</span>
+                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.35); color: #00F0FF;">🌊 Kinetic Cyan</span>
+                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); color: #FFFFFF;">🎬 Hindi Minimal</span>
+                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(253, 246, 233, 0.1); border: 1px solid rgba(253, 246, 233, 0.25); color: #FDF6E9; font-style: italic;">✒️ Editorial Serif</span>
+                                </div>
                             </div>
-                            <div class="card-action">
+                            <div class="card-action" style="margin-top: var(--space-3);">
                                 <a href="/caption-studio" class="btn btn-secondary btn-sm w-full" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
                                     <svg data-lucide="sparkles" width="14" height="14" aria-hidden="true"></svg>
                                     <span>Open Caption Studio</span>
@@ -279,6 +250,42 @@
                             <!-- Populated dynamically via JS -->
                         </div>
                     </div>
+
+                    <!-- Minimal Application Footer -->
+                    <footer class="app-minimal-footer">
+                        <div class="footer-left">
+                            <span class="footer-brand">
+                                <svg data-lucide="sparkles" width="14" height="14" style="color:var(--primary);"></svg>
+                                <span>UpClip Studio</span>
+                            </span>
+                            <span class="footer-divider">•</span>
+                            <a href="/settings?tab=diagnostics" class="footer-privacy-badge" title="All processing runs entirely on your local device">
+                                <svg data-lucide="lock" width="11" height="11"></svg>
+                                <span>Local Processing Enabled</span>
+                            </a>
+                        </div>
+                        <div class="footer-center">
+                            <span class="footer-version">v2.4.0</span>
+                            <span class="footer-divider">•</span>
+                            <span>&copy; 2025 UpClip Studio. All rights reserved.</span>
+                        </div>
+                        <div class="footer-right">
+                            <a href="/settings?tab=diagnostics" class="footer-link">
+                                <svg data-lucide="cpu" width="13" height="13"></svg>
+                                <span>System Diagnostics</span>
+                            </a>
+                            <span class="footer-divider">•</span>
+                            <a href="/settings" class="footer-link">
+                                <svg data-lucide="settings" width="13" height="13"></svg>
+                                <span>Settings</span>
+                            </a>
+                            <span class="footer-divider">•</span>
+                            <a href="/guide" class="footer-link">
+                                <svg data-lucide="book-open" width="13" height="13"></svg>
+                                <span>Docs</span>
+                            </a>
+                        </div>
+                    </footer>
                     </div>
                 </div>
             </main>
@@ -353,6 +360,113 @@
     <script src="{{ url_for('static', filename='js/app_framework.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script>lucide.createIcons();</script>
+    <script>
+        lucide.createIcons();
+        (function() {
+            const dropTarget = document.getElementById('homeDropTarget');
+            const fileInput = document.getElementById('homeFileInput');
+            const btnImport = document.getElementById('btnHomeImportFile');
+            const nameDisplay = document.getElementById('homeSelectedFilename');
+            const progressWrap = document.getElementById('homeUploadProgressWrap');
+            const progressBar = document.getElementById('homeUploadProgressBar');
+            const percentText = document.getElementById('homeUploadPercent');
+            const statusText = document.getElementById('homeUploadStatusText');
+
+            if (!dropTarget || !fileInput) return;
+
+            function handleFile(file) {
+                if (!file) return;
+                nameDisplay.textContent = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
+                nameDisplay.style.display = 'block';
+                progressWrap.style.display = 'block';
+                progressBar.style.width = '0%';
+                percentText.textContent = '0%';
+                statusText.textContent = 'Uploading media...';
+                if (btnImport) btnImport.disabled = true;
+
+                const formData = new FormData();
+                formData.append('video', file);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload/video', true);
+
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = pct + '%';
+                        percentText.textContent = pct + '%';
+                        if (pct >= 100) {
+                            statusText.textContent = 'Processing & opening AI Clip Studio...';
+                        }
+                    }
+                };
+
+                xhr.onload = function() {
+                    if (btnImport) btnImport.disabled = false;
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.success && res.filename) {
+                            statusText.textContent = 'Complete! Redirecting...';
+                            window.location.href = `/dashboard?file=${encodeURIComponent(res.filename)}`;
+                        } else {
+                            statusText.textContent = 'Upload failed: ' + (res.error || 'Server error');
+                            progressBar.style.background = 'var(--error)';
+                        }
+                    } catch (err) {
+                        statusText.textContent = 'Upload error: ' + err.message;
+                    }
+                };
+
+                xhr.onerror = function() {
+                    if (btnImport) btnImport.disabled = false;
+                    statusText.textContent = 'Network error during upload';
+                    progressBar.style.background = 'var(--error)';
+                };
+
+                xhr.send(formData);
+            }
+
+            dropTarget.addEventListener('click', function(e) {
+                if (e.target !== fileInput && !e.target.closest('#btnHomeImportFile')) {
+                    fileInput.click();
+                }
+            });
+
+            if (btnImport) {
+                btnImport.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+            }
+
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropTarget.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropTarget.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'dragend', 'drop'].forEach(eventName => {
+                dropTarget.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropTarget.classList.remove('dragover');
+                }, false);
+            });
+
+            dropTarget.addEventListener('drop', function(e) {
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

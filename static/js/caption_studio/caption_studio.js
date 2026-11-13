@@ -197,487 +197,943 @@
     // 3. ULTRA HIGH-QUALITY CINEMATIC MASTER & CREATOR GRADE PRESETS
     // =========================================================================
     const PRESETS = [
-        // --- 5 Master Reference Styles ---
         {
-            id: 'cinematic_creator',
-            name: 'Cinematic Creator',
-            category: 'cinematic',
-            platform: 'Reels / Shorts',
-            tagClass: 'tag-cinematic',
-            previewWord1: 'BHAI SCOUT KIA',
-            previewWord2: 'ROYA HOGA',
-            style: {
-                fontFamily: 'Anton',
-                fontWeight: '900',
-                fontSize: 42,
-                textColor: '#FFFFFF',
-                activeWordColor: '#80D8FF',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#001830',
-                strokeWidth: 2.5,
-                shadowEnabled: true,
-                shadowColor: '#001428',
-                shadowBlur: 8,
-                shadowY: 3,
-                glowEnabled: true,
-                glowColor: '#0088FF',
-                glowBlur: 10,
-                bgMode: 'none',
-                animation: 'pop_in',
-                twoLineHierarchy: true,
-            }
+                "id": "cinematic_creator",
+                "name": "Cinematic Creator",
+                "category": "cinematic master",
+                "description": "Bold condensed uppercase with Ice Blue glow and 2-line visual hierarchy.",
+                "platform": "Cinematic Master",
+                "tagClass": "tag-cinematic",
+                "previewWord1": "BHAI SCOUT KIA",
+                "previewWord2": "ROYA HOGA",
+                "style": {
+                        "fontFamily": "Anton",
+                        "fontWeight": "900",
+                        "fontSize": 42,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#80D8FF",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#001830",
+                        "strokeWidth": 2.5,
+                        "shadowEnabled": true,
+                        "shadowColor": "#001428",
+                        "shadowBlur": 8.0,
+                        "shadowY": 3.0,
+                        "glowEnabled": true,
+                        "glowColor": "#0088FF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "pop_in",
+                        "position": "center",
+                        "twoLineHierarchy": true
+                }
         },
         {
-            id: 'cinematic_minimal_hindi',
-            name: 'Cinematic Minimal (Devanagari)',
-            category: 'cinematic',
-            platform: 'Cinematic / Film',
-            tagClass: 'tag-minimal',
-            previewWord1: 'उसके',
-            previewWord2: 'आसपास के लोग',
-            style: {
-                fontFamily: 'Noto Sans Devanagari',
-                fontWeight: '600',
-                fontSize: 34,
-                textColor: '#FFFFFF',
-                activeWordColor: '#FFFFFF',
-                textCase: 'normal',
-                strokeEnabled: false,
-                strokeWidth: 0,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 2,
-                shadowY: 1.5,
-                glowEnabled: false,
-                bgMode: 'none',
-                animation: 'smooth_fade',
-            }
+                "id": "cinematic_minimal_hindi",
+                "name": "Cinematic Minimal (Devanagari)",
+                "category": "cinematic master",
+                "description": "Elegant Hindi Devanagari typography, pure white, center-aligned, minimal soft shadow.",
+                "platform": "Cinematic Master",
+                "tagClass": "tag-minimal",
+                "previewWord1": "\u0909\u0938\u0915\u0947 \u0906\u0938\u092a\u093e\u0938",
+                "previewWord2": "\u0915\u0947 \u0932\u094b\u0917",
+                "style": {
+                        "fontFamily": "Noto Sans Devanagari",
+                        "fontWeight": "600",
+                        "fontSize": 34,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FFFFFF",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2.0,
+                        "shadowY": 1.5,
+                        "glowEnabled": false,
+                        "glowColor": "#FFFFFF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "smooth_fade",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'bold_keyword_yellow',
-            name: 'Bold Keyword Highlight',
-            category: 'cinematic',
-            platform: 'Viral / Punch',
-            tagClass: 'tag-viral',
-            previewWord1: 'AGAR',
-            previewWord2: 'US DIN',
-            style: {
-                fontFamily: 'Anton',
-                fontWeight: '900',
-                fontSize: 46,
-                textColor: '#FFFFFF',
-                activeWordColor: '#FFEA00',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#000000',
-                strokeWidth: 3,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 4,
-                shadowY: 3,
-                glowEnabled: true,
-                glowColor: '#FFEA00',
-                glowBlur: 4,
-                bgMode: 'none',
-                animation: 'zoom_in',
-                twoLineHierarchy: true,
-            }
+                "id": "bold_keyword_yellow",
+                "name": "Bold Keyword Highlight",
+                "category": "cinematic master",
+                "description": "Main keyword in bright yellow with white supporting text, large bold condensed font.",
+                "platform": "Cinematic Master",
+                "tagClass": "tag-viral",
+                "previewWord1": "AGAR",
+                "previewWord2": "US DIN",
+                "style": {
+                        "fontFamily": "Anton",
+                        "fontWeight": "900",
+                        "fontSize": 46,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FFEA00",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 3.0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 4.0,
+                        "shadowY": 3.0,
+                        "glowEnabled": true,
+                        "glowColor": "#FFEA00",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "zoom_in",
+                        "position": "bottom",
+                        "twoLineHierarchy": true
+                }
         },
         {
-            id: 'modern_kinetic_cyan',
-            name: 'Modern Kinetic Typography',
-            category: 'cinematic',
-            platform: 'Podcast / TedX',
-            tagClass: 'tag-podcast',
-            previewWord1: 'with something',
-            previewWord2: 'predictable',
-            style: {
-                fontFamily: 'Montserrat',
-                fontWeight: '800',
-                fontSize: 38,
-                textColor: '#FFFFFF',
-                activeWordColor: '#00F0FF',
-                textCase: 'normal',
-                strokeEnabled: false,
-                strokeWidth: 0,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 4,
-                shadowY: 2,
-                glowEnabled: true,
-                glowColor: '#00E5FF',
-                glowBlur: 6,
-                bgMode: 'none',
-                animation: 'word_reveal',
-                twoLineHierarchy: true,
-            }
+                "id": "modern_kinetic_cyan",
+                "name": "Modern Kinetic Typography",
+                "category": "cinematic master",
+                "description": "White + electric cyan/turquoise, modern bold sans-serif, dynamic composition.",
+                "platform": "Cinematic Master",
+                "tagClass": "tag-podcast",
+                "previewWord1": "with something",
+                "previewWord2": "predictable",
+                "style": {
+                        "fontFamily": "Montserrat",
+                        "fontWeight": "800",
+                        "fontSize": 38,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#00F0FF",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 4.0,
+                        "shadowY": 2.0,
+                        "glowEnabled": true,
+                        "glowColor": "#00E5FF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "word_reveal",
+                        "position": "center",
+                        "twoLineHierarchy": true
+                }
         },
         {
-            id: 'editorial_layered',
-            name: 'Editorial Layered Typography',
-            category: 'cinematic',
-            platform: 'Magazine / Interview',
-            tagClass: 'tag-minimal',
-            previewWord1: 'paaji',
-            previewWord2: 'yeh dekho',
-            style: {
-                fontFamily: 'Playfair Display',
-                fontWeight: '700',
-                fontSize: 42,
-                textColor: '#FDF6E9',
-                activeWordColor: '#FFFFFF',
-                textCase: 'lowercase',
-                strokeEnabled: false,
-                strokeWidth: 0,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 5,
-                shadowY: 2.5,
-                glowEnabled: false,
-                bgMode: 'none',
-                animation: 'slide_up',
-                twoLineHierarchy: true,
-            }
+                "id": "editorial_layered",
+                "name": "Editorial Layered Typography",
+                "category": "cinematic master",
+                "description": "Cream lowercase typography with combination of bold sans and elegant serif italic.",
+                "platform": "Cinematic Master",
+                "tagClass": "tag-minimal",
+                "previewWord1": "paaji ch dekho",
+                "previewWord2": "is",
+                "style": {
+                        "fontFamily": "Playfair Display",
+                        "fontWeight": "700",
+                        "fontSize": 42,
+                        "textColor": "#FDF6E9",
+                        "activeWordColor": "#FFFFFF",
+                        "textCase": "normal",
+                        "isItalic": true,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 5.0,
+                        "shadowY": 2.5,
+                        "glowEnabled": false,
+                        "glowColor": "#FFFFFF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "slide_up",
+                        "position": "center",
+                        "twoLineHierarchy": true
+                }
         },
         {
-            id: 'action_hormozi',
-            name: 'Hormozi Viral',
-            category: 'viral',
-            platform: 'Viral / Reels',
-            tagClass: 'tag-viral',
-            previewWord1: 'VIRAL',
-            previewWord2: 'HOOK',
-            style: {
-                fontFamily: 'Montserrat',
-                fontWeight: '900',
-                fontSize: 38,
-                textColor: '#FFFFFF',
-                activeWordColor: '#22C55E',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#000000',
-                strokeWidth: 3.5,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 8,
-                shadowY: 3,
-                glowEnabled: false,
-                bgMode: 'none',
-                animation: 'pop',
-            }
+                "id": "boxed",
+                "name": "Boxed",
+                "category": "card & aesthetic",
+                "description": "White words on a rounded black card. Reads on any background.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "morning",
+                "previewWord2": "matcha routine.",
+                "style": {
+                        "fontFamily": "Inter",
+                        "fontWeight": "700",
+                        "fontSize": 36,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FACC15",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 3.0,
+                        "shadowY": 2.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FACC15",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "solid",
+                        "bgColor": "#000000",
+                        "animation": "smooth_fade",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'mrbeast_impact',
-            name: 'MrBeast Punch',
-            category: 'youtube',
-            platform: 'YouTube Shorts',
-            tagClass: 'tag-youtube',
-            previewWord1: 'IMPACT',
-            previewWord2: 'PUNCH',
-            style: {
-                fontFamily: 'Anton',
-                fontWeight: '900',
-                fontSize: 42,
-                textColor: '#FFFFFF',
-                activeWordColor: '#FACC15',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#000000',
-                strokeWidth: 4,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 10,
-                shadowY: 4,
-                glowEnabled: false,
-                bgMode: 'none',
-                animation: 'pop',
-            }
+                "id": "subtitle",
+                "name": "Subtitle",
+                "category": "card & aesthetic",
+                "description": "Classic subtitles on a dark box. Calm, and easy to read for long videos.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "morning",
+                "previewWord2": "matcha routine.",
+                "style": {
+                        "fontFamily": "Inter",
+                        "fontWeight": "600",
+                        "fontSize": 34,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FEF08A",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2.0,
+                        "shadowY": 1.5,
+                        "glowEnabled": false,
+                        "glowColor": "#FEF08A",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "semi",
+                        "bgColor": "#000000",
+                        "animation": "smooth_fade",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'ali_abdaal_clean',
-            name: 'Ali Abdaal Clean',
-            category: 'instagram',
-            platform: 'Instagram / Reels',
-            tagClass: 'tag-instagram',
-            previewWord1: 'CLEAN',
-            previewWord2: 'FOCUS',
-            style: {
-                fontFamily: 'Inter',
-                fontWeight: '700',
-                fontSize: 32,
-                textColor: '#F8FAFC',
-                activeWordColor: '#14B8A6',
-                textCase: 'normal',
-                strokeEnabled: false,
-                strokeWidth: 0,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 4,
-                shadowY: 2,
-                bgMode: 'semi',
-                bgColor: '#0F172A',
-                bgOpacity: 65,
-                bgPadding: 10,
-                bgRadius: 8,
-                animation: 'fade_in',
-            }
+                "id": "highlight",
+                "name": "Highlight",
+                "category": "card & aesthetic",
+                "description": "The spoken word sits on a tilted colour pill.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Montserrat",
+                        "fontWeight": "800",
+                        "fontSize": 38,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FFFFFF",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": true,
+                        "tiltAngle": -2.0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 1.5,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 3.0,
+                        "shadowY": 2.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FFFFFF",
+                        "wordBox": true,
+                        "wordBoxColor": "#7C3AED",
+                        "wordBoxRadius": 8,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "active_word_pill",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'neon_cyberpunk',
-            name: 'Neon Cyberpunk',
-            category: 'tiktok',
-            platform: 'TikTok',
-            tagClass: 'tag-tiktok',
-            previewWord1: 'NEON',
-            previewWord2: 'PULSE',
-            style: {
-                fontFamily: 'Bebas Neue',
-                fontWeight: '800',
-                fontSize: 44,
-                textColor: '#00FFCC',
-                activeWordColor: '#FF007F',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#000000',
-                strokeWidth: 2,
-                shadowEnabled: false,
-                glowEnabled: true,
-                glowColor: '#00FFCC',
-                glowIntensity: 18,
-                bgMode: 'none',
-                animation: 'pop',
-            }
+                "id": "comic",
+                "name": "Comic",
+                "category": "card & aesthetic",
+                "description": "Black on a tilted yellow panel with a hard shadow.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Arial Black",
+                        "fontWeight": "900",
+                        "fontSize": 36,
+                        "textColor": "#000000",
+                        "activeWordColor": "#000000",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": true,
+                        "tiltAngle": -1.5,
+                        "threeDShadow": true,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 2.5,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2,
+                        "shadowY": 4.0,
+                        "glowEnabled": false,
+                        "glowColor": "#000000",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "solid",
+                        "bgColor": "#FDE047",
+                        "animation": "soft_pop",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'vox_yellow_pop',
-            name: 'Vox Canary',
-            category: 'youtube',
-            platform: 'YouTube Shorts',
-            tagClass: 'tag-youtube',
-            previewWord1: 'EXPLAINER',
-            previewWord2: 'FACT',
-            style: {
-                fontFamily: 'DM Sans',
-                fontWeight: '800',
-                fontSize: 36,
-                textColor: '#FFFFFF',
-                activeWordColor: '#FDE047',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#18181B',
-                strokeWidth: 2.5,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 6,
-                shadowY: 2,
-                bgMode: 'semi',
-                bgColor: '#09090B',
-                bgOpacity: 80,
-                bgPadding: 8,
-                bgRadius: 6,
-                animation: 'pop',
-            }
+                "id": "terminal",
+                "name": "Terminal",
+                "category": "card & aesthetic",
+                "description": "Mono on a dark strip, typed on. Tech.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-tech",
+                "previewWord1": "> morning",
+                "previewWord2": "match",
+                "style": {
+                        "fontFamily": "JetBrains Mono",
+                        "fontWeight": "600",
+                        "fontSize": 32,
+                        "textColor": "#E2E8F0",
+                        "activeWordColor": "#4ADE80",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2.0,
+                        "shadowY": 1.5,
+                        "glowEnabled": false,
+                        "glowColor": "#4ADE80",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "solid",
+                        "bgColor": "#0F172A",
+                        "animation": "typewriter",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'tiktok_bubble_pop',
-            name: 'TikTok Candy',
-            category: 'tiktok',
-            platform: 'TikTok',
-            tagClass: 'tag-tiktok',
-            previewWord1: 'BUBBLE',
-            previewWord2: 'SWEET',
-            style: {
-                fontFamily: 'Poppins',
-                fontWeight: '900',
-                fontSize: 38,
-                textColor: '#FFFFFF',
-                activeWordColor: '#EC4899',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#581C87',
-                strokeWidth: 3,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 8,
-                shadowY: 3,
-                bgMode: 'none',
-                animation: 'pop',
-            }
+                "id": "soft_glass",
+                "name": "Soft glass",
+                "category": "card & aesthetic",
+                "description": "Sans on a see-through pill. Clean, modern.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "morning",
+                "previewWord2": "matcha routine.",
+                "style": {
+                        "fontFamily": "Inter",
+                        "fontWeight": "600",
+                        "fontSize": 34,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FFFFFF",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 4.0,
+                        "shadowY": 2.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FFFFFF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "glass",
+                        "bgColor": "#FFFFFF",
+                        "animation": "smooth_fade",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'goggins_fire',
-            name: 'Goggins Fire',
-            category: 'viral',
-            platform: 'Viral Reel',
-            tagClass: 'tag-viral',
-            previewWord1: 'STAY',
-            previewWord2: 'HARD',
-            style: {
-                fontFamily: 'Oswald',
-                fontWeight: '700',
-                fontSize: 42,
-                textColor: '#FFFFFF',
-                activeWordColor: '#F97316',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#7C2D12',
-                strokeWidth: 3,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 10,
-                shadowY: 3,
-                glowEnabled: true,
-                glowColor: '#EA580C',
-                glowIntensity: 12,
-                bgMode: 'none',
-                animation: 'pop',
-            }
+                "id": "magazine",
+                "name": "Magazine",
+                "category": "card & aesthetic",
+                "description": "Fashion caps on a black band, italic.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-minimal",
+                "previewWord1": "morning",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Playfair Display",
+                        "fontWeight": "700",
+                        "fontSize": 35,
+                        "textColor": "#F8FAFC",
+                        "activeWordColor": "#FFFFFF",
+                        "textCase": "normal",
+                        "isItalic": true,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2.0,
+                        "shadowY": 1.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FFFFFF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "solid",
+                        "bgColor": "#000000",
+                        "animation": "sentence_fade",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'retro_terminal',
-            name: 'Matrix Terminal',
-            category: 'viral',
-            platform: 'Tech Reel',
-            tagClass: 'tag-viral',
-            previewWord1: 'DEV',
-            previewWord2: 'MATRIX',
-            style: {
-                fontFamily: 'Fira Code',
-                fontWeight: '700',
-                fontSize: 30,
-                textColor: '#E2E8F0',
-                activeWordColor: '#10B981',
-                textCase: 'normal',
-                strokeEnabled: false,
-                strokeWidth: 0,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 4,
-                shadowY: 1,
-                bgMode: 'solid',
-                bgColor: '#0B0F19',
-                bgOpacity: 90,
-                bgPadding: 8,
-                bgRadius: 6,
-                animation: 'fade_in',
-            }
+                "id": "highlighter",
+                "name": "Highlighter",
+                "category": "card & aesthetic",
+                "description": "A highlighter swipes the key word. Tips, explainers.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "morning",
+                "previewWord2": "matcha routine.",
+                "style": {
+                        "fontFamily": "Inter",
+                        "fontWeight": "700",
+                        "fontSize": 36,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#000000",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 1.5,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2.5,
+                        "shadowY": 1.5,
+                        "glowEnabled": false,
+                        "glowColor": "#000000",
+                        "wordBox": true,
+                        "wordBoxColor": "#FACC15",
+                        "wordBoxRadius": 4,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "word_highlight",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'luxury_gold',
-            name: 'Luxury Champagne',
-            category: 'instagram',
-            platform: 'Aesthetic',
-            tagClass: 'tag-instagram',
-            previewWord1: 'ELITE',
-            previewWord2: 'LUXURY',
-            style: {
-                fontFamily: 'Plus Jakarta Sans',
-                fontWeight: '800',
-                fontSize: 34,
-                textColor: '#F8FAFC',
-                activeWordColor: '#F59E0B',
-                textCase: 'uppercase',
-                letterSpacing: 1,
-                strokeEnabled: true,
-                strokeColor: '#451A03',
-                strokeWidth: 2,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 8,
-                shadowY: 2,
-                bgMode: 'semi',
-                bgColor: '#18181B',
-                bgOpacity: 75,
-                bgPadding: 8,
-                bgRadius: 8,
-                animation: 'pop',
-            }
+                "id": "paper",
+                "name": "Paper",
+                "category": "card & aesthetic",
+                "description": "Typewriter on torn paper, typed on. Stories, journals.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-minimal",
+                "previewWord1": "morning",
+                "previewWord2": "matc",
+                "style": {
+                        "fontFamily": "Courier New",
+                        "fontWeight": "700",
+                        "fontSize": 33,
+                        "textColor": "#1F2937",
+                        "activeWordColor": "#111827",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": true,
+                        "tiltAngle": -1.0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 4.0,
+                        "shadowY": 2.5,
+                        "glowEnabled": false,
+                        "glowColor": "#111827",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "solid",
+                        "bgColor": "#F3EDE2",
+                        "animation": "typewriter",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'sunset_glow',
-            name: 'Sunset Glow',
-            category: 'tiktok',
-            platform: 'Shorts / TikTok',
-            tagClass: 'tag-tiktok',
-            previewWord1: 'WARM',
-            previewWord2: 'VIBES',
-            style: {
-                fontFamily: 'Outfit',
-                fontWeight: '800',
-                fontSize: 38,
-                textColor: '#FEF08A',
-                activeWordColor: '#FB7185',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#4C0519',
-                strokeWidth: 2.5,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 8,
-                shadowY: 2,
-                glowEnabled: true,
-                glowColor: '#FB7185',
-                glowIntensity: 10,
-                bgMode: 'none',
-                animation: 'pop',
-            }
+                "id": "label",
+                "name": "Label",
+                "category": "card & aesthetic",
+                "description": "Mono caps on a white label. Minimal, polished.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "JetBrains Mono",
+                        "fontWeight": "800",
+                        "fontSize": 34,
+                        "textColor": "#000000",
+                        "activeWordColor": "#000000",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 3.0,
+                        "shadowY": 2.0,
+                        "glowEnabled": false,
+                        "glowColor": "#000000",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "solid",
+                        "bgColor": "#FFFFFF",
+                        "animation": "color_karaoke",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'glitch_gamer',
-            name: 'Glitch Lime',
-            category: 'youtube',
-            platform: 'Gaming Shorts',
-            tagClass: 'tag-youtube',
-            previewWord1: 'LEVEL',
-            previewWord2: 'UP',
-            style: {
-                fontFamily: 'Anton',
-                fontWeight: '900',
-                fontSize: 40,
-                textColor: '#FFFFFF',
-                activeWordColor: '#A3E635',
-                textCase: 'uppercase',
-                strokeEnabled: true,
-                strokeColor: '#000000',
-                strokeWidth: 3.5,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 10,
-                shadowY: 3,
-                glowEnabled: true,
-                glowColor: '#84CC16',
-                glowIntensity: 12,
-                bgMode: 'none',
-                animation: 'pop',
-            }
+                "id": "sticker",
+                "name": "Sticker",
+                "category": "card & aesthetic",
+                "description": "Rounded words on a white sticker, the key word on colour.",
+                "platform": "Card & Aesthetic",
+                "tagClass": "tag-aesthetic",
+                "previewWord1": "morning",
+                "previewWord2": "matcha routine.",
+                "style": {
+                        "fontFamily": "Poppins",
+                        "fontWeight": "700",
+                        "fontSize": 34,
+                        "textColor": "#0F172A",
+                        "activeWordColor": "#FFFFFF",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": false,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 4.0,
+                        "shadowY": 2.5,
+                        "glowEnabled": false,
+                        "glowColor": "#FFFFFF",
+                        "wordBox": true,
+                        "wordBoxColor": "#FB7185",
+                        "wordBoxRadius": 14,
+                        "bgMode": "solid",
+                        "bgColor": "#FFFFFF",
+                        "animation": "active_word_pill",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
         {
-            id: 'minimalist_mono',
-            name: 'Monochrome Modern',
-            category: 'all',
-            platform: 'All Platforms',
-            tagClass: 'tag-viral',
-            previewWord1: 'PURE',
-            previewWord2: 'FOCUS',
-            style: {
-                fontFamily: 'Inter',
-                fontWeight: '800',
-                fontSize: 34,
-                textColor: '#FFFFFF',
-                activeWordColor: '#94A3B8',
-                textCase: 'uppercase',
-                strokeEnabled: false,
-                strokeWidth: 0,
-                shadowEnabled: true,
-                shadowColor: '#000000',
-                shadowBlur: 12,
-                shadowY: 3,
-                bgMode: 'none',
-                animation: 'fade_in',
-            }
+                "id": "bold_pop",
+                "name": "Bold pop",
+                "category": "loud captions",
+                "description": "Heavy white caps, black outline, the spoken word pops in yellow.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Arial Black",
+                        "fontWeight": "900",
+                        "fontSize": 40,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FACC15",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 3.5,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 3.0,
+                        "shadowY": 2.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FACC15",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "soft_pop",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
         },
-    ];
+        {
+                "id": "karaoke",
+                "name": "Karaoke",
+                "category": "loud captions",
+                "description": "The whole line shows; words fill with colour as they're said.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Montserrat",
+                        "fontWeight": "800",
+                        "fontSize": 38,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FACC15",
+                        "textCase": "normal",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 2.5,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2.5,
+                        "shadowY": 2.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FACC15",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "color_karaoke",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
+        },
+        {
+                "id": "typewriter",
+                "name": "Typewriter",
+                "category": "loud captions",
+                "description": "Words appear one by one, as they're said.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Montserrat",
+                        "fontWeight": "800",
+                        "fontSize": 38,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FACC15",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 3.0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2.5,
+                        "shadowY": 2.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FACC15",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "typewriter",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
+        },
+        {
+                "id": "one_word",
+                "name": "One word",
+                "category": "loud captions",
+                "description": "One huge word at a time, punched in. High energy.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MATCHA",
+                "previewWord2": "",
+                "style": {
+                        "fontFamily": "Anton",
+                        "fontWeight": "900",
+                        "fontSize": 58,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FFFFFF",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 4.0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 4.0,
+                        "shadowY": 3.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FFFFFF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "emphasis_scale",
+                        "position": "center",
+                        "twoLineHierarchy": false
+                }
+        },
+        {
+                "id": "neon",
+                "name": "Neon",
+                "category": "loud captions",
+                "description": "Geometric caps with a coloured glow on the spoken word.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Montserrat",
+                        "fontWeight": "800",
+                        "fontSize": 38,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#00F5FF",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 2.0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#00F5FF",
+                        "shadowBlur": 16.0,
+                        "shadowY": 1,
+                        "glowEnabled": true,
+                        "glowColor": "#00F5FF",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "color_karaoke",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
+        },
+        {
+                "id": "pop_3d",
+                "name": "3D pop",
+                "category": "loud captions",
+                "description": "Chunky caps with a stacked 3D shadow; the spoken word jumps.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Arial Black",
+                        "fontWeight": "900",
+                        "fontSize": 38,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FACC15",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": true,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 3.0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 2,
+                        "shadowY": 5.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FACC15",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "emphasis_scale",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
+        },
+        {
+                "id": "gradient",
+                "name": "Gradient",
+                "category": "loud captions",
+                "description": "Bold caps; the spoken word glows in a sunset gradient.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Montserrat",
+                        "fontWeight": "800",
+                        "fontSize": 38,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FB923C",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 2.8,
+                        "shadowEnabled": true,
+                        "shadowColor": "#F43F5E",
+                        "shadowBlur": 10.0,
+                        "shadowY": 2.0,
+                        "glowEnabled": true,
+                        "glowColor": "#FB923C",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "soft_pop",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
+        },
+        {
+                "id": "beast",
+                "name": "Beast",
+                "category": "loud captions",
+                "description": "Huge condensed caps in three colours, punched in. Maximum energy.",
+                "platform": "Loud Captions",
+                "tagClass": "tag-viral",
+                "previewWord1": "MORNING",
+                "previewWord2": "MATCHA",
+                "style": {
+                        "fontFamily": "Anton",
+                        "fontWeight": "900",
+                        "fontSize": 48,
+                        "textColor": "#FFFFFF",
+                        "activeWordColor": "#FDE047",
+                        "textCase": "uppercase",
+                        "isItalic": false,
+                        "isTilted": false,
+                        "tiltAngle": 0,
+                        "threeDShadow": false,
+                        "strokeEnabled": true,
+                        "strokeColor": "#000000",
+                        "strokeWidth": 4.0,
+                        "shadowEnabled": true,
+                        "shadowColor": "#000000",
+                        "shadowBlur": 4.0,
+                        "shadowY": 3.0,
+                        "glowEnabled": false,
+                        "glowColor": "#FDE047",
+                        "wordBox": false,
+                        "wordBoxColor": "#4F46E5",
+                        "wordBoxRadius": 6,
+                        "bgMode": "none",
+                        "bgColor": "#000000",
+                        "animation": "emphasis_scale",
+                        "position": "bottom",
+                        "twoLineHierarchy": false
+                }
+        }
+];
 
     // DOM Elements Cache
     let el = {};
@@ -1248,44 +1704,99 @@
             const res = await fetch('/api/caption-studio/presets/canonical');
             const data = await res.json();
             if (data.success && Array.isArray(data.presets)) {
-                canonicalApiPresets = data.presets.map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    category: (p.category || 'Card & Aesthetic').toLowerCase(),
-                    description: p.description || '',
-                    platform: p.category || 'Creator Style',
-                    tagClass: p.category === 'Loud Captions' ? 'tag-viral' : 'tag-instagram',
-                    previewWord1: p.id === 'terminal' ? '> morning' : p.id === 'one_word' ? 'MATCHA' : 'morning',
-                    previewWord2: p.id === 'one_word' ? '' : 'matcha',
-                    style: {
-                        fontFamily: p.fontFamily || p.font_family || 'Inter',
-                        fontWeight: String(p.fontWeight || p.font_weight || 700),
-                        fontSize: p.fontSize || p.font_size || 36,
-                        textColor: p.textColor || p.text_color || '#FFFFFF',
-                        activeWordColor: p.activeWordColor || p.active_word_color || '#FFE000',
-                        textCase: p.uppercase ? 'uppercase' : 'normal',
-                        isItalic: Boolean(p.isItalic || p.is_italic),
-                        isTilted: Boolean(p.isTilted || p.is_tilted),
-                        tiltAngle: p.tiltAngle || p.tilt_angle || 0,
-                        threeDShadow: Boolean(p.threeDShadow || p.three_d_shadow),
-                        strokeEnabled: Boolean(p.outlineEnabled || (p.outlineWidth && p.outlineWidth > 0)),
-                        strokeColor: p.outlineColor || '#000000',
-                        strokeWidth: p.outlineWidth || 0,
-                        shadowEnabled: p.shadowEnabled !== false,
-                        shadowColor: p.shadowColor || '#000000',
-                        shadowBlur: p.shadowBlur || 2,
-                        shadowY: p.shadowOffsetY || 1,
-                        glowEnabled: Boolean(p.glow),
-                        glowColor: p.activeWordColor || '#FFE000',
-                        wordBox: Boolean(p.wordBox),
-                        wordBoxColor: p.wordBoxColor || '#4F46E5',
-                        wordBoxRadius: p.wordBoxRadius || 6,
-                        bgMode: p.bgMode || (p.backgroundOpacity > 0 ? 'semi' : 'none'),
-                        bgColor: p.backgroundColor || '#000000',
-                        animation: p.animation || 'color_karaoke',
-                        position: p.position || 'bottom',
+                canonicalApiPresets = data.presets.map(p => {
+                    let pw1 = 'morning';
+                    let pw2 = 'matcha';
+                    let tagCls = 'tag-aesthetic';
+                    const cat = p.category || 'Card & Aesthetic';
+                    const catLower = cat.toLowerCase();
+
+                    if (p.id === 'cinematic_creator') {
+                        pw1 = 'BHAI SCOUT KIA';
+                        pw2 = 'ROYA HOGA';
+                        tagCls = 'tag-cinematic';
+                    } else if (p.id === 'cinematic_minimal_hindi') {
+                        pw1 = 'उसके आसपास';
+                        pw2 = 'के लोग';
+                        tagCls = 'tag-minimal';
+                    } else if (p.id === 'bold_keyword_yellow') {
+                        pw1 = 'AGAR';
+                        pw2 = 'US DIN';
+                        tagCls = 'tag-viral';
+                    } else if (p.id === 'modern_kinetic_cyan') {
+                        pw1 = 'with something';
+                        pw2 = 'predictable';
+                        tagCls = 'tag-podcast';
+                    } else if (p.id === 'editorial_layered') {
+                        pw1 = 'paaji ch dekho';
+                        pw2 = 'is';
+                        tagCls = 'tag-minimal';
+                    } else if (p.id === 'terminal') {
+                        pw1 = '> morning';
+                        pw2 = 'match';
+                        tagCls = 'tag-tech';
+                    } else if (p.id === 'one_word') {
+                        pw1 = 'MATCHA';
+                        pw2 = '';
+                        tagCls = 'tag-viral';
+                    } else if (p.id === 'paper') {
+                        pw1 = 'morning';
+                        pw2 = 'matc';
+                        tagCls = 'tag-minimal';
+                    } else if (p.id === 'magazine') {
+                        pw1 = 'morning';
+                        pw2 = 'MATCHA';
+                        tagCls = 'tag-minimal';
+                    } else if (p.id === 'highlight' || p.id === 'comic' || p.id === 'label' || cat === 'Loud Captions') {
+                        pw1 = 'MORNING';
+                        pw2 = 'MATCHA';
+                        tagCls = cat === 'Loud Captions' ? 'tag-viral' : 'tag-aesthetic';
+                    } else if (['boxed', 'subtitle', 'soft_glass', 'highlighter', 'sticker'].includes(p.id)) {
+                        pw1 = 'morning';
+                        pw2 = 'matcha routine.';
+                        tagCls = 'tag-aesthetic';
                     }
-                }));
+
+                    return {
+                        id: p.id,
+                        name: p.name,
+                        category: catLower,
+                        description: p.description || '',
+                        platform: p.category || 'Creator Style',
+                        tagClass: tagCls,
+                        previewWord1: pw1,
+                        previewWord2: pw2,
+                        style: {
+                            fontFamily: p.fontFamily || p.font_family || 'Inter',
+                            fontWeight: String(p.fontWeight || p.font_weight || 700),
+                            fontSize: p.fontSize || p.font_size || 36,
+                            textColor: p.textColor || p.text_color || '#FFFFFF',
+                            activeWordColor: p.activeWordColor || p.active_word_color || '#FFE000',
+                            textCase: p.uppercase ? 'uppercase' : (p.textCase || 'normal'),
+                            isItalic: Boolean(p.isItalic || p.is_italic || p.id === 'magazine' || p.id === 'editorial_layered'),
+                            isTilted: Boolean(p.isTilted || p.is_tilted || p.id === 'comic' || p.id === 'highlight'),
+                            tiltAngle: p.tiltAngle || p.tilt_angle || (p.id === 'comic' ? -2 : p.id === 'highlight' ? -1.5 : 0),
+                            threeDShadow: Boolean(p.threeDShadow || p.three_d_shadow || p.id === 'pop_3d'),
+                            strokeEnabled: Boolean(p.outlineEnabled || (p.outlineWidth && p.outlineWidth > 0)),
+                            strokeColor: p.outlineColor || '#000000',
+                            strokeWidth: p.outlineWidth || 0,
+                            shadowEnabled: p.shadowEnabled !== false,
+                            shadowColor: p.shadowColor || '#000000',
+                            shadowBlur: p.shadowBlur || 2,
+                            shadowY: p.shadowOffsetY || 1,
+                            glowEnabled: Boolean(p.glow || p.glowEnabled),
+                            glowColor: p.glowColor || p.glow_color || p.activeWordColor || '#FFE000',
+                            wordBox: Boolean(p.wordBox),
+                            wordBoxColor: p.wordBoxColor || '#4F46E5',
+                            wordBoxRadius: p.wordBoxRadius || 6,
+                            bgMode: p.bgMode || (p.backgroundOpacity > 0 ? 'semi' : (p.background ? 'solid' : 'none')),
+                            bgColor: p.backgroundColor || '#000000',
+                            animation: p.animation || 'color_karaoke',
+                            position: p.position || 'bottom',
+                            twoLineHierarchy: Boolean(p.twoLineHierarchy || p.two_line_hierarchy),
+                        }
+                    };
+                });
                 renderPresets();
             }
         } catch (e) {
@@ -1328,23 +1839,7 @@
             card.className = `preset-card ${preset.id === state.activePresetId ? 'active' : ''}`;
             card.setAttribute('data-preset-id', preset.id);
 
-            // Calculate preview styling inline
             const st = preset.style;
-            let textShadow = 'none';
-            if (st.glowEnabled) {
-                textShadow = `0 0 ${st.glowIntensity || 12}px ${st.glowColor || '#00FFCC'}`;
-            } else if (st.shadowEnabled) {
-                textShadow = `0 ${st.shadowY || 2}px ${st.shadowBlur || 6}px ${st.shadowColor || '#000000'}`;
-            }
-
-            const textStroke = st.strokeEnabled ? `${st.strokeWidth || 2}px ${st.strokeColor || '#000000'}` : 'none';
-            const bgCss = st.bgMode === 'semi' ? `background: rgba(15,23,42,0.7); border-radius: 6px; padding: 4px 8px;` :
-                          st.bgMode === 'solid' ? `background: ${st.bgColor || '#000000'}; border-radius: 4px; padding: 4px 8px;` : '';
-
-            const word2Style = st.wordBox
-                ? `background: ${st.wordBoxColor || '#4F46E5'}; color: #FFFFFF; border-radius: 4px; padding: 2px 6px;`
-                : `color:${st.activeWordColor};`;
-
             const animLabelMap = {
                 'color_karaoke': '✨ Karaoke',
                 'smooth_fade': '🌊 Fade',
@@ -1360,29 +1855,93 @@
             };
             const animBadgeText = animLabelMap[st.animation] || (st.animation ? st.animation.replace('_', ' ') : '✨ Karaoke');
 
-            const tiltTransform = st.isTilted ? `transform: rotate(${st.tiltAngle || -1.5}deg);` : '';
-            const fontStyleCss = st.isItalic ? 'font-style: italic;' : '';
-            const threeDShadowCss = st.threeDShadow ? 'text-shadow: 2px 2px 0px #000000, 4px 4px 0px #000000;' : `text-shadow: ${textShadow};`;
-            const comicBorder = preset.id === 'comic' ? 'border: 2px solid #000000; box-shadow: 3px 3px 0 #000000;' : '';
+            // Generate specialized preview matching reference screenshots exactly
+            let previewInnerHtml = '';
+            let tiltStyle = '';
+
+            if (preset.id === 'cinematic_creator') {
+                previewInnerHtml = `
+                    <div style="font-family:'Anton', sans-serif; text-transform:uppercase; text-align:center; line-height:1.15;">
+                        <div style="font-size:11.5px; color:#FFFFFF; letter-spacing:0.5px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">BHAI SCOUT KIA</div>
+                        <div style="font-size:16px; color:#80D8FF; letter-spacing:0.5px; text-shadow:0 0 10px #0088FF, 0 0 16px rgba(0,136,255,0.7); font-weight:900;">ROYA HOGA</div>
+                    </div>`;
+            } else if (preset.id === 'cinematic_minimal_hindi') {
+                previewInnerHtml = `
+                    <div style="font-family:'Noto Sans Devanagari', sans-serif; font-size:13px; font-weight:600; color:#FFFFFF; text-shadow:0 1px 3px rgba(0,0,0,0.85); text-align:center;">
+                        उसके आसपास के लोग
+                    </div>`;
+            } else if (preset.id === 'bold_keyword_yellow') {
+                previewInnerHtml = `
+                    <div style="font-family:'Anton', sans-serif; text-transform:uppercase; text-align:center; line-height:1.15;">
+                        <div style="font-size:15px; font-weight:900; -webkit-text-stroke:0.8px #000; text-shadow:0 2px 4px #000;">
+                            <span style="color:#FFEA00; text-shadow:0 0 8px rgba(255,234,0,0.6);">AGAR</span> <span style="color:#FFFFFF;">US DIN</span>
+                        </div>
+                        <div style="font-size:12px; color:#E2E8F0; -webkit-text-stroke:0.6px #000; text-shadow:0 2px 4px #000;">KD KE GHAR PE</div>
+                    </div>`;
+            } else if (preset.id === 'modern_kinetic_cyan') {
+                previewInnerHtml = `
+                    <div style="font-family:'Montserrat', sans-serif; font-weight:800; text-align:center; line-height:1.2;">
+                        <span style="font-size:11px; color:#FFFFFF; text-shadow:0 2px 4px #000;">with</span>
+                        <div style="font-size:16px; color:#00F0FF; text-shadow:0 0 10px #00E5FF, 0 0 18px rgba(0,229,255,0.6);">something</div>
+                        <span style="font-size:11px; color:#FFFFFF; text-shadow:0 2px 4px #000;">predictable</span>
+                    </div>`;
+            } else if (preset.id === 'editorial_layered') {
+                previewInnerHtml = `
+                    <div style="text-align:center; line-height:1.2;">
+                        <div style="font-family:'Playfair Display', serif; font-style:italic; font-weight:700; font-size:15px; color:#FDF6E9; text-shadow:0 2px 5px rgba(0,0,0,0.85);">paaji ch dekho</div>
+                        <div style="font-family:'Inter', sans-serif; font-size:13px; font-weight:600; color:#FFFFFF; text-shadow:0 2px 4px rgba(0,0,0,0.85);">is</div>
+                    </div>`;
+            } else if (preset.id === 'boxed') {
+                previewInnerHtml = `<span style="background:#000000; color:#FFFFFF; font-family:'Inter', sans-serif; font-size:11.5px; font-weight:700; border-radius:12px; padding:3px 9px; box-shadow:0 2px 6px rgba(0,0,0,0.6);">morning matcha routine.</span>`;
+            } else if (preset.id === 'subtitle') {
+                previewInnerHtml = `<span style="background:rgba(0,0,0,0.85); color:#FFFFFF; font-family:'Inter', sans-serif; font-size:11.5px; font-weight:600; border-radius:4px; padding:3px 8px;">morning matcha routine.</span>`;
+            } else if (preset.id === 'highlight') {
+                tiltStyle = 'transform: rotate(-1.5deg);';
+                previewInnerHtml = `<span style="font-family:'Montserrat', sans-serif; font-weight:800; font-size:12.5px; color:#FFFFFF; text-shadow:0 2px 4px rgba(0,0,0,0.8);">MORNING <span style="background:#8B5CF6; color:#FFFFFF; border-radius:4px; padding:2px 6px;">MATCHA</span></span>`;
+            } else if (preset.id === 'comic') {
+                tiltStyle = 'transform: rotate(-2deg);';
+                previewInnerHtml = `<span style="background:#FDE047; color:#000000; border:2px solid #000000; box-shadow:3px 3px 0 #000000; border-radius:3px; padding:2px 7px; font-weight:900; font-size:12.5px; font-family:'Arial Black', sans-serif;">MORNING MATCHA</span>`;
+            } else if (preset.id === 'terminal') {
+                previewInnerHtml = `<span style="background:#0A0E17; color:#22C55E; border-radius:3px; padding:3px 7px; font-family:'JetBrains Mono', monospace; font-size:10.5px; border:1px solid rgba(34,197,94,0.3);">&gt; morning match</span>`;
+            } else if (preset.id === 'soft_glass') {
+                previewInnerHtml = `<span style="background:rgba(255,255,255,0.18); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.25); color:#FFFFFF; border-radius:12px; padding:3px 9px; font-size:11.5px; font-weight:600; font-family:'Plus Jakarta Sans', sans-serif;">morning matcha routine.</span>`;
+            } else if (preset.id === 'magazine') {
+                previewInnerHtml = `<span style="background:#000000; color:#FFFFFF; padding:2px 8px; font-family:'Playfair Display', serif; font-size:12px; font-style:italic; border-radius:2px;">morning <strong style="font-style:normal; font-family:'Montserrat', sans-serif; font-weight:800;">MATCHA</strong></span>`;
+            } else if (preset.id === 'highlighter') {
+                previewInnerHtml = `<span style="font-family:'Inter', sans-serif; font-size:11.5px; font-weight:600; color:#FFFFFF; text-shadow:0 1px 3px #000;">morning <span style="background:#FDE047; color:#000000; padding:1px 4px; border-radius:2px; font-weight:700;">matcha</span> routine.</span>`;
+            } else if (preset.id === 'paper') {
+                previewInnerHtml = `<span style="background:#F5F5F0; color:#1C1917; border-radius:2px; padding:2px 7px; font-family:'JetBrains Mono', monospace; font-size:10.5px; box-shadow:1px 2px 4px rgba(0,0,0,0.3);">morning matc</span>`;
+            } else if (preset.id === 'label') {
+                previewInnerHtml = `<span style="background:#FFFFFF; color:#18181B; border-radius:2px; padding:2px 7px; font-family:'JetBrains Mono', monospace; font-weight:800; font-size:10.5px;">MORNING MATCHA</span>`;
+            } else if (preset.id === 'sticker') {
+                previewInnerHtml = `<span style="background:#FFFFFF; color:#18181B; border-radius:12px; padding:2px 7px; font-size:11px; font-weight:700; font-family:'Poppins', sans-serif;"><span style="background:#EC4899; color:#FFFFFF; border-radius:6px; padding:1px 5px;">morning</span> matcha routine.</span>`;
+            } else if (preset.id === 'bold_pop') {
+                previewInnerHtml = `<span style="font-family:'Anton', sans-serif; font-size:15px; color:#FFFFFF; -webkit-text-stroke:0.8px #000; text-shadow:0 2px 4px #000;">MORNING <span style="color:#FACC15;">MATCHA</span></span>`;
+            } else if (preset.id === 'karaoke') {
+                previewInnerHtml = `<span style="font-family:'Montserrat', sans-serif; font-weight:800; font-size:13px; color:#FFFFFF; -webkit-text-stroke:0.6px #000; text-shadow:0 2px 4px #000;">morning <span style="color:#FACC15;">matcha</span></span>`;
+            } else if (preset.id === 'typewriter') {
+                previewInnerHtml = `<span style="font-family:'Montserrat', sans-serif; font-weight:800; font-size:13px; color:#FFFFFF; -webkit-text-stroke:0.6px #000; text-shadow:0 2px 4px #000;">MORNING <span style="color:#FACC15;">MATCHA</span></span>`;
+            } else if (preset.id === 'one_word') {
+                previewInnerHtml = `<span style="font-family:'Anton', sans-serif; font-size:20px; color:#FFFFFF; -webkit-text-stroke:1px #000; text-shadow:0 3px 6px #000; letter-spacing:0.5px;">MATCHA</span>`;
+            } else if (preset.id === 'neon') {
+                previewInnerHtml = `<span style="font-family:'Montserrat', sans-serif; font-weight:800; font-size:13px; color:#FFFFFF; -webkit-text-stroke:0.6px #000; text-shadow:0 2px 4px #000;">MORNING <span style="color:#00F5FF; text-shadow:0 0 10px #00F5FF, 0 0 16px rgba(0,245,255,0.7);">MATCHA</span></span>`;
+            } else if (preset.id === 'pop_3d') {
+                previewInnerHtml = `<span style="font-family:'Arial Black', sans-serif; font-size:12.5px; color:#FFFFFF; text-shadow:2px 2px 0 #000, 3.5px 3.5px 0 #000;">MORNING <span style="color:#FACC15;">MATCHA</span></span>`;
+            } else if (preset.id === 'gradient') {
+                previewInnerHtml = `<span style="font-family:'Montserrat', sans-serif; font-weight:800; font-size:13px; color:#FFFFFF; -webkit-text-stroke:0.6px #000; text-shadow:0 2px 4px #000;">MORNING <span style="color:#FB923C; text-shadow:0 0 8px #EA580C;">MATCHA</span></span>`;
+            } else if (preset.id === 'beast') {
+                previewInnerHtml = `<span style="font-family:'Anton', sans-serif; font-size:16px; color:#FFFFFF; -webkit-text-stroke:1px #000; text-shadow:0 2px 4px #000;">MORNING <span style="color:#FDE047;">MATCHA</span></span>`;
+            } else {
+                // Generic Custom Preset fallback
+                let textShadow = st.glowEnabled ? `0 0 10px ${st.glowColor || '#00FFCC'}` : st.shadowEnabled ? `0 ${st.shadowY || 2}px ${st.shadowBlur || 4}px ${st.shadowColor || '#000'}` : 'none';
+                let textStroke = st.strokeEnabled ? `${st.strokeWidth || 1}px ${st.strokeColor || '#000'}` : 'none';
+                let bgCss = st.bgMode === 'semi' ? 'background:rgba(15,23,42,0.7); border-radius:6px; padding:3px 7px;' : st.bgMode === 'solid' ? `background:${st.bgColor || '#000'}; border-radius:4px; padding:3px 7px;` : '';
+                previewInnerHtml = `<span style="font-family:'${st.fontFamily}', sans-serif; font-weight:${st.fontWeight}; font-size:13px; color:${st.textColor}; text-transform:${st.textCase || 'normal'}; -webkit-text-stroke:${textStroke}; text-shadow:${textShadow}; ${bgCss}">${preset.previewWord1 || 'Custom'} <span style="color:${st.activeWordColor || '#FACC15'};">${preset.previewWord2 || 'Preset'}</span></span>`;
+            }
 
             card.innerHTML = `
-                <div class="preset-preview-box" style="${tiltTransform}">
-                    <span style="
-                        font-family: '${st.fontFamily}', sans-serif;
-                        font-weight: ${st.fontWeight};
-                        font-size: 15px;
-                        color: ${st.textColor};
-                        text-transform: ${st.textCase || 'uppercase'};
-                        -webkit-text-stroke: ${textStroke};
-                        ${threeDShadowCss}
-                        ${fontStyleCss}
-                        ${bgCss}
-                        ${comicBorder}
-                        letter-spacing: 0.5px;
-                        display: inline-block;
-                    ">
-                        ${preset.previewWord1 || 'morning'} <span style="${word2Style}">${preset.previewWord2 || 'matcha'}</span>
-                    </span>
+                <div class="preset-preview-box" style="${tiltStyle}">
+                    ${previewInnerHtml}
                 </div>
                 <div class="preset-card-meta">
                     <div class="preset-card-header">
