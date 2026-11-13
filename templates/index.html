@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Clip Studio | UpClip Studio</title>
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +20,7 @@
         <header class="app-topbar">
             <div class="topbar-left">
                 <a href="/" class="topbar-brand">
-                    <span class="brand-dot"></span>
+                    <img src="{{ url_for('static', filename='favicon.svg') }}" alt="UpClip Studio" class="brand-logo-icon" width="20" height="20">
                     <span>UpClip Studio</span>
                 </a>
                 <div class="topbar-divider"></div>
@@ -103,7 +107,11 @@
                         <span class="sidebar-label">YouTube Desk</span>
                     </a>
 
-                    <div class="nav-section-label" style="margin-top: 12px;">Resources</div>
+                    <div class="nav-section-label" style="margin-top: 12px;">Configuration</div>
+                    <a href="/settings" class="sidebar-item" data-tooltip="Settings & Resource Manager">
+                        <div class="sidebar-icon"><svg data-lucide="settings" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Settings</span>
+                    </a>
                     <a href="/guide" class="sidebar-item" data-tooltip="User Guide">
                         <div class="sidebar-icon"><svg data-lucide="book-open" width="18" height="18"></svg></div>
                         <span class="sidebar-label">How to Use</span>
@@ -120,7 +128,7 @@
 
             <!-- Main Workspace Container -->
             <main class="app-workspace">
-                <div class="workspace-content" style="max-width: 100%; width: 100%;">
+                <div class="workspace-content" style="max-width: 100%; width: 100%; padding-bottom: 96px;">
                     
                     <!-- Top Workspace Header -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
@@ -1339,10 +1347,10 @@
                         </div>
                     </div>
 
-                    <!-- Wizard Navigation Buttons (Pinned to Bottom Row) -->
-                    <div class="wizard-nav" style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--border); display: flex; justify-content: space-between;">
+                    <!-- Wizard Navigation Buttons (Pinned to Bottom Row - Viewport Safe) -->
+                    <div class="wizard-nav" style="margin-top: var(--space-6); padding: var(--space-4) 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; bottom: 0; background: var(--surface-0); z-index: 30; backdrop-filter: blur(12px); box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);">
                         <button class="btn btn-secondary" id="wizPrev" hidden>← Back</button>
-                        <button class="btn btn-primary" id="wizNext">Continue →</button>
+                        <button class="btn btn-primary" id="wizNext" style="padding: 10px 22px; font-weight: 700; font-size: 14px;">Continue →</button>
                     </div>
 
                 </div>

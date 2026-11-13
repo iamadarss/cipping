@@ -21,11 +21,15 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "confirmOnCloseUnsaved": True,
         "defaultProjectName": "Untitled Project",
         "defaultAspectRatio": "9:16",
-        "defaultFps": 30
+        "defaultFps": 30,
+        "defaultLanguage": "en",
+        "defaultResolution": "1080p",
+        "defaultExportFormat": "mp4",
+        "startupWorkspace": "/dashboard"
     },
     "appearance": {
         "theme": "dark",  # "dark" or "light"
-        "accentColor": "#8B5CF6",
+        "accentColor": "#10B981",
         "uiScale": 100,
         "compactTimeline": False,
         "showSafeGuidesByDefault": True
@@ -54,14 +58,25 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "export": {
         "defaultResolution": "1080p",
         "defaultCodec": "h264",
-        "defaultBitrate": "12M",
-        "burnCaptionsByDefault": True
+        "defaultBitrate": "8M",
+        "burnCaptionsByDefault": True,
+        "defaultExportFormat": "mp4"
     },
     "performance": {
         "hardwareAcceleration": "auto",
         "previewQuality": "high",
         "maxBackgroundThreads": 4,
         "tempCacheLimitGB": 10
+    },
+    "models": {
+        "activeWhisperModel": "base",
+        "preferredLanguage": "en"
+    },
+    "folders": {
+        "mediaImportFolder": str(config.INPUT_DIR),
+        "projectFolder": str(config.DATA_DIR / "projects"),
+        "exportFolder": str(config.FINAL_DIR),
+        "tempFolder": str(config.OUTPUT_DIR / "temp")
     },
     "keyboard": {
         "playPause": "Space",

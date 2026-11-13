@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings & Resource Manager | UpClip Studio</title>
+    <!-- Brand Favicons & Manifest -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .settings-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-6);
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding-bottom: 96px;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: var(--space-4);
+        }
+
+        .settings-tabs-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--surface-1);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .settings-tabs-nav::-webkit-scrollbar { display: none; }
+
+        .settings-tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+        .settings-tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .settings-tab-btn.active {
+            color: #FFFFFF;
+            background: var(--surface-2);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            border: 1px solid var(--border-strong, rgba(255,255,255,0.1));
+        }
+        .settings-tab-btn.active svg {
+            color: var(--primary);
+        }
+
+        .tab-pane {
+            display: none;
+            flex-direction: column;
+            gap: var(--space-6);
+        }
+        .tab-pane.active {
+            display: flex;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: var(--space-4);
+        }
+        .form-row label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .form-row .form-hint {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .model-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            padding: var(--space-5);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            transition: all var(--transition-base);
+            position: relative;
+        }
+        .model-card.is-active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary), 0 8px 24px rgba(16, 185, 129, 0.12);
+        }
+        .model-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .model-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .badge-active {
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(var(--primary-rgb), 0.35);
+        }
+        .badge-installed {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60A5FA;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+        }
+        .badge-available {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94A3B8;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .model-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            background: var(--surface-0);
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 11.5px;
+        }
+        .model-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .model-meta-label {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.04em;
+        }
+        .model-meta-val {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .progress-bar-wrap {
+            width: 100%;
+            height: 6px;
+            background: var(--surface-0);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .dep-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            padding: var(--space-4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-4);
+        }
+
+        .storage-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--surface-2);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            display: flex;
+        }
+        .storage-bar-used {
+            background: linear-gradient(90deg, var(--primary) 0%, #34D399 100%);
+            height: 100%;
+        }
+
+        .diag-item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+        }
+        .custom-table th {
+            text-align: left;
+            padding: 10px 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .custom-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Top Bar -->
+        <header class="app-topbar">
+            <div class="topbar-left">
+                <a href="/" class="topbar-brand">
+                    <img src="{{ url_for('static', filename='favicon.svg') }}" alt="UpClip Studio" class="brand-logo-icon" width="20" height="20">
+                    <span>UpClip Studio</span>
+                </a>
+                <div class="topbar-divider"></div>
+                <div class="topbar-workspace-title">
+                    <svg data-lucide="settings" width="16" height="16" style="color:var(--primary);"></svg>
+                    <span>Settings & Resource Manager</span>
+                </div>
+            </div>
+
+            <div class="topbar-center">
+                <button class="command-trigger" id="topbarCommandTrigger" data-tooltip="Quick Command Menu" data-hotkey="Ctrl+K">
+                    <div class="command-trigger-left">
+                        <svg data-lucide="search" width="14" height="14"></svg>
+                        <span>Search commands or settings...</span>
+                    </div>
+                    <span class="kbd-badge">Ctrl + K</span>
+                </button>
+            </div>
+
+            <div class="topbar-right">
+                <button id="saveGlobalSettingsBtn" class="btn btn-primary btn-sm">
+                    <svg data-lucide="save" width="14" height="14"></svg>
+                    <span>Save Changes</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="app-main">
+            <!-- Sidebar Navigation -->
+            <aside class="app-sidebar" id="appSidebar">
+                <div class="sidebar-header">
+                    <a href="/dashboard" class="sidebar-new-btn">
+                        <svg data-lucide="plus" width="16" height="16"></svg>
+                        <span>New Project</span>
+                    </a>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <div class="nav-section-label">Workspaces</div>
+                    <a href="/" class="sidebar-item" data-tooltip="Home & Projects">
+                        <div class="sidebar-icon"><svg data-lucide="house" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Home & Projects</span>
+                    </a>
+                    <a href="/dashboard" class="sidebar-item" data-tooltip="AI Clip Studio">
+                        <div class="sidebar-icon"><svg data-lucide="wand-sparkles" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">AI Clip Studio</span>
+                    </a>
+                    <a href="/caption-studio" class="sidebar-item" data-tooltip="Caption Studio">
+                        <div class="sidebar-icon"><svg data-lucide="captions" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Caption Studio</span>
+                    </a>
+                    <a href="/studio" class="sidebar-item" data-tooltip="Studio Hub">
+                        <div class="sidebar-icon"><svg data-lucide="shapes" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Studio Hub</span>
+                    </a>
+                    <a href="/yt-downloader" class="sidebar-item" data-tooltip="YT Downloader">
+                        <div class="sidebar-icon"><svg data-lucide="download" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Downloader</span>
+                    </a>
+                    <a href="/youtube-desk" class="sidebar-item" data-tooltip="YouTube Automation">
+                        <div class="sidebar-icon"><svg data-lucide="tv" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">YouTube Desk</span>
+                    </a>
+
+                    <div class="nav-section-label" style="margin-top: 12px;">Configuration</div>
+                    <a href="/settings" class="sidebar-item active" data-tooltip="Settings & Resource Manager">
+                        <div class="sidebar-icon"><svg data-lucide="settings" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">Settings</span>
+                    </a>
+                    <a href="/guide" class="sidebar-item" data-tooltip="User Guide">
+                        <div class="sidebar-icon"><svg data-lucide="book-open" width="18" height="18"></svg></div>
+                        <span class="sidebar-label">How to Use</span>
+                    </a>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" data-tooltip="Collapse / Expand Sidebar">
+                        <svg data-lucide="panel-left-close" width="18" height="18"></svg>
+                        <span class="sidebar-label">Collapse</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Workspace -->
+            <main class="app-workspace">
+                <div class="workspace-content settings-container">
+                    
+                    <!-- Page Header & Tab Bar -->
+                    <div class="settings-header">
+                        <div>
+                            <h1 style="font-family: var(--font-heading); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Settings & Resource Manager</h1>
+                            <p style="color: var(--text-secondary); font-size: 13px;">Manage AI models, system dependencies, hardware performance, storage, and project defaults.</p>
+                        </div>
+
+                        <!-- 10 Navigation Tabs -->
+                        <div class="settings-tabs-nav" id="settingsTabsNav">
+                            <button class="settings-tab-btn active" data-tab="general">
+                                <svg data-lucide="sliders" width="15" height="15"></svg> General
+                            </button>
+                            <button class="settings-tab-btn" data-tab="models">
+                                <svg data-lucide="cpu" width="15" height="15"></svg> AI Models
+                            </button>
+                            <button class="settings-tab-btn" data-tab="dependencies">
+                                <svg data-lucide="layers" width="15" height="15"></svg> Dependencies
+                            </button>
+                            <button class="settings-tab-btn" data-tab="downloads">
+                                <svg data-lucide="download" width="15" height="15"></svg> Downloads
+                            </button>
+                            <button class="settings-tab-btn" data-tab="storage">
+                                <svg data-lucide="hard-drive" width="15" height="15"></svg> Storage
+                            </button>
+                            <button class="settings-tab-btn" data-tab="folders">
+                                <svg data-lucide="folder" width="15" height="15"></svg> Folders
+                            </button>
+                            <button class="settings-tab-btn" data-tab="performance">
+                                <svg data-lucide="zap" width="15" height="15"></svg> Performance
+                            </button>
+                            <button class="settings-tab-btn" data-tab="privacy">
+                                <svg data-lucide="shield-check" width="15" height="15"></svg> Privacy
+                            </button>
+                            <button class="settings-tab-btn" data-tab="diagnostics">
+                                <svg data-lucide="activity" width="15" height="15"></svg> Diagnostics
+                            </button>
+                            <button class="settings-tab-btn" data-tab="about">
+                                <svg data-lucide="info" width="15" height="15"></svg> About
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 1: GENERAL SETTINGS -->
+                    <div class="tab-pane active" id="pane-general">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
+                                <svg data-lucide="sliders" width="18" height="18" style="color:var(--primary);"></svg>
+                                General Video & Export Defaults
+                            </h3>
+                            <div class="settings-grid">
+                                <div class="form-row">
+                                    <label for="cfgTheme">Application Theme</label>
+                                    <select id="cfgTheme" class="form-select">
+                                        <option value="dark" selected>Charcoal Dark (Default)</option>
+                                        <option value="light">Studio Light</option>
+                                    </select>
+                                    <span class="form-hint">Overall visual appearance across all workspaces.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgLanguage">Default Transcription Language</label>
+                                    <select id="cfgLanguage" class="form-select">
+                                        <option value="en" selected>English (en)</option>
+                                        <option value="auto">Auto Detect</option>
+                                        <option value="hi">Hindi (hi)</option>
+                                        <option value="hinglish">Hinglish (Hindi + English)</option>
+                                        <option value="es">Spanish (es)</option>
+                                        <option value="fr">French (fr)</option>
+                                        <option value="de">German (de)</option>
+                                    </select>
+                                    <span class="form-hint">Preferred language for speech-to-text recognition.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgAspectRatio">Default Video Aspect Ratio</label>
+                                    <select id="cfgAspectRatio" class="form-select">
+                                        <option value="9:16" selected>9:16 - Shorts / Reels / TikTok (Default)</option>
+                                        <option value="16:9">16:9 - YouTube Landscape</option>
+                                        <option value="1:1">1:1 - Square</option>
+                                        <option value="4:5">4:5 - Instagram Portrait</option>
+                                    </select>
+                                    <span class="form-hint">Target output framing for new projects.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgResolution">Default Export Resolution</label>
+                                    <select id="cfgResolution" class="form-select">
+                                        <option value="1080p" selected>1080p (Full HD - 1080×1920)</option>
+                                        <option value="720p">720p (HD - 720×1280)</option>
+                                        <option value="original">Original Source Dimensions</option>
+                                    </select>
+                                    <span class="form-hint">Resolution used when rendering final MP4 clips.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgFps">Default Frame Rate (FPS)</label>
+                                    <select id="cfgFps" class="form-select">
+                                        <option value="30" selected>30 FPS (Standard)</option>
+                                        <option value="60">60 FPS (High Motion)</option>
+                                    </select>
+                                    <span class="form-hint">Output video smoothness.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgExportFormat">Default Export Container</label>
+                                    <select id="cfgExportFormat" class="form-select">
+                                        <option value="mp4" selected>MP4 (H.264 / AAC - Broadest Compatibility)</option>
+                                        <option value="mov">MOV (Apple QuickTime)</option>
+                                        <option value="mkv">MKV (Matroska)</option>
+                                    </select>
+                                    <span class="form-hint">Container format for exported video clips.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgStartupWorkspace">Default Startup View</label>
+                                    <select id="cfgStartupWorkspace" class="form-select">
+                                        <option value="/dashboard" selected>AI Clip Studio</option>
+                                        <option value="/">Home & Projects</option>
+                                        <option value="/caption-studio">Caption Studio</option>
+                                        <option value="/studio">Studio Hub</option>
+                                    </select>
+                                    <span class="form-hint">Workspace opened upon application launch.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgAutoSave">Auto-Save Project State</label>
+                                    <select id="cfgAutoSave" class="form-select">
+                                        <option value="true" selected>Enabled (Every 2 seconds)</option>
+                                        <option value="false">Manual Save Only</option>
+                                    </select>
+                                    <span class="form-hint">Automatically saves changes while editing subtitles.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: AI MODELS -->
+                    <div class="tab-pane" id="pane-models">
+                        <div class="card" style="margin-bottom: var(--space-4);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                                <div>
+                                    <h3 class="card-title">
+                                        <svg data-lucide="cpu" width="18" height="18" style="color:var(--primary);"></svg>
+                                        Whisper Speech-to-Text Model Catalog
+                                    </h3>
+                                    <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                                        Official local Whisper models. Only downloaded models run locally with zero cloud API dependencies.
+                                    </p>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 12px; color: var(--text-muted);">Cache Location:</span>
+                                    <code id="modelsCacheDir" style="font-size: 11px; background: var(--surface-0); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border);">~/.cache/whisper</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Models Grid -->
+                        <div class="settings-grid" id="modelsGridContainer">
+                            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                                <span class="spinner"></span> Loading AI model catalog...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: DEPENDENCY & LIBRARY MANAGER -->
+                    <div class="tab-pane" id="pane-dependencies">
+                        <div class="card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+                                <h3 class="card-title">
+                                    <svg data-lucide="layers" width="18" height="18" style="color:var(--primary);"></svg>
+                                    Installed System Dependencies
+                                </h3>
+                                <button id="refreshDepsBtn" class="btn btn-secondary btn-sm">
+                                    <svg data-lucide="refresh-cw" width="14" height="14"></svg> Re-scan
+                                </button>
+                            </div>
+                            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-4);">
+                                Genuine runtimes and libraries powering video encoding, speech transcription, computer vision, and graphic rendering.
+                            </p>
+                            <div id="depsListContainer" style="display: flex; flex-direction: column; gap: var(--space-3);">
+                                <div style="text-align: center; padding: 20px; color: var(--text-muted);">Scanning installed libraries...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: DOWNLOAD MANAGER -->
+                    <div class="tab-pane" id="pane-downloads">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
+                                <svg data-lucide="download" width="18" height="18" style="color:var(--primary);"></svg>
+                                Active & Historical Resource Downloads
+                            </h3>
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Resource / Model</th>
+                                            <th>Status</th>
+                                            <th>Progress</th>
+                                            <th>Downloaded</th>
+                                            <th>Speed</th>
+                                            <th style="text-align: right;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="downloadsTableBody">
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                                                No active or recent background downloads.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: STORAGE MANAGEMENT -->
+                    <div class="tab-pane" id="pane-storage">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
+                                <svg data-lucide="hard-drive" width="18" height="18" style="color:var(--primary);"></svg>
+                                Disk & Cache Allocation
+                            </h3>
+
+                            <!-- Disk Usage Meter -->
+                            <div style="background: var(--surface-0); padding: var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: var(--space-5);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Storage Drive (<span id="storageDriveLabel">System</span>)</span>
+                                    <span style="font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono);" id="storageUsageStats">Calculating...</span>
+                                </div>
+                                <div class="storage-bar">
+                                    <div class="storage-bar-used" id="storageBarFill" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Cache Breakdown Cards -->
+                            <div class="settings-grid" id="storageBreakdownGrid">
+                                <div class="card" style="background: var(--surface-0);">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Whisper AI Models</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 4px 0;" id="szWhisperModels">--</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);" id="cntWhisperModels">0 models</div>
+                                </div>
+
+                                <div class="card" style="background: var(--surface-0);">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Subtitles Cache</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 4px 0;" id="szSubtitles">--</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);" id="cntSubtitles">0 files</div>
+                                </div>
+
+                                <div class="card" style="background: var(--surface-0);">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Transcripts Cache</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 4px 0;" id="szTranscripts">--</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);" id="cntTranscripts">0 files</div>
+                                </div>
+
+                                <div class="card" style="background: var(--surface-0);">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">B-Roll & Video Cache</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 4px 0;" id="szBroll">--</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary);" id="cntBroll">0 files</div>
+                                </div>
+                            </div>
+
+                            <!-- Clear Cache CTA -->
+                            <div style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">Temporary Processing Cache</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">Removes temporary frames, b-roll cache, and partial downloads. Never deletes original videos or projects.</div>
+                                </div>
+                                <button id="clearCacheBtn" class="btn btn-secondary">
+                                    <svg data-lucide="trash-2" width="14" height="14" style="color:#EF4444;"></svg>
+                                    <span>Clear Temporary Cache</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: IMPORT & EXPORT FOLDERS -->
+                    <div class="tab-pane" id="pane-folders">
+                        <div class="card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                                <h3 class="card-title">
+                                    <svg data-lucide="folder" width="18" height="18" style="color:var(--primary);"></svg>
+                                    Configured Workspace Directories
+                                </h3>
+                                <button id="resetFoldersBtn" class="btn btn-secondary btn-sm">
+                                    <svg data-lucide="rotate-ccw" width="14" height="14"></svg> Restore Defaults
+                                </button>
+                            </div>
+                            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-5);">
+                                Designate directories for media ingestion, project metadata, rendered video exports, and temporary caching.
+                            </p>
+
+                            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                                <div class="form-row">
+                                    <label>Default Media Import Directory</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="dirMediaImport" class="form-input" style="font-family: var(--font-mono); font-size: 12px;" />
+                                        <button class="btn btn-secondary btn-sm btn-open-folder" data-folder="mediaImportFolder">
+                                            <svg data-lucide="folder-open" width="14" height="14"></svg> Open
+                                        </button>
+                                    </div>
+                                    <span class="form-hint">Where local videos and audio files are imported from.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label>Default Project Metadata Directory</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="dirProjects" class="form-input" style="font-family: var(--font-mono); font-size: 12px;" />
+                                        <button class="btn btn-secondary btn-sm btn-open-folder" data-folder="projectFolder">
+                                            <svg data-lucide="folder-open" width="14" height="14"></svg> Open
+                                        </button>
+                                    </div>
+                                    <span class="form-hint">Where project history and subtitle edits are stored.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label>Default Export Directory</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="dirExports" class="form-input" style="font-family: var(--font-mono); font-size: 12px;" />
+                                        <button class="btn btn-secondary btn-sm btn-open-folder" data-folder="exportFolder">
+                                            <svg data-lucide="folder-open" width="14" height="14"></svg> Open
+                                        </button>
+                                    </div>
+                                    <span class="form-hint">Destination directory for rendered MP4 clips and subtitles.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label>Temporary Processing Directory</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="dirTemp" class="form-input" style="font-family: var(--font-mono); font-size: 12px;" />
+                                        <button class="btn btn-secondary btn-sm btn-open-folder" data-folder="tempFolder">
+                                            <svg data-lucide="folder-open" width="14" height="14"></svg> Open
+                                        </button>
+                                    </div>
+                                    <span class="form-hint">Scratch space used during scene detection and video stitching.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 7: PERFORMANCE SETTINGS -->
+                    <div class="tab-pane" id="pane-performance">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
+                                <svg data-lucide="zap" width="18" height="18" style="color:var(--primary);"></svg>
+                                Hardware Capabilities & Acceleration
+                            </h3>
+
+                            <div class="settings-grid" style="margin-bottom: var(--space-5);">
+                                <div class="card" style="background: var(--surface-0);">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Processor (CPU)</div>
+                                    <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 4px 0;" id="perfCpuCores">-- Cores</div>
+                                    <div style="font-size: 11.5px; color: var(--text-secondary);" id="perfCpuModel">Detecting...</div>
+                                </div>
+
+                                <div class="card" style="background: var(--surface-0);">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">System Memory (RAM)</div>
+                                    <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 4px 0;" id="perfRamTotal">-- GB Total</div>
+                                    <div style="font-size: 11.5px; color: var(--text-secondary);" id="perfRamAvailable">-- GB Available</div>
+                                </div>
+
+                                <div class="card" style="background: var(--surface-0);">
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">GPU Acceleration (CUDA)</div>
+                                    <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 4px 0;" id="perfGpuStatus">--</div>
+                                    <div style="font-size: 11.5px; color: var(--text-secondary);" id="perfGpuDevice">Detecting...</div>
+                                </div>
+                            </div>
+
+                            <div class="settings-grid">
+                                <div class="form-row">
+                                    <label for="cfgHardwareAccel">Hardware Acceleration Policy</label>
+                                    <select id="cfgHardwareAccel" class="form-select">
+                                        <option value="auto" selected>Auto Detect (CUDA GPU if available, CPU fallback)</option>
+                                        <option value="cpu">Force CPU Processing Only</option>
+                                    </select>
+                                    <span class="form-hint">Governs PyTorch Whisper execution and FFmpeg encoding.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgMaxThreads">Max Background Worker Threads</label>
+                                    <select id="cfgMaxThreads" class="form-select">
+                                        <option value="2">2 Worker Threads</option>
+                                        <option value="4" selected>4 Worker Threads (Recommended)</option>
+                                        <option value="8">8 Worker Threads</option>
+                                    </select>
+                                    <span class="form-hint">Thread pool concurrency for parallel clip detection.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 8: PRIVACY & SECURITY -->
+                    <div class="tab-pane" id="pane-privacy">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
+                                <svg data-lucide="shield-check" width="18" height="18" style="color:var(--primary);"></svg>
+                                100% Local & Private Processing
+                            </h3>
+                            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); padding: 16px; margin-bottom: var(--space-4);">
+                                <div style="display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 700; font-size: 14px; margin-bottom: 6px;">
+                                    <svg data-lucide="lock" width="16" height="16"></svg>
+                                    <span>Zero Cloud Audio & Video Transmission</span>
+                                </div>
+                                <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+                                    UpClip Studio runs Whisper AI, OpenCV computer vision, and FFmpeg transcoding exclusively on your local workstation. Your raw footage, speech audio, and rendered clips never leave your computer.
+                                </p>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                                <div class="diag-item">
+                                    <div>
+                                        <strong style="color:var(--text-primary); font-size: 13px;">Speech Transcription</strong>
+                                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Executed locally via PyTorch Whisper model binaries (.pt) stored in your home cache.</p>
+                                    </div>
+                                    <span class="badge-active">100% Local</span>
+                                </div>
+
+                                <div class="diag-item">
+                                    <div>
+                                        <strong style="color:var(--text-primary); font-size: 13px;">Face Tracking & Scene Splitting</strong>
+                                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Executed locally using OpenCV Haar/DNN and frame luminance analysis.</p>
+                                    </div>
+                                    <span class="badge-active">100% Local</span>
+                                </div>
+
+                                <div class="diag-item">
+                                    <div>
+                                        <strong style="color:var(--text-primary); font-size: 13px;">Telemetry & Analytics</strong>
+                                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">No tracking cookies, external analytics beacons, or third-party user identifiers are collected.</p>
+                                    </div>
+                                    <span class="badge-active">Disabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 9: SYSTEM DIAGNOSTICS -->
+                    <div class="tab-pane" id="pane-diagnostics">
+                        <div class="card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                                <h3 class="card-title">
+                                    <svg data-lucide="activity" width="18" height="18" style="color:var(--primary);"></svg>
+                                    System Diagnostics & Health Check
+                                </h3>
+                                <button id="runDiagnosticsBtn" class="btn btn-primary btn-sm">
+                                    <svg data-lucide="play" width="14" height="14"></svg> Run Diagnostics
+                                </button>
+                            </div>
+                            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-4);">
+                                Validates binary availability, tensor computation, storage permissions, and audio filter support.
+                            </p>
+                            <div id="diagnosticsList" style="display: flex; flex-direction: column; gap: var(--space-3);">
+                                <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                                    Click "Run Diagnostics" to perform a real hardware & library audit.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 10: ABOUT & UPDATES -->
+                    <div class="tab-pane" id="pane-about">
+                        <div class="card">
+                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: var(--space-5);">
+                                <img src="{{ url_for('static', filename='favicon.svg') }}" alt="UpClip Studio" width="56" height="56" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);">
+                                <div>
+                                    <h2 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 2px;">UpClip Studio</h2>
+                                    <div style="font-size: 12px; color: var(--primary); font-weight: 700;">Desktop AI Video Suite — Version 2.4.0</div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="custom-table">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width: 200px; font-weight: 600;">Edition</td>
+                                            <td>UpClip Studio Pro Edition (Local Workstation)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600;">Architecture</td>
+                                            <td id="aboutArch">Python 3.14 x64 / Flask Desktop / React Caption Studio</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600;">Video Pipeline</td>
+                                            <td>FFmpeg 8.1 / libx264 / AAC / ASS Substation Alpha Subtitles</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600;">AI Engine</td>
+                                            <td>OpenAI Whisper Speech Recognition / OpenCV Computer Vision</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600;">Update Status</td>
+                                            <td><span class="badge-active">Up to date (Official Release)</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal for Deleting / Clearing -->
+    <div class="modal-overlay" id="confirmActionModal" hidden style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:9999;">
+        <div class="modal card" style="max-width:440px; width:90%; padding:20px; border-radius:12px; border:1px solid var(--border-strong); background:var(--surface-1); box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+            <h3 id="confirmModalTitle" style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Confirm Action</h3>
+            <p id="confirmModalMsg" style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;">Are you sure you want to proceed?</p>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button class="btn btn-secondary" id="confirmModalCancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmModalConfirmBtn" style="background:#EF4444; border-color:#EF4444;">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+
+            // -------------------------------------------------------------
+            // Tab Switching Logic
+            // -------------------------------------------------------------
+            const tabButtons = document.querySelectorAll(".settings-tab-btn");
+            const tabPanes = document.querySelectorAll(".tab-pane");
+
+            function switchTab(tabId) {
+                tabButtons.forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+                tabPanes.forEach(p => p.classList.toggle("active", p.id === `pane-${tabId}`));
+                window.location.hash = tabId;
+
+                // Load tab data on demand
+                if (tabId === "models") loadModels();
+                else if (tabId === "dependencies") loadDependencies();
+                else if (tabId === "storage") loadStorage();
+                else if (tabId === "performance") loadPerformance();
+                else if (tabId === "diagnostics") runDiagnostics();
+            }
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+            });
+
+            const initialHash = window.location.hash.replace("#", "");
+            if (initialHash && document.getElementById(`pane-${initialHash}`)) {
+                switchTab(initialHash);
+            } else {
+                loadInitialSettings();
+            }
+
+            // -------------------------------------------------------------
+            // Load Initial Preferences
+            // -------------------------------------------------------------
+            async function loadInitialSettings() {
+                try {
+                    const res = await fetch("/api/settings/all");
+                    const data = await res.json();
+                    if (data.success && data.settings) {
+                        const s = data.settings;
+                        if (s.general) {
+                            if (s.general.defaultLanguage) document.getElementById("cfgLanguage").value = s.general.defaultLanguage;
+                            if (s.general.defaultAspectRatio) document.getElementById("cfgAspectRatio").value = s.general.defaultAspectRatio;
+                            if (s.general.defaultResolution) document.getElementById("cfgResolution").value = s.general.defaultResolution;
+                            if (s.general.defaultFps) document.getElementById("cfgFps").value = s.general.defaultFps;
+                            if (s.general.defaultExportFormat) document.getElementById("cfgExportFormat").value = s.general.defaultExportFormat;
+                            if (s.general.startupWorkspace) document.getElementById("cfgStartupWorkspace").value = s.general.startupWorkspace;
+                            if (s.general.autoSaveEnabled !== undefined) document.getElementById("cfgAutoSave").value = s.general.autoSaveEnabled ? "true" : "false";
+                        }
+                        if (s.appearance && s.appearance.theme) {
+                            document.getElementById("cfgTheme").value = s.appearance.theme;
+                        }
+                        if (s.folders) {
+                            if (s.folders.mediaImportFolder) document.getElementById("dirMediaImport").value = s.folders.mediaImportFolder;
+                            if (s.folders.projectFolder) document.getElementById("dirProjects").value = s.folders.projectFolder;
+                            if (s.folders.exportFolder) document.getElementById("dirExports").value = s.folders.exportFolder;
+                            if (s.folders.tempFolder) document.getElementById("dirTemp").value = s.folders.tempFolder;
+                        }
+                        if (s.performance) {
+                            if (s.performance.hardwareAcceleration) document.getElementById("cfgHardwareAccel").value = s.performance.hardwareAcceleration;
+                            if (s.performance.maxBackgroundThreads) document.getElementById("cfgMaxThreads").value = s.performance.maxBackgroundThreads;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load settings:", e);
+                }
+            }
+
+            // -------------------------------------------------------------
+            // Save Settings
+            // -------------------------------------------------------------
+            document.getElementById("saveGlobalSettingsBtn").addEventListener("click", async () => {
+                const savePayload = {
+                    general: {
+                        defaultLanguage: document.getElementById("cfgLanguage").value,
+                        defaultAspectRatio: document.getElementById("cfgAspectRatio").value,
+                        defaultResolution: document.getElementById("cfgResolution").value,
+                        defaultFps: parseInt(document.getElementById("cfgFps").value, 10),
+                        defaultExportFormat: document.getElementById("cfgExportFormat").value,
+                        startupWorkspace: document.getElementById("cfgStartupWorkspace").value,
+                        autoSaveEnabled: document.getElementById("cfgAutoSave").value === "true"
+                    },
+                    appearance: {
+                        theme: document.getElementById("cfgTheme").value
+                    },
+                    folders: {
+                        mediaImportFolder: document.getElementById("dirMediaImport").value,
+                        projectFolder: document.getElementById("dirProjects").value,
+                        exportFolder: document.getElementById("dirExports").value,
+                        tempFolder: document.getElementById("dirTemp").value
+                    },
+                    performance: {
+                        hardwareAcceleration: document.getElementById("cfgHardwareAccel").value,
+                        maxBackgroundThreads: parseInt(document.getElementById("cfgMaxThreads").value, 10)
+                    }
+                };
+
+                try {
+                    const btn = document.getElementById("saveGlobalSettingsBtn");
+                    btn.innerHTML = `<span class="spinner"></span> Saving...`;
+                    btn.disabled = true;
+
+                    const res = await fetch("/api/settings/save", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(savePayload)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        btn.innerHTML = `<svg data-lucide="check" width="14" height="14"></svg> Saved!`;
+                        lucide.createIcons();
+                        setTimeout(() => {
+                            btn.innerHTML = `<svg data-lucide="save" width="14" height="14"></svg> Save Changes`;
+                            btn.disabled = false;
+                            lucide.createIcons();
+                        }, 2000);
+                    }
+                } catch (e) {
+                    alert("Error saving settings: " + e.message);
+                    document.getElementById("saveGlobalSettingsBtn").disabled = false;
+                }
+            });
+
+            // -------------------------------------------------------------
+            // AI Models Manager
+            // -------------------------------------------------------------
+            let pollTimer = null;
+
+            async function loadModels() {
+                try {
+                    const res = await fetch("/api/settings/models");
+                    const data = await res.json();
+                    if (data.success) {
+                        renderModels(data.models, data.active_model);
+                        if (data.cache_dir) {
+                            document.getElementById("modelsCacheDir").textContent = data.cache_dir;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load models:", e);
+                }
+            }
+
+            function renderModels(models, activeModelId) {
+                const container = document.getElementById("modelsGridContainer");
+                container.innerHTML = "";
+
+                let hasActiveDownload = false;
+
+                models.forEach(m => {
+                    const card = document.createElement("div");
+                    card.className = `model-card ${m.is_active ? "is-active" : ""}`;
+
+                    let badgeHtml = "";
+                    if (m.is_active) {
+                        badgeHtml = `<span class="badge-active">Default Active</span>`;
+                    } else if (m.status === "installed") {
+                        badgeHtml = `<span class="badge-installed">Downloaded</span>`;
+                    } else if (m.status === "downloading") {
+                        badgeHtml = `<span class="badge-active" style="background:#F59E0B; color:#000;">Downloading...</span>`;
+                        hasActiveDownload = true;
+                    } else {
+                        badgeHtml = `<span class="badge-available">Available</span>`;
+                    }
+
+                    // Download progress section if currently downloading
+                    let downloadProgressHtml = "";
+                    if (m.status === "downloading" && m.download_job) {
+                        const job = m.download_job;
+                        downloadProgressHtml = `
+                            <div style="margin-top: 8px;">
+                                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary);">
+                                    <span>${job.progress_pct}% (${(job.downloaded_bytes / (1024*1024)).toFixed(1)} MB / ${(job.total_bytes / (1024*1024)).toFixed(1)} MB)</span>
+                                    <span>${job.speed_mbps} MB/s</span>
+                                </div>
+                                <div class="progress-bar-wrap">
+                                    <div class="progress-bar-fill" style="width: ${job.progress_pct}%;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Action buttons
+                    let actionsHtml = "";
+                    if (m.status === "downloading") {
+                        actionsHtml = `
+                            <button class="btn btn-secondary btn-sm btn-cancel-download" data-model="${m.id}" style="color:#EF4444;">
+                                Cancel Download
+                            </button>
+                        `;
+                    } else if (m.status === "installed") {
+                        actionsHtml = `
+                            <div style="display:flex; gap:8px; width:100%; justify-content:space-between;">
+                                <button class="btn btn-sm ${m.is_active ? "btn-secondary" : "btn-primary"} btn-set-default" data-model="${m.id}" ${m.is_active ? "disabled" : ""}>
+                                    ${m.is_active ? "Active Model" : "Set as Default"}
+                                </button>
+                                ${!m.is_active ? `
+                                    <button class="btn btn-secondary btn-sm btn-delete-model" data-model="${m.id}" style="color:#EF4444;" title="Delete model to free disk space">
+                                        <svg data-lucide="trash-2" width="14" height="14"></svg>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+                    } else {
+                        actionsHtml = `
+                            <button class="btn btn-primary btn-sm btn-start-download" data-model="${m.id}" data-size="${m.size}">
+                                <svg data-lucide="download" width="14" height="14"></svg> Download (${m.size})
+                            </button>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="model-card-header">
+                            <div>
+                                <div class="model-title">${m.name}</div>
+                                <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${m.recommended_for}</div>
+                            </div>
+                            ${badgeHtml}
+                        </div>
+
+                        <div class="model-meta-grid">
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Parameters</span>
+                                <span class="model-meta-val">${m.parameters}</span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Storage Size</span>
+                                <span class="model-meta-val">${m.size}</span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Accuracy Tier</span>
+                                <span class="model-meta-val">${m.accuracy}</span>
+                            </div>
+                            <div class="model-meta-item">
+                                <span class="model-meta-label">Languages</span>
+                                <span class="model-meta-val">${m.languages.split(" ")[0]}</span>
+                            </div>
+                        </div>
+
+                        ${downloadProgressHtml}
+
+                        <div style="margin-top:auto; padding-top:8px;">
+                            ${actionsHtml}
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+
+                lucide.createIcons();
+
+                // Attach event handlers
+                container.querySelectorAll(".btn-set-default").forEach(b => {
+                    b.addEventListener("click", async () => {
+                        const mid = b.dataset.model;
+                        const res = await fetch("/api/settings/models/set-default", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ model_name: mid })
+                        });
+                        const resData = await res.json();
+                        if (resData.success) loadModels();
+                        else alert(resData.message);
+                    });
+                });
+
+                container.querySelectorAll(".btn-start-download").forEach(b => {
+                    b.addEventListener("click", () => {
+                        const mid = b.dataset.model;
+                        const sz = b.dataset.size;
+                        if (sz.includes("GB")) {
+                            showConfirmModal(
+                                "Large Download Warning",
+                                `Model ${mid} requires ${sz} of disk storage and high-speed internet. Download now?`,
+                                async () => {
+                                    await fetch("/api/settings/models/download", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ model_name: mid })
+                                    });
+                                    loadModels();
+                                }
+                            );
+                        } else {
+                            fetch("/api/settings/models/download", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ model_name: mid })
+                            }).then(() => loadModels());
+                        }
+                    });
+                });
+
+                container.querySelectorAll(".btn-cancel-download").forEach(b => {
+                    b.addEventListener("click", async () => {
+                        const mid = b.dataset.model;
+                        await fetch("/api/settings/models/cancel-download", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ model_name: mid })
+                        });
+                        loadModels();
+                    });
+                });
+
+                container.querySelectorAll(".btn-delete-model").forEach(b => {
+                    b.addEventListener("click", () => {
+                        const mid = b.dataset.model;
+                        showConfirmModal(
+                            "Delete Model File",
+                            `Are you sure you want to remove the cached model file for '${mid}'? You can re-download it anytime.`,
+                            async () => {
+                                const res = await fetch("/api/settings/models/delete", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ model_name: mid })
+                                });
+                                const rData = await res.json();
+                                if (rData.success) loadModels();
+                                else alert(rData.message);
+                            }
+                        );
+                    });
+                });
+
+                // Polling for live downloads
+                if (hasActiveDownload) {
+                    if (!pollTimer) {
+                        pollTimer = setInterval(loadModels, 1000);
+                    }
+                } else if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            }
+
+            // -------------------------------------------------------------
+            // Dependency & Library Manager
+            // -------------------------------------------------------------
+            async function loadDependencies() {
+                const container = document.getElementById("depsListContainer");
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);"><span class="spinner"></span> Scanning installed libraries...</div>`;
+                try {
+                    const res = await fetch("/api/settings/dependencies");
+                    const data = await res.json();
+                    if (data.success && data.dependencies) {
+                        container.innerHTML = "";
+                        data.dependencies.forEach(d => {
+                            const item = document.createElement("div");
+                            item.className = "dep-card";
+                            item.innerHTML = `
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); display:flex; align-items:center; gap:8px;">
+                                        <span>${d.name}</span>
+                                        <span style="font-size:11px; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; color:var(--text-muted);">${d.category}</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-family: var(--font-mono);">
+                                        Version: <strong style="color:var(--text-primary);">${d.version}</strong>
+                                        ${d.hardware_accel ? ` | <span style="color:var(--primary);">${d.hardware_accel}</span>` : ''}
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                        Requirement: ${d.required}
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="${d.status_code === 'ok' ? 'badge-active' : 'badge-available'}" style="${d.status_code !== 'ok' ? 'color:#EF4444; border-color:#EF4444;' : ''}">
+                                        ${d.status}
+                                    </span>
+                                </div>
+                            `;
+                            container.appendChild(item);
+                        });
+                        lucide.createIcons();
+                    }
+                } catch (e) {
+                    container.innerHTML = `<div style="color:#EF4444; padding:20px;">Failed to scan dependencies: ${e.message}</div>`;
+                }
+            }
+
+            document.getElementById("refreshDepsBtn").addEventListener("click", loadDependencies);
+
+            // -------------------------------------------------------------
+            // Storage Management
+            // -------------------------------------------------------------
+            async function loadStorage() {
+                try {
+                    const res = await fetch("/api/settings/storage");
+                    const data = await res.json();
+                    if (data.success) {
+                        const d = data.disk;
+                        document.getElementById("storageDriveLabel").textContent = d.drive;
+                        document.getElementById("storageUsageStats").textContent = `${d.used_gb} GB used of ${d.total_gb} GB (${d.free_gb} GB free)`;
+                        document.getElementById("storageBarFill").style.width = `${d.used_percent}%`;
+
+                        const b = data.breakdown;
+                        if (b.whisper_models) {
+                            document.getElementById("szWhisperModels").textContent = b.whisper_models.formatted;
+                            document.getElementById("cntWhisperModels").textContent = `${b.whisper_models.file_count} cached models`;
+                        }
+                        if (b.subtitles_cache) {
+                            document.getElementById("szSubtitles").textContent = b.subtitles_cache.formatted;
+                            document.getElementById("cntSubtitles").textContent = `${b.subtitles_cache.file_count} files`;
+                        }
+                        if (b.transcript_cache) {
+                            document.getElementById("szTranscripts").textContent = b.transcript_cache.formatted;
+                            document.getElementById("cntTranscripts").textContent = `${b.transcript_cache.file_count} files`;
+                        }
+                        if (b.broll_cache) {
+                            document.getElementById("szBroll").textContent = b.broll_cache.formatted;
+                            document.getElementById("cntBroll").textContent = `${b.broll_cache.file_count} files`;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Storage loading error:", e);
+                }
+            }
+
+            document.getElementById("clearCacheBtn").addEventListener("click", () => {
+                showConfirmModal(
+                    "Clear Temporary Cache",
+                    "This will remove temporary frames, b-roll cache, and partial downloads. Your original videos, projects, and subtitle files will remain completely safe.",
+                    async () => {
+                        const res = await fetch("/api/settings/storage/clear-cache", { method: "POST" });
+                        const data = await res.json();
+                        alert(data.message);
+                        loadStorage();
+                    }
+                );
+            });
+
+            // -------------------------------------------------------------
+            // Folder Actions
+            // -------------------------------------------------------------
+            document.querySelectorAll(".btn-open-folder").forEach(b => {
+                b.addEventListener("click", async () => {
+                    const fType = b.dataset.folder;
+                    const res = await fetch("/api/settings/folders/open", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ folder_type: fType })
+                    });
+                    const d = await res.json();
+                    if (!d.success) alert(d.message);
+                });
+            });
+
+            document.getElementById("resetFoldersBtn").addEventListener("click", async () => {
+                showConfirmModal(
+                    "Reset Folders",
+                    "Reset all folder locations back to default project directories?",
+                    async () => {
+                        const res = await fetch("/api/settings/folders/reset", { method: "POST" });
+                        const data = await res.json();
+                        if (data.success && data.folders) {
+                            document.getElementById("dirMediaImport").value = data.folders.mediaImportFolder;
+                            document.getElementById("dirProjects").value = data.folders.projectFolder;
+                            document.getElementById("dirExports").value = data.folders.exportFolder;
+                            document.getElementById("dirTemp").value = data.folders.tempFolder;
+                        }
+                    }
+                );
+            });
+
+            // -------------------------------------------------------------
+            // Performance & Diagnostics
+            // -------------------------------------------------------------
+            async function loadPerformance() {
+                try {
+                    const res = await fetch("/api/settings/performance");
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById("perfCpuCores").textContent = `${data.cpu.cores} Physical / Logical Cores`;
+                        document.getElementById("perfCpuModel").textContent = `${data.cpu.model} (${data.cpu.architecture})`;
+
+                        document.getElementById("perfRamTotal").textContent = `${data.ram.total_gb} GB Total`;
+                        document.getElementById("perfRamAvailable").textContent = `${data.ram.available_gb} GB Available (${data.ram.load_percent}% load)`;
+
+                        document.getElementById("perfGpuStatus").textContent = data.gpu.cuda_available ? "CUDA Acceleration Active" : "CPU Processing (Standard)";
+                        document.getElementById("perfGpuDevice").textContent = data.gpu.device_name;
+                    }
+                } catch (e) {
+                    console.error("Performance load error:", e);
+                }
+            }
+
+            async function runDiagnostics() {
+                const list = document.getElementById("diagnosticsList");
+                list.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted);"><span class="spinner"></span> Running diagnostics audit...</div>`;
+                try {
+                    const res = await fetch("/api/settings/diagnostics");
+                    const data = await res.json();
+                    if (data.success && data.diagnostics) {
+                        list.innerHTML = "";
+                        data.diagnostics.forEach(d => {
+                            const row = document.createElement("div");
+                            row.className = "diag-item";
+                            row.innerHTML = `
+                                <div>
+                                    <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); display:flex; align-items:center; gap:8px;">
+                                        <svg data-lucide="${d.passed ? 'check-circle-2' : 'alert-triangle'}" width="16" height="16" style="color:${d.passed ? 'var(--primary)' : '#EF4444'};"></svg>
+                                        <span>${d.test}</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-family: var(--font-mono);">
+                                        ${d.details}
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                        Status: ${d.recommendation}
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="${d.passed ? 'badge-active' : 'badge-available'}" style="${!d.passed ? 'color:#EF4444; border-color:#EF4444;' : ''}">
+                                        ${d.passed ? 'PASS' : 'ATTENTION'}
+                                    </span>
+                                </div>
+                            `;
+                            list.appendChild(row);
+                        });
+                        lucide.createIcons();
+                    }
+                } catch (e) {
+                    list.innerHTML = `<div style="color:#EF4444; padding:20px;">Diagnostics failed: ${e.message}</div>`;
+                }
+            }
+
+            document.getElementById("runDiagnosticsBtn").addEventListener("click", runDiagnostics);
+
+            // -------------------------------------------------------------
+            // Helper Modal
+            // -------------------------------------------------------------
+            const modal = document.getElementById("confirmActionModal");
+            const modalTitle = document.getElementById("confirmModalTitle");
+            const modalMsg = document.getElementById("confirmModalMsg");
+            const modalCancel = document.getElementById("confirmModalCancelBtn");
+            const modalConfirm = document.getElementById("confirmModalConfirmBtn");
+            let onConfirmCallback = null;
+
+            function showConfirmModal(title, msg, onConfirm) {
+                modalTitle.textContent = title;
+                modalMsg.textContent = msg;
+                onConfirmCallback = onConfirm;
+                modal.hidden = false;
+                modal.style.display = "flex";
+            }
+
+            modalCancel.addEventListener("click", () => {
+                modal.hidden = true;
+                modal.style.display = "none";
+                onConfirmCallback = null;
+            });
+
+            modalConfirm.addEventListener("click", () => {
+                if (onConfirmCallback) onConfirmCallback();
+                modal.hidden = true;
+                modal.style.display = "none";
+                onConfirmCallback = null;
+            });
+        });
+    </script>
+</body>
+</html>

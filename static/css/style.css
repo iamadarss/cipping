@@ -233,6 +233,15 @@ textarea {
     box-shadow: 0 0 8px var(--primary);
 }
 
+.brand-logo-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 .topbar-divider {
     width: 1px;
     height: 14px;
@@ -1079,9 +1088,14 @@ input[type="checkbox"]:checked::after {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: var(--space-4);
+    padding: var(--space-4) 0;
     border-top: 1px solid var(--border);
-    margin-top: var(--space-3);
+    margin-top: var(--space-4);
+    position: sticky;
+    bottom: 0;
+    background: var(--surface-0);
+    z-index: 30;
+    backdrop-filter: blur(12px);
 }
 
 /* Upload zone (10% Sleeker) */
