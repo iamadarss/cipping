@@ -71,6 +71,30 @@ LEGACY_ID_MAP: Dict[str, str] = {
     "3d_pop": "pop_3d",
     "three_d_pop": "pop_3d",
     "softglass": "soft_glass",
+
+    # 5 Cinematic Master Reference Styles
+    "style_01": "cinematic_creator",
+    "reference_style_01": "cinematic_creator",
+    "cinematic_creator": "cinematic_creator",
+    "ice_blue": "cinematic_creator",
+    "scout": "cinematic_creator",
+    "style_02": "cinematic_minimal_hindi",
+    "reference_style_02": "cinematic_minimal_hindi",
+    "cinematic_minimal": "cinematic_minimal_hindi",
+    "hindi_minimal": "cinematic_minimal_hindi",
+    "devanagari": "cinematic_minimal_hindi",
+    "style_03": "bold_keyword_yellow",
+    "reference_style_03": "bold_keyword_yellow",
+    "bold_keyword": "bold_keyword_yellow",
+    "yellow_punch": "bold_keyword_yellow",
+    "style_04": "modern_kinetic_cyan",
+    "reference_style_04": "modern_kinetic_cyan",
+    "kinetic_cyan": "modern_kinetic_cyan",
+    "cyan_predictable": "modern_kinetic_cyan",
+    "style_05": "editorial_layered",
+    "reference_style_05": "editorial_layered",
+    "editorial": "editorial_layered",
+    "paaji_editorial": "editorial_layered",
 }
 
 

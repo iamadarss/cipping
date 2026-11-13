@@ -11,6 +11,7 @@ import re
 
 
 VALID_CATEGORIES = {
+    "Cinematic Master",
     "Card & Aesthetic",
     "Loud Captions",
     "Minimal & Luxury",
@@ -22,17 +23,30 @@ VALID_CATEGORIES = {
 }
 
 VALID_ANIMATIONS = {
-    "color_karaoke",
+    # 16 Professional Animations
+    "pop_in",
+    "bounce_in",
     "smooth_fade",
-    "soft_pop",
-    "active_word_pill",
     "slide_up",
     "slide_down",
+    "zoom_in",
+    "zoom_out",
     "typewriter",
+    "word_reveal",
+    "karaoke_highlight",
+    "glow_pulse",
+    "glitch",
+    "elastic_scale",
+    "blur_reveal",
+    "split_reveal",
+    "tracking_reveal",
+    # Canonical & Legacy aliases
+    "color_karaoke",
+    "soft_pop",
+    "active_word_pill",
     "emphasis_scale",
     "word_highlight",
     "sentence_fade",
-    # Legacy aliases
     "pop",
     "fade",
     "bounce",
@@ -117,6 +131,12 @@ class CaptionPresetSchema:
     animation_duration: float = 0.20
     word_pop: bool = False
     glow: bool = False
+    glow_color: Optional[str] = None
+    glow_blur: float = 0.0
+    secondary_font_family: Optional[str] = None
+    secondary_font_size: Optional[int] = None
+    two_line_hierarchy: bool = False
+    keyword_scale: float = 1.0
     emoji: bool = False
 
     # Layout & Alignment
@@ -173,6 +193,16 @@ class CaptionPresetSchema:
         # Shadow clamping
         self.shadow_blur = max(0.0, min(20.0, float(self.shadow_blur)))
         self.shadow_offset_y = max(0.0, min(20.0, float(self.shadow_offset_y)))
+
+        # Glow
+        if self.glow_color:
+            self.glow_color = sanitize_color(self.glow_color, "#00A2FF")
+        self.glow_blur = max(0.0, min(30.0, float(self.glow_blur or 0.0)))
+        if self.glow_blur > 0:
+            self.glow = True
+
+        # Hierarchy & scaling
+        self.keyword_scale = max(0.5, min(3.0, float(self.keyword_scale or 1.0)))
 
         # Background opacity
         self.background_opacity = max(0.0, min(1.0, float(self.background_opacity)))
@@ -232,6 +262,13 @@ class CaptionPresetSchema:
         d["maxWordsPerLine"] = self.max_words_per_line
         d["maxLines"] = self.max_lines
         d["safeZonePadding"] = self.safe_zone_padding
+        d["glow"] = self.glow
+        d["glowColor"] = self.glow_color
+        d["glowBlur"] = self.glow_blur
+        d["secondaryFontFamily"] = self.secondary_font_family
+        d["secondaryFontSize"] = self.secondary_font_size
+        d["twoLineHierarchy"] = self.two_line_hierarchy
+        d["keywordScale"] = self.keyword_scale
         d["isSystem"] = self.is_system
         d["isCustom"] = self.is_custom
         return d
@@ -277,6 +314,12 @@ class CaptionPresetSchema:
             animation_duration=float(data.get("animation_duration") or data.get("animationDuration") or data.get("animationSpeed", 0.20)),
             word_pop=bool(data.get("word_pop") or data.get("wordPop", False)),
             glow=bool(data.get("glow", False)),
+            glow_color=data.get("glow_color") or data.get("glowColor"),
+            glow_blur=float(data.get("glow_blur") or data.get("glowBlur") or 0.0),
+            secondary_font_family=data.get("secondary_font_family") or data.get("secondaryFontFamily"),
+            secondary_font_size=int(data.get("secondary_font_size") or data.get("secondaryFontSize")) if (data.get("secondary_font_size") or data.get("secondaryFontSize")) else None,
+            two_line_hierarchy=bool(data.get("two_line_hierarchy") or data.get("twoLineHierarchy", False)),
+            keyword_scale=float(data.get("keyword_scale") or data.get("keywordScale") or 1.0),
             emoji=bool(data.get("emoji", False)),
             position=str(data.get("position", "bottom")),
             position_y=float(data.get("position_y") or data.get("positionY") or 0.80),

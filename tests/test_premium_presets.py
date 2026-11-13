@@ -30,6 +30,14 @@ from ai.animated_caption_renderer import AnimatedCaptionRenderer
 from app import create_app
 
 
+EXPECTED_5_CINEMATIC_MASTER_IDS = [
+    "cinematic_creator",
+    "cinematic_minimal_hindi",
+    "bold_keyword_yellow",
+    "modern_kinetic_cyan",
+    "editorial_layered",
+]
+
 EXPECTED_19_PRESET_IDS = [
     # Card & Aesthetic (11 styles)
     "boxed",
@@ -56,8 +64,8 @@ EXPECTED_19_PRESET_IDS = [
 
 
 def test_19_canonical_presets_registered():
-    """Verify all 19 benchmark creator presets are registered with exact IDs."""
-    assert len(CANONICAL_PRESETS) == 19
+    """Verify all 24 canonical presets (5 Cinematic Master + 19 Creator Benchmarks) are registered."""
+    assert len(CANONICAL_PRESETS) == 24
     for preset_id in EXPECTED_19_PRESET_IDS:
         assert preset_id in CANONICAL_PRESETS, f"Missing canonical preset: {preset_id}"
         preset = get_preset(preset_id)
@@ -72,11 +80,62 @@ def test_19_canonical_presets_registered():
         assert preset.animation in VALID_ANIMATIONS
 
 
+def test_5_cinematic_master_reference_styles():
+    """Verify the 5 Master Reference Styles reproduced from the 5 reference images."""
+    for preset_id in EXPECTED_5_CINEMATIC_MASTER_IDS:
+        assert preset_id in CANONICAL_PRESETS, f"Missing cinematic master preset: {preset_id}"
+        p = get_preset(preset_id)
+        assert p.category == "Cinematic Master"
+        assert p.is_system is True
+
+    # Style 01 - Cinematic Creator (Ice Blue Glow & 2-line hierarchy)
+    creator = get_preset("cinematic_creator")
+    assert creator.name == "Cinematic Creator"
+    assert creator.active_word_color == "#80D8FF"
+    assert creator.glow is True
+    assert creator.two_line_hierarchy is True
+    assert creator.uppercase is True
+
+    # Style 02 - Cinematic Minimal Subtitles (Hindi Devanagari)
+    hindi = get_preset("cinematic_minimal_hindi")
+    assert "Devanagari" in hindi.name
+    assert "Noto Sans Devanagari" in hindi.font_family
+    assert hindi.text_color == "#FFFFFF"
+    assert hindi.outline_enabled is False
+
+    # Style 03 - Bold Keyword Highlight (Bright Yellow Punch)
+    yellow = get_preset("bold_keyword_yellow")
+    assert yellow.active_word_color == "#FFEA00"
+    assert yellow.font_size >= 44
+    assert yellow.two_line_hierarchy is True
+
+    # Style 04 - Modern Kinetic Typography (Electric Cyan)
+    cyan = get_preset("modern_kinetic_cyan")
+    assert cyan.active_word_color == "#00F0FF"
+    assert cyan.glow is True
+    assert cyan.animation in ("word_reveal", "karaoke_highlight", "pop_in")
+
+    # Style 05 - Editorial Layered Typography (Cream Serif)
+    editorial = get_preset("editorial_layered")
+    assert "Playfair" in editorial.font_family
+    assert editorial.text_color == "#FDF6E9"
+    assert editorial.text_case == "lowercase"
+
+
 def test_preset_categories_taxonomy():
-    """Verify presets are correctly distributed across Card & Aesthetic and Loud Captions."""
+    """Verify presets are correctly distributed across Cinematic Master, Card & Aesthetic, and Loud Captions."""
     categories = caption_registry.get_categories()
+    assert "Cinematic Master" in categories
     assert "Card & Aesthetic" in categories
     assert "Loud Captions" in categories
+
+    cinematic_master = list_presets("Cinematic Master")
+    assert len(cinematic_master) == 5
+    assert any(p.id == "cinematic_creator" for p in cinematic_master)
+    assert any(p.id == "cinematic_minimal_hindi" for p in cinematic_master)
+    assert any(p.id == "bold_keyword_yellow" for p in cinematic_master)
+    assert any(p.id == "modern_kinetic_cyan" for p in cinematic_master)
+    assert any(p.id == "editorial_layered" for p in cinematic_master)
 
     card_aesthetic = list_presets("Card & Aesthetic")
     assert len(card_aesthetic) == 11
@@ -204,7 +263,7 @@ def test_legacy_migrations():
 
 
 def test_10_animations_in_ass():
-    """Verify each of the 10 canonical animations generates valid ASS override tags."""
+    """Verify all 16 professional animations generate valid ASS override tags."""
     renderer = AnimatedCaptionRenderer()
     sample_transcript = [
         {
@@ -221,13 +280,26 @@ def test_10_animations_in_ass():
     ]
 
     animations = [
-        "color_karaoke",
+        "pop_in",
+        "bounce_in",
         "smooth_fade",
-        "soft_pop",
-        "active_word_pill",
         "slide_up",
         "slide_down",
+        "zoom_in",
+        "zoom_out",
         "typewriter",
+        "word_reveal",
+        "karaoke_highlight",
+        "glow_pulse",
+        "glitch",
+        "elastic_scale",
+        "blur_reveal",
+        "split_reveal",
+        "tracking_reveal",
+        # Legacy aliases
+        "color_karaoke",
+        "soft_pop",
+        "active_word_pill",
         "emphasis_scale",
         "word_highlight",
         "sentence_fade",

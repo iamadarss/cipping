@@ -52,51 +52,76 @@ class AnimatedCaptionRenderer:
             return f"&H{alpha_hex}FFFFFF&"
 
     # -----------------------------------------------
-    # Animation -> ASS override block
+    # Animation -> ASS override block (16 Professional Animations)
     # -----------------------------------------------
 
     @staticmethod
     def _animation_block(style, duration_ms=200):
         style = (style or "color_karaoke").lower().replace("-", "_").strip()
-        # Canonical 10 Animations
-        if style == "color_karaoke":
-            return r"{\fad(80,80)}"
-        if style in ("smooth_fade", "fade", "fade_in"):
+
+        # 1. Pop In (Dynamic scale overshoot)
+        if style in ("pop_in", "soft_pop", "pop"):
+            return r"{\fscx85\fscy85\t(0,120,\fscx106\fscy106)\t(120,200,\fscx100\fscy100)}"
+        # 2. Bounce In (Elastic vertical bounce)
+        if style in ("bounce_in", "bounce"):
+            return r"{\fscy70\t(0,100,\fscy115)\t(100,180,\fscy95)\t(180,240,\fscy100)}"
+        # 3. Smooth Fade
+        if style in ("smooth_fade", "fade", "fade_in", "sentence_fade"):
             return r"{\fad(150,150)}"
-        if style in ("sentence_fade",):
-            return r"{\fad(200,200)}"
-        if style == "fade_out":
-            return r"{\fad(0,250)}"
-        if style in ("soft_pop", "pop"):
-            return r"{\fscx92\fscy92\t(0,120,\fscx100\fscy100)}"
-        if style in ("emphasis_scale",):
-            return r"{\fscx95\fscy95\t(0,100,\fscx100\fscy100)}"
-        if style in ("active_word_pill", "word_pill"):
-            return r"{\fad(90,90)}"
-        if style in ("word_highlight",):
-            return r"{\fad(60,60)}"
-        if style in ("typewriter",):
-            return r"{\fad(50,50)}"
-        if style in ("slide", "slide_up"):
+        # 4. Slide Up
+        if style in ("slide_up", "slide"):
             return r"{\fad(80,60)\fscy88\t(0,150,\fscy100)}"
+        # 5. Slide Down
         if style == "slide_down":
             return r"{\fad(80,60)\fscy112\t(0,150,\fscy100)}"
+        # 6. Zoom In
+        if style in ("zoom_in", "zoom", "scale_in"):
+            return r"{\fscx75\fscy75\t(0,160,\fscx100\fscy100)}"
+        # 7. Zoom Out
+        if style == "zoom_out":
+            return r"{\fscx125\fscy125\t(0,160,\fscx100\fscy100)}"
+        # 8. Typewriter
+        if style == "typewriter":
+            return r"{\fad(40,40)}"
+        # 9. Word Reveal
+        if style in ("word_reveal", "word_by_word"):
+            return r"{\k80}"
+        # 10. Karaoke Highlight
+        if style in ("karaoke_highlight", "color_karaoke", "active_word_pill", "word_highlight"):
+            return r"{\fad(80,80)}"
+        # 11. Glow Pulse
+        if style == "glow_pulse":
+            return r"{\t(0,120,\bord4\blur6)\t(120,240,\bord2\blur2)}"
+        # 12. Glitch
+        if style == "glitch":
+            return r"{\fscx108\fscy92\t(0,50,\fscx95\fscy105)\t(50,100,\fscx100\fscy100)}"
+        # 13. Elastic Scale
+        if style in ("elastic_scale", "emphasis_scale"):
+            return r"{\fscx80\fscy80\t(0,140,\fscx112\fscy112)\t(140,220,\fscx98\fscy98)\t(220,280,\fscx100\fscy100)}"
+        # 14. Blur Reveal
+        if style == "blur_reveal":
+            return r"{\blur8\t(0,180,\blur0)}"
+        # 15. Split Reveal
+        if style == "split_reveal":
+            return r"{\fscx50\t(0,160,\fscx100)}"
+        # 16. Tracking Reveal
+        if style == "tracking_reveal":
+            return r"{\fsp15\t(0,180,\fsp0)}"
+
+        # Directional & utility animations
+        if style == "fade_out":
+            return r"{\fad(0,250)}"
         if style == "slide_left":
             return r"{\fad(80,60)\fscx88\t(0,150,\fscx100)}"
         if style == "slide_right":
             return r"{\fad(80,60)\fscx112\t(0,150,\fscx100)}"
-        if style == "bounce":
-            return r"{\move(0,0)\t(0,150,\fay-0.06)\t(150,300,\fay0)}"
-        if style in ("scale_in", "zoom"):
-            return r"{\fscx82\fscy82\t(0,140,\fscx100\fscy100)}"
-        if style in ("word_reveal", "word_by_word"):
-            return r"{\k80}"
         if style in ("character_reveal", "character_by_character"):
             return r"{\k40}"
         if style == "smooth_reveal":
             return r"{\alpha&HFF&\t(0,250,\alpha&H00&)}"
         if style == "none":
             return ""
+
         # Default fallback
         return r"{\fad(80,80)}"
 
@@ -149,6 +174,14 @@ class AnimatedCaptionRenderer:
                         break
         if has_devanagari and "devanagari" not in font.lower() and "segoe" not in font.lower():
             font = f"{font}, Segoe UI, Arial"
+        elif "devanagari" in font.lower() or "mukta" in font.lower():
+            font = f"{font}, Segoe UI, Mangal, Arial"
+        elif "anton" in font.lower() or "bebas" in font.lower():
+            font = f"{font}, Impact, Arial Black, Arial"
+        elif "playfair" in font.lower() or "cormorant" in font.lower():
+            font = f"{font}, Georgia, Times New Roman, serif"
+        elif "montserrat" in font.lower() or "poppins" in font.lower():
+            font = f"{font}, Inter, Arial, sans-serif"
 
         play_res_x = int(opts.get("play_res_x") or config.OUTPUT_WIDTH)
         play_res_y = int(opts.get("play_res_y") or config.OUTPUT_HEIGHT)
@@ -484,8 +517,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             or ("uppercase" if opts.get("uppercase") else "normal")
         ).lower()
 
-        # Check soft neon glow effect (\blur4)
-        glow_tag = r"{\blur4}" if opts.get("glow") else ""
+        # Check glow effect
+        glow_enabled = bool(opts.get("glow", False))
+        glow_color = opts.get("glow_color") or "#70C8FF"
+        glow_blur = int(opts.get("glow_blur") or 6)
+        if glow_enabled:
+            glow_ass = self._to_ass_color(glow_color)
+            glow_tag = r"{\blur%d\bord3\3c%s}" % (glow_blur, glow_ass)
+        else:
+            glow_tag = ""
+
+        two_line = bool(opts.get("two_line_hierarchy", False))
+        preset_id = (opts.get("id") or "").lower()
 
         # Contextual emoji flag
         enable_emoji = bool(opts.get("emoji", True))
@@ -565,7 +608,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                         w_text = f"{w_text} {emoji_map[w_idx]}"
                     if w_text:
                         karaoke_parts.append(r"{\k%d}%s" % (d_cs, w_text))
-                karaoke = " ".join(karaoke_parts)
             else:
                 words = text.split()
                 if not words:
@@ -586,6 +628,36 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     if idx in emoji_map:
                         w_text = f"{w_text} {emoji_map[idx]}"
                     karaoke_parts.append(r"{\k%d}%s" % (cs, w_text))
+
+            # Apply two-line hierarchy formatting if requested by preset
+            if two_line and len(karaoke_parts) >= 2:
+                if preset_id == "cinematic_creator":
+                    split_idx = max(1, len(karaoke_parts) // 2)
+                    line1 = r"{\fscx82\fscy82\c&H00FFFFFF&}" + " ".join(karaoke_parts[:split_idx])
+                    line2 = r"\N{\fscx135\fscy135\c&H00FFD880&\blur8\bord3\3c&H00FF8800&}" + " ".join(karaoke_parts[split_idx:])
+                    karaoke = f"{line1} {line2}"
+                elif preset_id == "bold_keyword_yellow":
+                    line1 = r"{\fscx140\fscy140\c&H0000EAFF&\bord3.5\3c&H00000000&}" + karaoke_parts[0]
+                    line2 = r"\N{\fscx100\fscy100\c&H00FFFFFF&}" + " ".join(karaoke_parts[1:])
+                    karaoke = f"{line1} {line2}"
+                elif preset_id == "modern_kinetic_cyan":
+                    if len(karaoke_parts) >= 3:
+                        line1 = r"{\fscx85\fscy85\c&H00FFFFFF&}" + karaoke_parts[0]
+                        line2 = r"\N{\fscx135\fscy135\c&H00FFFF00&\blur4}" + karaoke_parts[1]
+                        line3 = r"\N{\fscx100\fscy100\c&H00FFFFFF&}" + " ".join(karaoke_parts[2:])
+                        karaoke = f"{line1} {line2} {line3}"
+                    else:
+                        line1 = r"{\fscx88\fscy88\c&H00FFFFFF&}" + karaoke_parts[0]
+                        line2 = r"\N{\fscx135\fscy135\c&H00FFFF00&}" + karaoke_parts[1]
+                        karaoke = f"{line1} {line2}"
+                elif preset_id == "editorial_layered":
+                    line1 = r"{\fscx130\fscy130\c&H00E9F6FD&}" + karaoke_parts[0]
+                    line2 = r"\N{\i1\c&H00E9F6FD&}" + " ".join(karaoke_parts[1:])
+                    karaoke = f"{line1} {line2}"
+                else:
+                    split_idx = max(1, len(karaoke_parts) // 2)
+                    karaoke = " ".join(karaoke_parts[:split_idx]) + r"\N" + " ".join(karaoke_parts[split_idx:])
+            else:
                 karaoke = " ".join(karaoke_parts)
 
             dialogue = (

@@ -44,6 +44,7 @@ import type { CaptionStyle } from "../types";
 
 const PRESET_CATEGORIES = [
   "All",
+  "Cinematic Master",
   "Card & Aesthetic",
   "Loud Captions",
   "Custom",
@@ -527,7 +528,9 @@ export default function Editor() {
         color: selectedStyle.textColor,
         textTransform: selectedStyle.uppercase ? "uppercase" : "none",
         fontStyle: selectedStyle.isItalic ? "italic" : "normal",
-        textShadow: selectedStyle.threeDShadow
+        textShadow: selectedStyle.glow
+          ? `0 0 ${selectedStyle.glowBlur || 8}px ${selectedStyle.glowColor || "#70C8FF"}, 0 0 ${Math.round((selectedStyle.glowBlur || 8) * 1.5)}px ${selectedStyle.glowColor || "#0088FF"}`
+          : selectedStyle.threeDShadow
           ? "2px 2px 0px #000000, 4px 4px 0px #000000"
           : selectedStyle.shadowEnabled !== false && selectedStyle.shadowBlur > 0
           ? `0px ${selectedStyle.shadowOffsetY || 1}px ${selectedStyle.shadowBlur}px ${selectedStyle.shadowColor || "#000000"}`
@@ -676,17 +679,46 @@ export default function Editor() {
                             boxShadow: style.threeDShadow ? "2px 2px 0px #000000" : undefined,
                           }}
                         >
-                          <span
-                            style={{
-                              color: style.wordBox ? "#FFFFFF" : style.activeWordColor,
-                              backgroundColor: style.wordBox ? (style.wordBoxColor || "#4F46E5") : undefined,
-                              borderRadius: style.wordBox ? (style.wordBoxRadius || 4) : 0,
-                              padding: style.wordBox ? "1px 4px" : 0,
-                            }}
-                          >
-                            {style.id === "terminal" ? "> MORNING" : "MORNING"}
-                          </span>{" "}
-                          <span>{style.id === "one_word" ? "" : "MATCHA"}</span>
+                          {style.id === "cinematic_creator" ? (
+                            <div className="leading-tight">
+                              <div className="text-[9px] text-white">BHAI SCOUT KIA</div>
+                              <div className="text-[12px] text-[#80D8FF]" style={{ textShadow: "0 0 8px #0088FF" }}>ROYA HOGA</div>
+                            </div>
+                          ) : style.id === "cinematic_minimal_hindi" ? (
+                            <span style={{ fontFamily: "'Noto Sans Devanagari', sans-serif", color: "#FFFFFF", fontWeight: 600 }}>
+                              उसके आसपास के लोग
+                            </span>
+                          ) : style.id === "bold_keyword_yellow" ? (
+                            <div>
+                              <span style={{ color: "#FFEA00", fontSize: "12px", textShadow: "0 0 6px rgba(255,234,0,0.5)" }}>AGAR </span>
+                              <span style={{ color: "#FFFFFF" }}>US DIN</span>
+                            </div>
+                          ) : style.id === "modern_kinetic_cyan" ? (
+                            <div className="leading-tight">
+                              <span className="text-[9px] text-white">with </span>
+                              <span className="text-[12px] text-[#00F0FF]" style={{ textShadow: "0 0 8px #00D4FF" }}>something </span>
+                              <span className="text-[9px] text-white">predictable</span>
+                            </div>
+                          ) : style.id === "editorial_layered" ? (
+                            <div className="leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif", textTransform: "lowercase", color: "#FDF6E9" }}>
+                              <span style={{ fontSize: "13px", fontWeight: "bold" }}>paaji </span>
+                              <span style={{ fontStyle: "italic" }}>yeh dekho</span>
+                            </div>
+                          ) : (
+                            <>
+                              <span
+                                style={{
+                                  color: style.wordBox ? "#FFFFFF" : style.activeWordColor,
+                                  backgroundColor: style.wordBox ? (style.wordBoxColor || "#4F46E5") : undefined,
+                                  borderRadius: style.wordBox ? (style.wordBoxRadius || 4) : 0,
+                                  padding: style.wordBox ? "1px 4px" : 0,
+                                }}
+                              >
+                                {style.id === "terminal" ? "> MORNING" : "MORNING"}
+                              </span>{" "}
+                              <span>{style.id === "one_word" ? "" : "MATCHA"}</span>
+                            </>
+                          )}
                         </div>
                       </button>
                     );
@@ -871,16 +903,77 @@ export default function Editor() {
                             const isActive = i === currentWordIndex;
                             const wordText = typeof word === "string" ? word : word.text;
                             const hasWordBox = selectedStyle?.wordBox && isActive;
+
+                            // Style-specific hierarchy overrides
+                            let customFontSize: string | undefined = undefined;
+                            let customColor: string | undefined = undefined;
+                            let customFontFamily: string | undefined = undefined;
+                            let customFontStyle: "normal" | "italic" | undefined = undefined;
+                            let customGlowShadow: string | undefined = undefined;
+
+                            if (selectedStyle?.id === "cinematic_creator" && words.length >= 2) {
+                              const isSecondLine = i >= Math.floor(words.length / 2);
+                              if (isSecondLine) {
+                                customFontSize = "1.35em";
+                                customColor = "#80D8FF";
+                                customGlowShadow = "0 0 16px #0088FF, 0 0 28px rgba(0,136,255,0.7)";
+                              } else {
+                                customFontSize = "0.85em";
+                                customColor = "#FFFFFF";
+                              }
+                            } else if (selectedStyle?.id === "bold_keyword_yellow" && words.length >= 2) {
+                              if (i === 0) {
+                                customFontSize = "1.40em";
+                                customColor = "#FFEA00";
+                                customGlowShadow = "0 0 12px rgba(255,234,0,0.6)";
+                              } else {
+                                customColor = "#FFFFFF";
+                              }
+                            } else if (selectedStyle?.id === "modern_kinetic_cyan" && words.length >= 2) {
+                              if (i === 1 || (words.length === 2 && i === 1)) {
+                                customFontSize = "1.35em";
+                                customColor = "#00F0FF";
+                                customGlowShadow = "0 0 14px rgba(0,240,255,0.7)";
+                              } else {
+                                customFontSize = "0.90em";
+                                customColor = "#FFFFFF";
+                              }
+                            } else if (selectedStyle?.id === "editorial_layered" && words.length >= 2) {
+                              if (i === 0) {
+                                customFontSize = "1.30em";
+                                customColor = "#FDF6E9";
+                              } else {
+                                customFontStyle = "italic";
+                                customColor = "#FDF6E9";
+                              }
+                            }
+
+                            // Dynamic scale / transform based on 16 animations
+                            let wordTransform = "scale(1)";
+                            if (isActive) {
+                              const a = selectedStyle?.animation;
+                              if (a === "pop_in" || a === "soft_pop" || a === "pop") wordTransform = "scale(1.14)";
+                              else if (a === "bounce_in" || a === "bounce") wordTransform = "scale(1.18) translateY(-3px)";
+                              else if (a === "zoom_in" || a === "zoom") wordTransform = "scale(1.22)";
+                              else if (a === "zoom_out") wordTransform = "scale(0.95)";
+                              else if (a === "slide_up" || a === "slide") wordTransform = "translateY(-4px)";
+                              else if (a === "slide_down") wordTransform = "translateY(4px)";
+                              else if (a === "elastic_scale" || a === "emphasis_scale") wordTransform = "scale(1.24)";
+                              else if (a === "glitch") wordTransform = "skewX(-8deg) scale(1.10)";
+                              else if (a === "glow_pulse") wordTransform = "scale(1.08)";
+                            }
+
                             return (
                               <span
                                 key={i}
                                 className="transition-all duration-150 inline-block"
                                 style={{
+                                  fontSize: customFontSize,
                                   color: hasWordBox
                                     ? "#FFFFFF"
-                                    : isActive
-                                    ? selectedStyle?.activeWordColor
-                                    : selectedStyle?.textColor,
+                                    : customColor || (isActive ? selectedStyle?.activeWordColor : selectedStyle?.textColor),
+                                  fontFamily: customFontFamily,
+                                  fontStyle: customFontStyle || (selectedStyle?.isItalic ? "italic" : "normal"),
                                   backgroundColor: hasWordBox
                                     ? selectedStyle?.wordBoxColor || "#4F46E5"
                                     : undefined,
@@ -888,26 +981,16 @@ export default function Editor() {
                                     ? `${selectedStyle?.wordBoxRadius || 6}px`
                                     : undefined,
                                   padding: hasWordBox ? "2px 8px" : "0 2px",
-                                  transform:
-                                    isActive &&
-                                    (selectedStyle?.animation === "soft_pop" ||
-                                      selectedStyle?.animation === "pop")
-                                      ? "scale(1.10)"
-                                      : isActive && selectedStyle?.animation === "emphasis_scale"
-                                      ? "scale(1.18)"
-                                      : isActive && selectedStyle?.animation === "slide_up"
-                                      ? "translateY(-4px)"
-                                      : isActive && selectedStyle?.animation === "slide_down"
-                                      ? "translateY(4px)"
-                                      : "scale(1)",
+                                  transform: wordTransform,
                                   opacity:
-                                    !isActive && selectedStyle?.animation === "smooth_fade"
-                                      ? 0.55
+                                    !isActive && (selectedStyle?.animation === "smooth_fade" || selectedStyle?.animation === "word_reveal")
+                                      ? 0.50
                                       : undefined,
                                   textShadow:
-                                    isActive && selectedStyle?.glow
+                                    customGlowShadow ||
+                                    (isActive && selectedStyle?.glow
                                       ? `0 0 15px ${selectedStyle?.activeWordColor}`
-                                      : undefined,
+                                      : undefined),
                                 }}
                               >
                                 {selectedStyle?.uppercase ? wordText.toUpperCase() : wordText}

@@ -100,6 +100,7 @@ class CaptionPresetRegistry:
     def get_categories(self) -> List[str]:
         """Return list of distinct categories in display order."""
         return [
+            "Cinematic Master",
             "Card & Aesthetic",
             "Loud Captions",
             "Custom",

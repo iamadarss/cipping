@@ -44,13 +44,25 @@ export type CaptionStyle = {
   maxWidth: number;
   padding: number;
   animation:
-    | "color_karaoke"
+    | "pop_in"
+    | "bounce_in"
     | "smooth_fade"
-    | "soft_pop"
-    | "active_word_pill"
     | "slide_up"
     | "slide_down"
+    | "zoom_in"
+    | "zoom_out"
     | "typewriter"
+    | "word_reveal"
+    | "karaoke_highlight"
+    | "glow_pulse"
+    | "glitch"
+    | "elastic_scale"
+    | "blur_reveal"
+    | "split_reveal"
+    | "tracking_reveal"
+    | "color_karaoke"
+    | "soft_pop"
+    | "active_word_pill"
     | "emphasis_scale"
     | "word_highlight"
     | "sentence_fade"
@@ -62,7 +74,6 @@ export type CaptionStyle = {
     | "glow"
     | "none"
     | "float"
-    | "glitch"
     | "wave"
     | "neon-flicker"
     | "retro";
@@ -76,6 +87,12 @@ export type CaptionStyle = {
   threeDShadow?: boolean;
   wordPop?: boolean;
   glow?: boolean;
+  glowColor?: string;
+  glowBlur?: number;
+  secondaryFontFamily?: string;
+  secondaryFontSize?: number;
+  twoLineHierarchy?: boolean;
+  keywordScale?: number;
   emoji?: boolean;
   isSystem?: boolean;
   isCustom?: boolean;
