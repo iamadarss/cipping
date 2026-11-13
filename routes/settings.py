@@ -903,3 +903,4 @@ def reset_folders():
     }
     settings_manager.update_settings({"folders": default_folders})
     return jsonify({"success": True, "folders": default_folders, "message": "Folder paths reset to system defaults."})
+

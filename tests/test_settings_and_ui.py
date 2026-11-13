@@ -195,3 +195,4 @@ def test_api_folders_reset(client):
     folders = data["folders"]
     assert str(config.INPUT_DIR) in folders["mediaImportFolder"]
     assert str(config.FINAL_DIR) in folders["exportFolder"]
+
