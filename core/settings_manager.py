@@ -25,6 +25,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "defaultLanguage": "en",
         "defaultResolution": "1080p",
         "defaultExportFormat": "mp4",
+        "preferredTemplate": "clean_creator",
         "startupWorkspace": "/dashboard"
     },
     "appearance": {
@@ -138,8 +139,25 @@ class SettingsManager:
     def get_settings(self) -> Dict[str, Any]:
         return self.settings
 
+    def get(self, key_path: str, default: Any = None) -> Any:
+        """Retrieve a setting by key or dot-notation path, e.g. 'general.preferredTemplate'."""
+        if not key_path:
+            return default
+        parts = key_path.split(".")
+        val = self.settings
+        for p in parts:
+            if isinstance(val, dict) and p in val:
+                val = val[p]
+            else:
+                return default
+        return val
+
     def get_category(self, category: str) -> Dict[str, Any]:
         return self.settings.get(category, {})
+
+    def update_section(self, section: str, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Convenience method to update a specific settings section."""
+        return self.update_settings({section: values})
 
     def update_settings(self, new_settings: Dict[str, Any]) -> Dict[str, Any]:
         for cat, values in new_settings.items():

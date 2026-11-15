@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <defs>
+    <linearGradient id="bg_clean" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B132B"/>
+      <stop offset="50%" stop-color="#1C2541"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="glow_clean" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.0"/>
+    </linearGradient>
+    <filter id="shadow_frame" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  <!-- Background Canvas -->
+  <rect width="540" height="960" fill="url(#bg_clean)"/>
+  <rect width="540" height="400" fill="url(#glow_clean)"/>
+
+  <!-- Top Creator Watermark -->
+  <text x="490" y="54" font-family="'Inter', -apple-system, sans-serif" font-size="14" font-weight="700" fill="#94A3B8" text-anchor="end" letter-spacing="1">@CREATOR</text>
+  <circle cx="50" cy="48" r="8" fill="#38BDF8"/>
+  <text x="68" y="53" font-family="'Inter', -apple-system, sans-serif" font-size="14" font-weight="800" fill="#FFFFFF" letter-spacing="0.5">CLEAN CREATOR</text>
+
+  <!-- Centered Rounded Video Window -->
+  <g filter="url(#shadow_frame)">
+    <rect x="36" y="86" width="468" height="730" rx="24" fill="#1E293B" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.25"/>
+    <clipPath id="clip_clean">
+      <rect x="36" y="86" width="468" height="730" rx="24"/>
+    </clipPath>
+    <g clip-path="url(#clip_clean)">
+      <!-- Simulated Camera Subject -->
+      <radialGradient id="speaker_light" cx="50%" cy="40%" r="50%">
+        <stop offset="0%" stop-color="#334155"/>
+        <stop offset="100%" stop-color="#0F172A"/>
+      </radialGradient>
+      <rect x="36" y="86" width="468" height="730" fill="url(#speaker_light)"/>
+      <!-- Speaker silhouette -->
+      <circle cx="270" cy="330" r="105" fill="#475569" opacity="0.65"/>
+      <ellipse cx="270" cy="560" rx="190" ry="160" fill="#475569" opacity="0.65"/>
+      <circle cx="270" cy="315" r="75" fill="#64748B" opacity="0.7"/>
+      <!-- Studio Mic -->
+      <rect x="256" y="430" width="28" height="60" rx="14" fill="#38BDF8" opacity="0.8"/>
+      <line x1="270" y1="490" x2="270" y2="540" stroke="#38BDF8" stroke-width="4" opacity="0.8"/>
+    </g>
+  </g>
+
+  <!-- Black Pill Subtitles with Ice Blue Active Word -->
+  <g transform="translate(270, 715)">
+    <!-- Pill Backing Box -->
+    <rect x="-210" y="-36" width="420" height="72" rx="16" fill="#000000" fill-opacity="0.85" stroke="#FFFFFF" stroke-width="1" stroke-opacity="0.12"/>
+    <!-- Words -->
+    <text x="0" y="8" font-family="'Inter', -apple-system, sans-serif" font-size="25" font-weight="800" text-anchor="middle">
+      <tspan fill="#FFFFFF">MASTER </tspan>
+      <tspan fill="#38BDF8" font-weight="900">EVERY</tspan>
+      <tspan fill="#FFFFFF"> SECOND</tspan>
+    </text>
+  </g>
+
+  <!-- Aspect Tag -->
+  <rect x="36" y="836" width="60" height="26" rx="6" fill="#0284C7" fill-opacity="0.3" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="66" y="853" font-family="'Inter', sans-serif" font-size="11" font-weight="800" fill="#38BDF8" text-anchor="middle">9:16</text>
+  <text x="110" y="853" font-family="'Inter', sans-serif" font-size="12" font-weight="600" fill="#94A3B8">Minimalist · Word-by-Word Karaoke</text>
+</svg>

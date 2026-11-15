@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <!-- Deep Pitch Black Background -->
+  <rect width="540" height="960" fill="#050505"/>
+
+  <!-- Top Red Accent Line -->
+  <rect x="50" y="44" width="440" height="3" fill="#EF4444"/>
+
+  <!-- Editorial Masthead -->
+  <text x="50" y="82" font-family="'Georgia', serif" font-size="13" font-weight="700" fill="#EF4444" letter-spacing="3">EDITORIAL ARCHIVE</text>
+  <text x="490" y="82" font-family="'Inter', sans-serif" font-size="12" font-weight="500" fill="#71717A" text-anchor="end">ISSUE 01</text>
+
+  <!-- Headline -->
+  <text x="50" y="125" font-family="'Georgia', serif" font-size="26" font-weight="700" fill="#F8FAFC" letter-spacing="-0.5">The Anatomy of Focus</text>
+
+  <!-- Framed Video Window with Fine Border -->
+  <g transform="translate(50, 160)">
+    <rect width="440" height="560" rx="10" fill="#0E0E10" stroke="#27272A" stroke-width="1.5"/>
+    <clipPath id="clip_edit">
+      <rect width="440" height="560" rx="10"/>
+    </clipPath>
+    <g clip-path="url(#clip_edit)">
+      <!-- Cinematic Monochrome Lighting -->
+      <radialGradient id="edit_light" cx="50%" cy="40%" r="50%">
+        <stop offset="0%" stop-color="#27272A"/>
+        <stop offset="100%" stop-color="#09090B"/>
+      </radialGradient>
+      <rect width="440" height="560" fill="url(#edit_light)"/>
+      <circle cx="220" cy="240" r="90" fill="#3F3F46" opacity="0.6"/>
+      <ellipse cx="220" cy="440" rx="160" ry="140" fill="#3F3F46" opacity="0.6"/>
+      <circle cx="220" cy="225" r="65" fill="#52525B" opacity="0.7"/>
+    </g>
+  </g>
+
+  <!-- Editorial Subtitles (Serif, Red Highlight) -->
+  <g transform="translate(270, 770)">
+    <text x="0" y="0" font-family="'Georgia', serif" font-size="23" font-weight="700" text-anchor="middle">
+      <tspan fill="#F8FAFC">Success is not accidental, </tspan>
+    </text>
+    <text x="0" y="32" font-family="'Georgia', serif" font-size="23" font-weight="700" text-anchor="middle">
+      <tspan fill="#F8FAFC">it is </tspan>
+      <tspan fill="#EF4444" font-weight="800">OBSESSIVE</tspan>
+      <tspan fill="#F8FAFC"> discipline.</tspan>
+    </text>
+  </g>
+
+  <!-- Bottom Accent -->
+  <line x1="230" y1="840" x2="310" y2="840" stroke="#EF4444" stroke-width="2"/>
+  <text x="270" y="875" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#71717A" text-anchor="middle" letter-spacing="2">LUXURY DOCUMENTARY</text>
+</svg>

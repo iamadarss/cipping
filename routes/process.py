@@ -778,6 +778,22 @@ def run_pipeline_job(job, app=None):
             if not caption_enabled and subtitle_enabled:
                 effective_opts["animation"] = "none"
 
+            # Resolve Level 1 (Project Default) and Level 2 (Clip Overrides)
+            project_default_tpl = caption_template
+            clip_overrides = {}
+            if job.project_id:
+                try:
+                    from models.project import Project
+                    from extensions import db
+                    proj_obj = db.session.get(Project, int(job.project_id))
+                    if proj_obj and proj_obj.editor_state:
+                        p_state = json.loads(proj_obj.editor_state)
+                        if not project_default_tpl and p_state.get("default_template"):
+                            project_default_tpl = p_state["default_template"].get("id")
+                        clip_overrides = p_state.get("clip_templates", {})
+                except Exception as e:
+                    logger.debug(f"Could not load project template overrides: {e}")
+
             for clip_path in clips:
                 clip_name = Path(clip_path).name
                 clip_stem = Path(clip_path).stem
@@ -797,13 +813,20 @@ def run_pipeline_job(job, app=None):
                 if seg.get("point_labels"):
                     cur_opts["point_labels"] = seg.get("point_labels")
 
+                # Resolve clip-specific template override (Level 2) or fallback to project default (Level 1)
+                active_clip_tpl = (
+                    clip_overrides.get(clip_name, {}).get("template_id")
+                    or clip_overrides.get(clip_stem, {}).get("template_id")
+                    or project_default_tpl
+                )
+
                 try:
                     rendered = caption_renderer.render(
                         input_video=clip_path,
                         transcript=clip_sub_segments,
                         output_video=temp_output,
                         opts=cur_opts,
-                        template=caption_template,
+                        template=active_clip_tpl,
                     )
                     if rendered and rendered.exists():
                         rendered.replace(clip_path)

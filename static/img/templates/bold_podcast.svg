@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <defs>
+    <linearGradient id="bg_bold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#18181B"/>
+      <stop offset="60%" stop-color="#09090B"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+    <radialGradient id="punch_spot" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Full Bleed Canvas -->
+  <rect width="540" height="960" fill="url(#bg_bold)"/>
+  <rect width="540" height="960" fill="url(#punch_spot)"/>
+
+  <!-- Speaker Visual Graphic -->
+  <g transform="translate(270, 360)">
+    <circle cx="0" cy="-30" r="130" fill="#27272A"/>
+    <circle cx="0" cy="-45" r="95" fill="#3F3F46"/>
+    <ellipse cx="0" cy="220" rx="220" ry="180" fill="#27272A"/>
+    <!-- Podcast Microphone In Front -->
+    <rect x="-24" y="60" width="48" height="90" rx="24" fill="#18181B" stroke="#FBBF24" stroke-width="3"/>
+    <line x1="0" y1="150" x2="0" y2="240" stroke="#FBBF24" stroke-width="6"/>
+  </g>
+
+  <!-- Top Badge -->
+  <rect x="36" y="44" width="90" height="28" rx="6" fill="#FBBF24"/>
+  <text x="81" y="63" font-family="'Montserrat', sans-serif" font-size="12" font-weight="900" fill="#000000" text-anchor="middle">PODCAST</text>
+
+  <!-- High Retention Viral Captions (Heavy Stroke, Electric Yellow) -->
+  <g transform="translate(270, 720)">
+    <!-- Line 1 -->
+    <text x="0" y="0" font-family="'Montserrat', sans-serif" font-size="44" font-weight="900" fill="#FFFFFF" stroke="#000000" stroke-width="8" paint-order="stroke fill" text-anchor="middle">
+      NEVER STOP
+    </text>
+    <!-- Line 2 -->
+    <text x="0" y="52" font-family="'Montserrat', sans-serif" font-size="44" font-weight="900" fill="#FBBF24" stroke="#000000" stroke-width="8" paint-order="stroke fill" text-anchor="middle">
+      BUILDING
+    </text>
+  </g>
+
+  <!-- Subtitle Tag -->
+  <text x="270" y="850" font-family="'Inter', sans-serif" font-size="13" font-weight="800" fill="#A1A1AA" text-anchor="middle">
+    High Contrast · Electric Yellow Pop
+  </text>
+</svg>

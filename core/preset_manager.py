@@ -470,7 +470,14 @@ class PresetManager:
         # Enforce strict user templates limit (max 6)
         cleaned_user = cleaned_user[:6]
 
-        all_templates = SYSTEM_TEMPLATES + cleaned_user
+        try:
+            from core.template_engine import template_engine
+            premium_templates = template_engine.get_all_templates()
+        except Exception as e:
+            print("[PRESETS] Failed to load premium templates:", e)
+            premium_templates = []
+
+        all_templates = premium_templates + SYSTEM_TEMPLATES + cleaned_user
         if category and category != "All":
             all_templates = [t for t in all_templates if t.get("category", "").lower() == category.lower()]
 

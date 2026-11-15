@@ -55,10 +55,10 @@
             </div>
 
             <div class="topbar-right">
-                <a href="/dashboard" class="btn btn-primary btn-sm">
+                <button type="button" class="btn btn-primary btn-sm" id="btnTopNewProject" style="display:inline-flex; align-items:center; gap:6px;">
                     <svg data-lucide="plus" width="14" height="14"></svg>
                     <span>New Project</span>
-                </a>
+                </button>
             </div>
         </header>
 
@@ -119,21 +119,10 @@
                     <section class="home-hero-compact" aria-label="Welcome banner">
                         <div class="home-hero-glow"></div>
                         <div class="home-hero-content">
-                            <div class="home-badge">
-                                <svg data-lucide="sparkles" width="13" height="13" aria-hidden="true"></svg>
-                                <span>Desktop AI Video Suite 2.0</span>
-                            </div>
                             <h1 class="home-hero-title">
                                 Welcome to <span class="text-accent">UpClip Studio</span>
                             </h1>
-                            <p class="home-hero-subtitle">
-                                Transform long-form videos into high-retention viral shorts with automated scene detection, on-device Whisper AI speech-to-text, and cinematic creator captions.
-                            </p>
                             <div class="home-hero-tags">
-                                <span class="hero-tag-pill">
-                                    <svg data-lucide="shield-check" width="12" height="12"></svg>
-                                    <span>100% Offline Local Processing</span>
-                                </span>
                                 <span class="hero-tag-pill">
                                     <svg data-lucide="mic" width="12" height="12"></svg>
                                     <span>Whisper AI Speech Engine</span>
@@ -150,7 +139,6 @@
                     <section class="home-workspaces-section" aria-labelledby="headingWorkspaces">
                         <div class="home-workspaces-header">
                             <h2 id="headingWorkspaces" class="section-heading-sm">Primary Workspaces</h2>
-                            <span class="section-tag-label">Video Creation Suites</span>
                         </div>
                         <div class="home-workspaces-grid">
                             <!-- Card 1: AI Clip Studio -->
@@ -160,18 +148,9 @@
                                     <div class="workspace-icon-wrap clip-icon-wrap">
                                         <svg data-lucide="wand-sparkles" width="22" height="22" aria-hidden="true"></svg>
                                     </div>
-                                    <span class="workspace-badge clip-badge">AI PIPELINE</span>
                                 </div>
                                 <div class="workspace-card-body">
                                     <h3 class="workspace-card-title">AI Clip Studio</h3>
-                                    <p class="workspace-card-desc">
-                                        Automated video clipping engine with viral scene detection, speech energy analysis, retention scoring, and smart multi-format 9:16 vertical reframing.
-                                    </p>
-                                    <div class="workspace-features-list">
-                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> 5 AI Modes (Highlights, Series, Topic, Recap, Trailer)</span>
-                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> Smart Face-Centered Video Reframing</span>
-                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> PyTorch GPU/CPU Neural Engine</span>
-                                    </div>
                                 </div>
                                 <div class="workspace-card-action">
                                     <a href="/dashboard" class="btn btn-primary w-full workspace-launch-btn">
@@ -189,18 +168,9 @@
                                     <div class="workspace-icon-wrap caption-icon-wrap">
                                         <svg data-lucide="captions" width="22" height="22" aria-hidden="true"></svg>
                                     </div>
-                                    <span class="workspace-badge caption-badge">TYPOGRAPHY</span>
                                 </div>
                                 <div class="workspace-card-body">
                                     <h3 class="workspace-card-title">Caption Studio</h3>
-                                    <p class="workspace-card-desc">
-                                        Word-by-word animated subtitle designer with 24 viral creator presets, Ice Blue neon glow, Hindi Devanagari typography, and hardburned MP4 exports.
-                                    </p>
-                                    <div class="workspace-features-list">
-                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> 24 Production Styles (Cinematic, Aesthetic, Loud)</span>
-                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> Hindi, English &amp; Hinglish Transliteration</span>
-                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> SRT, VTT, ASS &amp; Hardburned Video Burning</span>
-                                    </div>
                                 </div>
                                 <div class="workspace-card-action">
                                     <a href="/caption-studio" class="btn btn-secondary w-full workspace-launch-btn workspace-caption-btn">
@@ -230,12 +200,11 @@
                         </div>
                     </section>
 
-                    <!-- 4. Template Selector Section -->
+                    <!-- 4. Premium Template Library Section -->
                     <section class="template-selector-wrap" aria-labelledby="headingTemplates">
                         <div class="home-section-header" style="margin-bottom: var(--space-3);">
                             <div>
-                                <h2 id="headingTemplates" class="section-title">Template Selector</h2>
-                                <p class="section-subtitle">Choose a production-tested layout and style preset for your video.</p>
+                                <h2 id="headingTemplates" class="section-title">Templates</h2>
                             </div>
                             <div id="templateActionWrap" style="display:none;">
                                 <button class="btn btn-primary btn-sm" id="btnUseSelectedTemplate" style="display:flex; align-items:center; gap:6px;">
@@ -249,11 +218,11 @@
                         <div class="template-filter-bar">
                             <div class="template-category-tabs" id="templateCategoryTabs">
                                 <button class="template-tab-btn active" data-cat="all">All</button>
-                                <button class="template-tab-btn" data-cat="Shorts">Shorts</button>
                                 <button class="template-tab-btn" data-cat="Podcast">Podcast</button>
-                                <button class="template-tab-btn" data-cat="Explainer">Explainer</button>
-                                <button class="template-tab-btn" data-cat="Minimal">Minimal</button>
-                                <button class="template-tab-btn" data-cat="Custom">Custom</button>
+                                <button class="template-tab-btn" data-cat="Creator">Creator</button>
+                                <button class="template-tab-btn" data-cat="Motivation">Motivation</button>
+                                <button class="template-tab-btn" data-cat="Educational">Educational</button>
+                                <button class="template-tab-btn" data-cat="Cinematic">Cinematic</button>
                             </div>
                             <div class="template-search-box">
                                 <svg data-lucide="search" width="14" height="14"></svg>
@@ -267,7 +236,7 @@
                         </div>
                     </section>
 
-                    <!-- 5. Optional Project Activity & System Health Section -->
+                    <!-- 5. Workspace Activity & Status Section -->
                     <section class="home-activity-section" aria-labelledby="headingActivity">
                         <div class="home-section-header" style="margin-bottom: var(--space-3);">
                             <div>
@@ -280,43 +249,33 @@
                             </a>
                         </div>
                         <div class="home-activity-grid">
-                            <div class="activity-metric-card">
-                                <div class="metric-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25);">
-                                    <svg data-lucide="shield-check" width="18" height="18"></svg>
-                                </div>
-                                <div class="metric-info">
-                                    <div class="metric-label">Local Processing</div>
-                                    <div class="metric-value">100% Offline</div>
-                                    <div class="metric-hint">Zero cloud uploads, total data privacy</div>
-                                </div>
-                            </div>
-                            <div class="activity-metric-card">
+                            <div class="activity-metric-card" id="metricSpeechCard">
                                 <div class="metric-icon-wrap" style="background: rgba(99, 102, 241, 0.12); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.25);">
                                     <svg data-lucide="mic" width="18" height="18"></svg>
                                 </div>
                                 <div class="metric-info">
                                     <div class="metric-label">Speech Recognition</div>
-                                    <div class="metric-value">Whisper AI Ready</div>
+                                    <div class="metric-value" id="metricSpeechStatus">Whisper AI Ready</div>
                                     <div class="metric-hint">Word timestamps &amp; VAD filtering</div>
                                 </div>
                             </div>
-                            <div class="activity-metric-card">
+                            <div class="activity-metric-card" id="metricCaptionCard">
                                 <div class="metric-icon-wrap" style="background: rgba(6, 182, 212, 0.12); color: #22D3EE; border: 1px solid rgba(6, 182, 212, 0.25);">
                                     <svg data-lucide="palette" width="18" height="18"></svg>
                                 </div>
                                 <div class="metric-info">
                                     <div class="metric-label">Caption Presets</div>
-                                    <div class="metric-value">24 Active Styles</div>
+                                    <div class="metric-value" id="metricCaptionCount">24 Active Styles</div>
                                     <div class="metric-hint">Ice Blue, Devanagari, Neon, Beast</div>
                                 </div>
                             </div>
-                            <div class="activity-metric-card">
+                            <div class="activity-metric-card" id="metricVideoCard">
                                 <div class="metric-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.25);">
                                     <svg data-lucide="cpu" width="18" height="18"></svg>
                                 </div>
                                 <div class="metric-info">
                                     <div class="metric-label">Video Engine</div>
-                                    <div class="metric-value">FFmpeg Acceleration</div>
+                                    <div class="metric-value" id="metricVideoStatus">FFmpeg Acceleration</div>
                                     <div class="metric-hint">Multi-threaded H.264 rendering</div>
                                 </div>
                             </div>
@@ -358,69 +317,439 @@
         </div>
     </div>
 
-    <!-- Template Action Modal -->
+    <!-- Premium Template Studio & Customization Modal -->
     <div class="modal-overlay" id="templateActionModal" style="display:none; opacity:0; pointer-events:none; transition: opacity 0.2s ease;">
-        <div class="modal" style="max-width: 520px; width: 100%; border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.6); background: var(--surface-1); padding: var(--space-6);">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: var(--space-3);">
+        <div class="modal template-studio-modal" style="max-width: 920px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: 0 25px 60px rgba(0,0,0,0.7); background: var(--surface-1); padding: 0; overflow: hidden;">
+            
+            <!-- Modal Header -->
+            <div class="template-studio-header" style="display:flex; justify-content:space-between; align-items:center; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface-2);">
                 <div style="display:flex; align-items:center; gap: 12px;">
-                    <div id="modalTemplateIcon" style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--primary-soft); border: 1px solid rgba(var(--primary-rgb),0.3); display:flex; align-items:center; justify-content:center; font-size: var(--text-xl);">🎬</div>
+                    <div id="modalTemplateIcon" style="width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--primary-soft); border: 1px solid rgba(var(--primary-rgb),0.3); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                        <img id="modalTemplateIconImg" src="/static/img/templates/clean_creator.svg" alt="" style="width:100%; height:100%; object-fit:cover;">
+                    </div>
                     <div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <h3 id="modalTemplateTitle" style="font-family: var(--font-heading); font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); margin:0;">Template Name</h3>
-                            <span id="modalTemplateCategory" class="template-card-category" style="font-size: var(--text-xs);">Shorts</span>
+                            <span id="modalTemplateCategory" class="template-card-category" style="font-size: var(--text-xs);">Creator</span>
                             <span id="modalTemplateAspect" style="font-size: var(--text-xs); padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,0.08); font-family: var(--font-mono); color: var(--primary); font-weight:700;">9:16</span>
                         </div>
-                        <p id="modalTemplateDesc" style="font-size: var(--text-sm); color: var(--text-secondary); margin: 4px 0 0 0; line-height: 1.4;">Template description will appear here.</p>
+                        <p id="modalTemplateDesc" style="font-size: var(--text-xs); color: var(--text-secondary); margin: 2px 0 0 0; line-height: 1.3;">Template description will appear here.</p>
                     </div>
                 </div>
-                <button type="button" class="modal-close" id="btnTemplateModalClose" style="position:static; margin-left:8px;" aria-label="Close">✕</button>
-            </div>
-
-            <!-- Features Included Breakdown -->
-            <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin: var(--space-4) 0;">
-                <div style="font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; margin-bottom: 10px;">Included in this preset</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: var(--text-xs);">
-                    <div style="display:flex; align-items:flex-start; gap: 8px;">
-                        <span style="font-size: var(--text-sm);">🔤</span>
-                        <div>
-                            <div style="font-weight:600; color:var(--text-primary);">Captions</div>
-                            <div id="modalTemplateCaption" style="color:var(--text-muted); font-size: var(--text-xs);">Pop karaoke styling</div>
-                        </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <!-- Modal Navigation Tabs -->
+                    <div class="template-modal-tabs" style="display:flex; gap:4px; background: var(--surface-3); padding:3px; border-radius: var(--radius-sm); border:1px solid var(--border-subtle);">
+                        <button type="button" class="btn-modal-tab active" id="tabBtnPreview" data-tab="preview" style="font-size:12px; font-weight:700; padding:5px 12px; border-radius:4px; border:none; background:var(--primary); color:#000; cursor:pointer;">
+                            <svg data-lucide="play" width="13" height="13" style="vertical-align:middle; margin-right:4px;"></svg>Interactive Preview
+                        </button>
+                        <button type="button" class="btn-modal-tab" id="tabBtnCustomize" data-tab="customize" style="font-size:12px; font-weight:600; padding:5px 12px; border-radius:4px; border:none; background:transparent; color:var(--text-secondary); cursor:pointer;">
+                            <svg data-lucide="sliders" width="13" height="13" style="vertical-align:middle; margin-right:4px;"></svg>Customize Template
+                        </button>
                     </div>
-                    <div style="display:flex; align-items:flex-start; gap: 8px;">
-                        <span style="font-size: var(--text-sm);">🎨</span>
-                        <div>
-                            <div style="font-weight:600; color:var(--text-primary);">Graphics &amp; Badges</div>
-                            <div id="modalTemplateGraphics" style="color:var(--text-muted); font-size: var(--text-xs);">Hook cards &amp; shapes</div>
-                        </div>
-                    </div>
-                    <div style="display:flex; align-items:flex-start; gap: 8px;">
-                        <span style="font-size: var(--text-sm);">🎵</span>
-                        <div>
-                            <div style="font-weight:600; color:var(--text-primary);">Audio Mix</div>
-                            <div id="modalTemplateAudio" style="color:var(--text-muted); font-size: var(--text-xs);">Auto music ducking</div>
-                        </div>
-                    </div>
-                    <div style="display:flex; align-items:flex-start; gap: 8px;">
-                        <span style="font-size: var(--text-sm);">📐</span>
-                        <div>
-                            <div style="font-weight:600; color:var(--text-primary);">Canvas Format</div>
-                            <div id="modalTemplateCanvas" style="color:var(--text-muted); font-size: var(--text-xs);">9:16 Vertical video</div>
-                        </div>
-                    </div>
+                    <button type="button" class="modal-close" id="btnTemplateModalClose" style="position:static; margin-left:8px;" aria-label="Close">✕</button>
                 </div>
             </div>
 
-            <!-- Action Options -->
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                <button type="button" class="btn btn-primary w-full" id="btnTemplateOpenClipStudio">
-                    <svg data-lucide="wand-sparkles" width="15" height="15"></svg>
-                    <span>Use in AI Clip Studio</span>
-                </button>
-                <a href="/caption-studio" class="btn btn-secondary w-full" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                    <svg data-lucide="subtitles" width="15" height="15"></svg>
-                    <span>Open in Caption Studio</span>
-                </a>
+            <!-- Modal Body Container (Scrollable) -->
+            <div class="template-studio-body" style="flex:1; overflow-y:auto; padding: 20px 24px;">
+                
+                <!-- TAB 1: INTERACTIVE PREVIEW -->
+                <div id="modalViewPreview" class="template-tab-content">
+                    <div style="display: grid; grid-template-columns: minmax(280px, 340px) 1fr; gap: 24px; align-items: start;">
+                        
+                        <!-- Left: Live Video & Snapshot Player -->
+                        <div class="template-player-container" style="background:#000; border-radius: var(--radius-card); border: 1px solid var(--border); overflow:hidden; position:relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                            <!-- View Toggle Switch (Video vs Snapshot) -->
+                            <div style="position:absolute; top:12px; left:12px; right:12px; z-index:10; display:flex; justify-content:space-between; align-items:center;">
+                                <div style="background: rgba(0,0,0,0.65); backdrop-filter:blur(8px); padding: 3px 8px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); font-size:11px; font-weight:700; color:#fff; display:flex; gap:6px;">
+                                    <button type="button" id="btnToggleAnimMode" class="btn-preview-toggle active" style="background:var(--primary); color:#000; border:none; padding:2px 8px; border-radius:12px; font-size:10.5px; font-weight:800; cursor:pointer;">Live Video</button>
+                                    <button type="button" id="btnToggleStaticMode" class="btn-preview-toggle" style="background:transparent; color:#fff; border:none; padding:2px 8px; border-radius:12px; font-size:10.5px; font-weight:700; cursor:pointer;">Static Frame</button>
+                                </div>
+                                <span id="previewAspectBadge" style="background: rgba(0,0,0,0.7); backdrop-filter:blur(6px); color:var(--primary); border:1px solid rgba(var(--primary-rgb),0.4); padding:2px 8px; border-radius:6px; font-size:11px; font-family:var(--font-mono); font-weight:800;">9:16</span>
+                            </div>
+
+                            <!-- Video Element -->
+                            <div id="videoPreviewWrapper" style="width:100%; aspect-ratio: 9/16; max-height:480px; position:relative; display:flex; align-items:center; justify-content:center; background:#000;">
+                                <video id="templatePreviewVideo" loop playsinline preload="auto" style="width:100%; height:100%; object-fit:contain; background:#000;" src="/static/previews/clean_creator_preview.mp4"></video>
+                                <img id="templateStaticSnapshot" src="/static/img/templates/clean_creator.svg" alt="Static Preview" style="display:none; width:100%; height:100%; object-fit:contain; background:#000;">
+                            </div>
+
+                            <!-- Interactive Player Controls Bar -->
+                            <div class="template-player-controls" style="background: rgba(15,23,42,0.95); border-top: 1px solid var(--border-subtle); padding: 10px 14px; display:flex; flex-direction:column; gap:8px;">
+                                <!-- Progress scrubber -->
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="range" id="previewScrubber" min="0" max="100" value="0" step="0.1" style="flex:1; accent-color: var(--primary); height:4px; cursor:pointer;">
+                                    <span id="previewTimeDisplay" style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); min-width:44px; text-align:right;">0.0s</span>
+                                </div>
+                                <!-- Button bar -->
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="display:flex; gap:6px;">
+                                        <button type="button" id="btnPreviewPlayPause" class="btn btn-secondary btn-sm" style="padding:4px 10px; font-size:11.5px; font-weight:700;">
+                                            <svg data-lucide="play" width="13" height="13" id="iconPreviewPlay"></svg>
+                                            <span id="lblPreviewPlay">Play</span>
+                                        </button>
+                                        <button type="button" id="btnPreviewReplay" class="btn btn-ghost btn-sm" title="Replay from start" style="padding:4px 8px;">
+                                            <svg data-lucide="rotate-ccw" width="13" height="13"></svg>
+                                        </button>
+                                        <button type="button" id="btnPreviewMute" class="btn btn-ghost btn-sm" title="Mute / Unmute" style="padding:4px 8px;">
+                                            <svg data-lucide="volume-2" width="13" height="13" id="iconPreviewVolume"></svg>
+                                        </button>
+                                    </div>
+                                    <button type="button" id="btnPreviewFullscreen" class="btn btn-ghost btn-sm" title="Fullscreen" style="padding:4px 8px;">
+                                        <svg data-lucide="maximize" width="13" height="13"></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Preset Specification Breakdown & Metadata -->
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            
+                            <!-- Template Identity Card -->
+                            <div style="background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 18px;">
+                                <h4 style="font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 800; margin-bottom: 12px; display:flex; align-items:center; gap:6px;">
+                                    <svg data-lucide="sparkles" width="14" height="14" style="color:var(--primary);"></svg>
+                                    <span>Visual Identity Blueprint</span>
+                                </h4>
+                                
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size: var(--text-xs);">
+                                    <div style="background: rgba(0,0,0,0.25); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+                                        <div style="color:var(--text-muted); font-weight:600; margin-bottom:2px;">Composition Layout</div>
+                                        <div id="specLayoutMode" style="font-weight:700; color:var(--text-primary);">Centered Rounded Inset</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.25); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+                                        <div style="color:var(--text-muted); font-weight:600; margin-bottom:2px;">Caption Typography</div>
+                                        <div id="specTypography" style="font-weight:700; color:var(--text-primary);">Inter Bold, 36px</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.25); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+                                        <div style="color:var(--text-muted); font-weight:600; margin-bottom:2px;">Animation Engine</div>
+                                        <div id="specAnimation" style="font-weight:700; color:var(--primary);">Word-by-Word Karaoke</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.25); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+                                        <div style="color:var(--text-muted); font-weight:600; margin-bottom:2px;">Color Grading</div>
+                                        <div id="specGrading" style="font-weight:700; color:var(--text-primary);">Clean Vivid Contrast</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Best For & Recommended Use -->
+                            <div style="background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 18px;">
+                                <h4 style="font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 800; margin-bottom: 8px;">Recommended For</h4>
+                                <p id="specRecommendedFor" style="font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5; margin:0;">
+                                    Educational shorts, personal branding, talking-head videos, and Hindi/Hinglish motivational reels.
+                                </p>
+                            </div>
+
+                            <!-- Quick Action Buttons -->
+                            <div style="display:flex; flex-direction:column; gap:10px; margin-top: auto;">
+                                <button type="button" class="btn btn-primary w-full" id="btnModalSetProjectDefault" style="padding:10px; font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                                    <svg data-lucide="check-circle-2" width="16" height="16"></svg>
+                                    <span>Set as Project Default (Level 1)</span>
+                                </button>
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                    <button type="button" class="btn btn-secondary" id="btnModalSetGlobalPref" style="font-size:12px; font-weight:600; padding:8px;">
+                                        <svg data-lucide="globe" width="14" height="14" style="margin-right:4px; vertical-align:middle;"></svg>Save as Global Default
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="btnModalSwitchToCustomize" style="font-size:12px; font-weight:600; padding:8px;">
+                                        <svg data-lucide="sliders" width="14" height="14" style="margin-right:4px; vertical-align:middle;"></svg>Customize Preset
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: TEMPLATE CUSTOMIZATION PANEL -->
+                <div id="modalViewCustomize" class="template-tab-content" style="display:none;">
+                    <div style="display:flex; flex-direction:column; gap:20px;">
+                        
+                        <!-- Panel A: Video Settings -->
+                        <div class="customizer-section" style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px;">
+                            <h4 style="font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="video" width="14" height="14"></svg>A. Video Layout Settings
+                            </h4>
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Aspect Ratio</label>
+                                    <select id="custVideoAspect" class="form-control" style="font-size:12px;">
+                                        <option value="9:16" selected>9:16 Vertical (Shorts/Reels/TikTok)</option>
+                                        <option value="1:1">1:1 Square (Feed)</option>
+                                        <option value="16:9">16:9 Landscape (YouTube)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Video Framing Mode</label>
+                                    <select id="custVideoMode" class="form-control" style="font-size:12px;">
+                                        <option value="centered_framed">Centered Rounded Inset</option>
+                                        <option value="speaker_crop">Full-Bleed Speaker Crop</option>
+                                        <option value="framed_black">Pitch Black Luxury Frame</option>
+                                        <option value="dualcast_split">DualCast Split Screen</option>
+                                    </select>
+                                </div>
+                                <div id="custDualcastLayoutWrap">
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">DualCast Layout</label>
+                                    <select id="custDualcastLayout" class="form-control" style="font-size:12px;">
+                                        <option value="HOST_TOP_GUEST_BOTTOM">1. Host Top / Guest Bottom</option>
+                                        <option value="GUEST_TOP_HOST_BOTTOM">2. Guest Top / Host Bottom</option>
+                                        <option value="SIDE_BY_SIDE">3. Side by Side</option>
+                                        <option value="ACTIVE_SPEAKER_FOCUS">4. Active Speaker Focus</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Frame Border Radius (<span id="lblCustRadius">16</span>px)</label>
+                                    <input type="range" id="custBorderRadius" min="0" max="32" value="16" style="width:100%; accent-color:var(--primary);">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel B: Caption Settings -->
+                        <div class="customizer-section" style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px;">
+                            <h4 style="font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="type" width="14" height="14"></svg>B. Caption &amp; Typography Settings
+                            </h4>
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Font Family</label>
+                                    <select id="custFontFamily" class="form-control" style="font-size:12px;">
+                                        <option value="Inter" selected>Inter</option>
+                                        <option value="Montserrat">Montserrat</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="Arial Black">Arial Black</option>
+                                        <option value="Anton">Anton</option>
+                                        <option value="Nirmala UI">Nirmala UI (Hindi/Devanagari)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Font Size (<span id="lblCustFontSize">36</span>px)</label>
+                                    <input type="range" id="custFontSize" min="20" max="54" value="36" style="width:100%; accent-color:var(--primary);">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Text Color</label>
+                                    <div style="display:flex; gap:8px; align-items:center;">
+                                        <input type="color" id="custTextColor" value="#FFFFFF" style="width:36px; height:32px; padding:2px; border-radius:4px; border:1px solid var(--border); background:none; cursor:pointer;">
+                                        <input type="text" id="custTextColorText" value="#FFFFFF" class="form-control" style="font-size:12px; font-family:var(--font-mono);">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Active Word Highlight Color</label>
+                                    <div style="display:flex; gap:8px; align-items:center;">
+                                        <input type="color" id="custHighlightColor" value="#38BDF8" style="width:36px; height:32px; padding:2px; border-radius:4px; border:1px solid var(--border); background:none; cursor:pointer;">
+                                        <input type="text" id="custHighlightColorText" value="#38BDF8" class="form-control" style="font-size:12px; font-family:var(--font-mono);">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Vertical Position Y (<span id="lblCustPosY">78</span>%)</label>
+                                    <input type="range" id="custPosY" min="20" max="90" value="78" style="width:100%; accent-color:var(--primary);">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Max Words Per Line</label>
+                                    <select id="custMaxWords" class="form-control" style="font-size:12px;">
+                                        <option value="1">1 Word (Ultra Fast Flash)</option>
+                                        <option value="2">2 Words</option>
+                                        <option value="3" selected>3 Words (Creator Standard)</option>
+                                        <option value="4">4 Words</option>
+                                        <option value="6">6 Words (Editorial)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel C: Caption Animation -->
+                        <div class="customizer-section" style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px;">
+                            <h4 style="font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="sparkle" width="14" height="14"></svg>C. Caption Animation Style
+                            </h4>
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Animation Engine</label>
+                                    <select id="custAnimation" class="form-control" style="font-size:12px;">
+                                        <option value="karaoke_highlight" selected>Word-by-Word Karaoke</option>
+                                        <option value="pop">Pop Scale Overshoot</option>
+                                        <option value="bounce">Elastic Bounce</option>
+                                        <option value="fade">Smooth Line Fade</option>
+                                        <option value="slide_up">Slide Up Entrance</option>
+                                        <option value="slide_down">Slide Down Entrance</option>
+                                        <option value="typewriter">Typewriter Reveal</option>
+                                        <option value="line_by_line">Line-by-Line Reveal</option>
+                                    </select>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px; margin-top:24px;">
+                                    <input type="checkbox" id="custUppercase" style="accent-color:var(--primary); width:16px; height:16px;">
+                                    <label for="custUppercase" style="font-size:12px; font-weight:700; cursor:pointer;">Force Uppercase Captions</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel D: Visual Effects -->
+                        <div class="customizer-section" style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px;">
+                            <h4 style="font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="palette" width="14" height="14"></svg>D. Visual Effects &amp; Color Grading
+                            </h4>
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Cinematic Color Grading</label>
+                                    <select id="custGrading" class="form-control" style="font-size:12px;">
+                                        <option value="none">None (Standard Natural)</option>
+                                        <option value="warm_gold">Warm 24K Gold Film</option>
+                                        <option value="cinematic_contrast">Cinematic High Contrast</option>
+                                        <option value="dark_editorial">Dark Moody Editorial</option>
+                                        <option value="clean_vivid">Clean Vivid Modern</option>
+                                    </select>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px; margin-top:24px;">
+                                    <input type="checkbox" id="custFilmGrain" style="accent-color:var(--primary); width:16px; height:16px;">
+                                    <label for="custFilmGrain" style="font-size:12px; font-weight:700; cursor:pointer;">Subtle Film Grain</label>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px; margin-top:24px;">
+                                    <input type="checkbox" id="custSubtleZoom" style="accent-color:var(--primary); width:16px; height:16px;">
+                                    <label for="custSubtleZoom" style="font-size:12px; font-weight:700; cursor:pointer;">Slow Speaker Zoom</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel E: Branding -->
+                        <div class="customizer-section" style="background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px;">
+                            <h4 style="font-size:13px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                                <svg data-lucide="award" width="14" height="14"></svg>E. Creator Branding &amp; Labels
+                            </h4>
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Watermark Text</label>
+                                    <input type="text" id="custWatermarkText" class="form-control" placeholder="@yourhandle" style="font-size:12px;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Host Label (DualCast)</label>
+                                    <input type="text" id="custHostLabel" class="form-control" value="HOST" style="font-size:12px;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:11.5px; font-weight:700;">Guest Label (DualCast)</label>
+                                    <input type="text" id="custGuestLabel" class="form-control" value="GUEST" style="font-size:12px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Customizer Action Buttons -->
+                        <div style="display:flex; justify-content:flex-end; gap:10px; padding-top:8px;">
+                            <button type="button" class="btn btn-secondary" id="btnSaveAsCustomTemplate">
+                                <svg data-lucide="bookmark" width="14" height="14"></svg>
+                                <span>Save As Custom Template</span>
+                            </button>
+                            <button type="button" class="btn btn-primary" id="btnApplyCustomToProject">
+                                <svg data-lucide="check" width="14" height="14"></svg>
+                                <span>Apply Customizations as Project Default</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="template-studio-footer" style="padding: 14px 24px; border-top: 1px solid var(--border); background: var(--surface-2); display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="modalActiveStatusIndicator" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary);"></span>
+                    <span id="modalActiveStatusText" style="font-size:12px; font-weight:700; color:var(--text-secondary);">Ready to use</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnTemplateOpenEditor">
+                        <svg data-lucide="layout-template" width="14" height="14"></svg>
+                        <span>Open in Timeline Editor</span>
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnTemplateOpenClipStudio">
+                        <svg data-lucide="wand-sparkles" width="14" height="14"></svg>
+                        <span>Launch in AI Clip Studio</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- New Project Creation Modal -->
+    <div class="modal-overlay" id="newProjectModal" style="display:none; opacity:0; pointer-events:none; transition: opacity 0.2s ease;">
+        <div class="modal compact-dialog" style="max-width: 440px; width: 90%; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-lg); overflow: hidden;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2);">
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; margin: 0; color: var(--text-primary);">
+                    <svg data-lucide="folder-plus" width="18" height="18" style="color:var(--primary);"></svg>
+                    <span>New Project</span>
+                </h3>
+                <button type="button" class="modal-close" id="btnCloseNewProjectModal" aria-label="Close" style="background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;">✕</button>
+            </div>
+            <form id="newProjectForm" class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label for="newProjectNameInput" class="form-label" style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">Project Name</label>
+                    <input type="text" id="newProjectNameInput" class="form-control" placeholder="e.g., Viral Reel Episode 01" required style="width: 100%; font-size: 13px;">
+                </div>
+                <div>
+                    <label for="newProjectAspectSelect" class="form-label" style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">Aspect Ratio</label>
+                    <select id="newProjectAspectSelect" class="form-control" style="width: 100%; font-size: 13px;">
+                        <option value="9:16" selected>9:16 Vertical (Shorts, Reels, TikTok)</option>
+                        <option value="16:9">16:9 Landscape (YouTube)</option>
+                        <option value="1:1">1:1 Square (Instagram Feed)</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnCancelNewProject">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitNewProject" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg data-lucide="plus" width="14" height="14"></svg>
+                        <span>Create Project</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rename Project Modal -->
+    <div class="modal-overlay" id="renameProjectModal" style="display:none; opacity:0; pointer-events:none; transition: opacity 0.2s ease;">
+        <div class="modal compact-dialog" style="max-width: 420px; width: 90%; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-lg); overflow: hidden;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2);">
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; margin: 0; color: var(--text-primary);">
+                    <svg data-lucide="edit-3" width="18" height="18" style="color:var(--primary);"></svg>
+                    <span>Rename Project</span>
+                </h3>
+                <button type="button" class="modal-close" id="btnCloseRenameModal" aria-label="Close" style="background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;">✕</button>
+            </div>
+            <form id="renameProjectForm" class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                <input type="hidden" id="renameProjectIdInput">
+                <div>
+                    <label for="renameProjectNameInput" class="form-label" style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">New Project Name</label>
+                    <input type="text" id="renameProjectNameInput" class="form-control" required style="width: 100%; font-size: 13px;">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnCancelRenameProject">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitRenameProject" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg data-lucide="check" width="14" height="14"></svg>
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Project Confirmation Modal -->
+    <div class="modal-overlay" id="deleteProjectModal" style="display:none; opacity:0; pointer-events:none; transition: opacity 0.2s ease;">
+        <div class="modal compact-dialog" style="max-width: 420px; width: 90%; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-lg); overflow: hidden;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface-2);">
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; margin: 0; color: var(--error, #EF4444);">
+                    <svg data-lucide="trash-2" width="18" height="18"></svg>
+                    <span>Delete Project</span>
+                </h3>
+                <button type="button" class="modal-close" id="btnCloseDeleteModal" aria-label="Close" style="background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="color: var(--text-secondary); font-size: 13.5px; margin: 0 0 16px 0; line-height: 1.5;">
+                    Are you sure you want to delete <strong id="deleteProjectNameDisplay" style="color:var(--text-primary);"></strong>? This will remove the project record and its autosaves. Source video files will not be deleted.
+                </p>
+                <input type="hidden" id="deleteProjectIdInput">
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnCancelDeleteProject">Cancel</button>
+                    <button type="button" class="btn btn-sm" id="btnConfirmDeleteProject" style="background: #EF4444; color: #fff; border: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 0 12px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;">
+                        <svg data-lucide="trash-2" width="14" height="14"></svg>
+                        <span>Delete</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -6,6 +6,7 @@ Recent Projects Tracking, Global Settings, and Background Task Management.
 """
 
 import json
+import time
 from flask import Blueprint, request, jsonify
 
 from extensions import db
@@ -24,16 +25,10 @@ projects_bp = Blueprint('projects', __name__)
 
 @projects_bp.route('/api/projects', methods=['GET'])
 def list_projects():
-    """List projects, filtering by default to only projects with generated clips."""
-    show_all = request.args.get("all", "false").lower() in ("true", "1")
-    projects = Project.query.order_by(Project.updated_at.desc()).all()
+    """List actual saved projects, ordered by recent update."""
+    projects = Project.query.order_by(Project.updated_at.desc()).limit(20).all()
     project_dicts = [p.to_dict() for p in projects]
-
-    if not show_all:
-        # Keep only projects that have generated clips from AI Clipping Studio
-        project_dicts = [p for p in project_dicts if len(p.get("clips", [])) > 0]
-
-    return jsonify(project_dicts[:20])
+    return jsonify(project_dicts)
 
 
 @projects_bp.route('/api/projects', methods=['POST'])
@@ -295,6 +290,175 @@ def get_all_templates_list():
     })
 
 
+@projects_bp.route('/api/templates/<template_id>', methods=['GET'])
+def get_template_detail(template_id):
+    """Retrieve full configuration object for a specific template."""
+    from core.template_engine import template_engine
+    from core.preset_manager import preset_manager
+
+    # Check premium templates first
+    prem = template_engine.get_template(template_id)
+    if prem:
+        return jsonify({"success": True, "template": prem.to_dict()})
+
+    # Check legacy/system/user presets
+    tpl = preset_manager.get_template_by_id(template_id)
+    if tpl:
+        return jsonify({"success": True, "template": tpl})
+
+    return jsonify({"success": False, "error": f"Template '{template_id}' not found"}), 404
+
+
+@projects_bp.route('/api/templates/<template_id>/save-custom', methods=['POST'])
+def save_custom_template_api(template_id):
+    """Save user customizations as a new or modified custom template."""
+    from core.template_engine import template_engine
+
+    data = request.get_json(silent=True) or {}
+    if not data:
+        return jsonify({"success": False, "error": "Missing template configuration payload"}), 400
+
+    data["id"] = data.get("id") or f"custom_{template_id}_{int(time.time())}"
+    success, tmpl, errors = template_engine.save_custom_template(data)
+    if not success:
+        return jsonify({"success": False, "errors": errors}), 400
+
+    return jsonify({"success": True, "template": tmpl.to_dict()}), 201
+
+
+@projects_bp.route('/api/templates/set-project-default', methods=['POST'])
+def set_project_default_template():
+    """Set the default template (Level 1) for a specific project."""
+    data = request.get_json(silent=True) or {}
+    project_id = data.get("project_id") or data.get("projectId")
+    template_id = data.get("template_id") or data.get("templateId")
+    custom_settings = data.get("custom_settings") or data.get("customSettings") or {}
+
+    if not project_id:
+        return jsonify({"success": False, "error": "project_id is required"}), 400
+    if not template_id:
+        return jsonify({"success": False, "error": "template_id is required"}), 400
+
+    proj = db.session.get(Project, int(project_id))
+    if not proj:
+        return jsonify({"success": False, "error": f"Project #{project_id} not found"}), 404
+
+    try:
+        current_state = json.loads(proj.editor_state) if proj.editor_state else {}
+    except Exception:
+        current_state = {}
+
+    current_state["default_template"] = {
+        "id": template_id,
+        "custom_settings": custom_settings,
+        "updated_at": time.time(),
+    }
+    # Sync captionStyle if provided
+    if "caption_config" in custom_settings:
+        current_state["captionStyle"] = custom_settings["caption_config"]
+    elif "captionStyle" in custom_settings:
+        current_state["captionStyle"] = custom_settings["captionStyle"]
+
+    proj.editor_state = json.dumps(current_state)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "project_id": proj.id,
+        "default_template": current_state["default_template"]
+    })
+
+
+@projects_bp.route('/api/templates/set-global-preferred', methods=['POST'])
+def set_global_preferred_template():
+    """Set user's global preferred template (Level 3) in settings."""
+    from core.settings_manager import settings_manager
+
+    data = request.get_json(silent=True) or {}
+    template_id = data.get("template_id") or data.get("templateId")
+    if not template_id:
+        return jsonify({"success": False, "error": "template_id is required"}), 400
+
+    settings_manager.update_section("general", {"preferredTemplate": template_id})
+    settings_manager.update_section("captions", {"preferredTemplate": template_id})
+
+    return jsonify({
+        "success": True,
+        "preferred_template": template_id,
+        "message": f"Global preferred template set to '{template_id}'"
+    })
+
+
+@projects_bp.route('/api/templates/global-preferred', methods=['GET'])
+def get_global_preferred_template():
+    """Get the active global preferred template (Level 3)."""
+    from core.settings_manager import settings_manager
+
+    pref = settings_manager.get("general.preferredTemplate") or settings_manager.get("captions.preferredTemplate") or "clean_creator"
+    return jsonify({
+        "success": True,
+        "preferred_template": pref
+    })
+
+
+@projects_bp.route('/api/projects/<int:project_id>/clips/<clip_name>/template-override', methods=['POST'])
+def set_clip_template_override(project_id, clip_name):
+    """Set an individual clip's template override (Level 2)."""
+    data = request.get_json(silent=True) or {}
+    template_id = data.get("template_id") or data.get("templateId")
+
+    proj = db.session.get(Project, project_id)
+    if not proj:
+        return jsonify({"success": False, "error": f"Project #{project_id} not found"}), 404
+
+    try:
+        current_state = json.loads(proj.editor_state) if proj.editor_state else {}
+    except Exception:
+        current_state = {}
+
+    clip_overrides = current_state.get("clip_templates", {})
+    if template_id:
+        clip_overrides[clip_name] = {
+            "template_id": template_id,
+            "custom_settings": data.get("custom_settings", {}),
+            "updated_at": time.time(),
+        }
+    else:
+        # Clear override
+        clip_overrides.pop(clip_name, None)
+
+    current_state["clip_templates"] = clip_overrides
+    proj.editor_state = json.dumps(current_state)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "project_id": project_id,
+        "clip_name": clip_name,
+        "clip_templates": clip_overrides
+    })
+
+
+@projects_bp.route('/api/projects/<int:project_id>/template', methods=['GET'])
+def get_project_template_settings(project_id):
+    """Retrieve active project default template (Level 1) and all clip overrides (Level 2)."""
+    proj = db.session.get(Project, project_id)
+    if not proj:
+        return jsonify({"success": False, "error": f"Project #{project_id} not found"}), 404
+
+    try:
+        current_state = json.loads(proj.editor_state) if proj.editor_state else {}
+    except Exception:
+        current_state = {}
+
+    return jsonify({
+        "success": True,
+        "project_id": project_id,
+        "default_template": current_state.get("default_template"),
+        "clip_templates": current_state.get("clip_templates", {}),
+    })
+
+
 @projects_bp.route('/api/templates/<template_id>/create-project', methods=['POST'])
 def create_project_from_template_root(template_id):
     """Instantiate a new project initialized with template configuration."""
@@ -313,7 +477,13 @@ def create_project_from_template_root(template_id):
         "audioTracks": template.get("data", {}).get("audioTracks", []),
         "audioClips": [],
         "captionStyle": template.get("data", {}).get("captionStyle", {}),
-        "aspectRatio": template.get("data", {}).get("aspectRatio", "9:16")
+        "aspectRatio": template.get("data", {}).get("aspectRatio", "9:16"),
+        "default_template": {
+            "id": template_id,
+            "name": template.get("name", ""),
+            "custom_settings": template.get("data", {}),
+            "updated_at": time.time(),
+        }
     })
 
     new_proj = Project(

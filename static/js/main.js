@@ -2270,6 +2270,25 @@ function escapeHtml(str) {
 }
 
 // ---------- Load Recent Projects ----------
+function formatProjectTime(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - d;
+        const diffMins = Math.round(diffMs / 60000);
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        const diffHours = Math.round(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        const diffDays = Math.round(diffHours / 24);
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch(e) {
+        return '';
+    }
+}
+
 async function loadProjects() {
     const grid = document.getElementById('projectsGrid');
     if (!grid) return;
@@ -2296,9 +2315,10 @@ async function loadProjects() {
                     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="14" x="3" y="5" rx="2"/><path d="M7 15h4M15 15h2M7 11h2M13 11h4"/></svg>` :
                     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></svg>`;
                 const metaText = isCaptionStudio ? (dur ? dur + ' • Captions' : 'Captions') : (dur ? dur + ' • ' : '') + `${clipCount} clip${clipCount === 1 ? '' : 's'}`;
+                const modTime = formatProjectTime(p.updated_at || p.created_at);
 
                 return `
-                <div class="compact-project-card" data-id="${p.id}" data-origin="${p.origin || ''}">
+                <div class="compact-project-card" data-id="${p.id}" data-name="${safeName}" data-origin="${p.origin || ''}">
                     <a href="${targetUrl}" class="compact-thumb-wrap" aria-label="Open project ${safeName} in ${studioLabel}">
                         <img class="compact-project-thumb" src="${thumb}" alt="${safeName}" loading="lazy" onerror="this.onerror=null; this.src='/static/img/default_thumb.png'">
                         <span class="compact-project-badge">${aspect}</span>
@@ -2309,13 +2329,18 @@ async function loadProjects() {
                         <div class="compact-project-meta">
                             <span class="compact-status-tag ${status.toLowerCase()}">${isCaptionStudio ? 'Captions' : status}</span>
                             <span>${metaText}</span>
+                            ${modTime ? `<span style="font-size:11px; color:var(--text-muted); margin-left:auto;">${modTime}</span>` : ''}
                         </div>
                         <div class="compact-card-actions">
                             <button type="button" class="btn btn-primary btn-sm btn-action-studio" data-id="${p.id}" data-url="${targetUrl}" data-origin="${p.origin || ''}" title="Open in ${studioLabel}" aria-label="Open in ${studioLabel}">
                                 ${studioIcon}
-                                <span>${studioLabel}</span>
+                                <span>Open</span>
                             </button>
-                            <button type="button" class="btn btn-ghost btn-action-delete" data-id="${p.id}" title="Delete project" aria-label="Delete project ${safeName}">
+                            <button type="button" class="btn btn-secondary btn-sm btn-action-rename" data-id="${p.id}" data-name="${safeName}" title="Rename project">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                <span>Rename</span>
+                            </button>
+                            <button type="button" class="btn btn-ghost btn-action-delete" data-id="${p.id}" data-name="${safeName}" title="Delete project" aria-label="Delete project ${safeName}">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             </button>
                         </div>
@@ -2333,21 +2358,13 @@ async function loadProjects() {
                 </div>`;
             const emptyBtn = document.getElementById('btnEmptyCreateProj');
             if (emptyBtn) {
-                emptyBtn.addEventListener('click', async () => {
-                    try {
-                        const res = await fetch('/api/projects', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name: 'Project ' + new Date().toLocaleDateString(), settings: { aspect: '9:16' } })
-                        });
-                        const resData = await res.json();
-                        if (resData.success && resData.project) {
-                            window.location.href = `/dashboard?project_id=${resData.project.id}`;
-                        } else {
-                            window.location.href = '/dashboard';
-                        }
-                    } catch (e) {
-                        window.location.href = '/dashboard';
+                emptyBtn.addEventListener('click', () => {
+                    const modal = document.getElementById('newProjectModal');
+                    if (modal) {
+                        modal.style.display = 'flex';
+                        setTimeout(() => { modal.style.opacity = '1'; modal.style.pointerEvents = 'auto'; }, 10);
+                        const input = document.getElementById('newProjectNameInput');
+                        if (input) input.focus();
                     }
                 });
             }
@@ -2773,16 +2790,38 @@ function initBatchAndRefreshListeners() {
                 e.preventDefault();
                 e.stopPropagation();
                 const id = delBtn.dataset.id;
-                if (confirm('Delete this project?')) {
-                    try {
-                        const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-                        if (res.ok) {
-                            if (window.UpClipToast) window.UpClipToast.show('Project deleted', 'success');
-                            loadProjects();
-                        }
-                    } catch (err) {
-                        console.error('Failed to delete project:', err);
-                    }
+                const name = delBtn.dataset.name || 'this project';
+                const modal = document.getElementById('deleteProjectModal');
+                const idInput = document.getElementById('deleteProjectIdInput');
+                const nameDisplay = document.getElementById('deleteProjectNameDisplay');
+                if (modal && idInput && nameDisplay) {
+                    idInput.value = id;
+                    nameDisplay.textContent = name;
+                    modal.style.display = 'flex';
+                    setTimeout(() => { modal.style.opacity = '1'; modal.style.pointerEvents = 'auto'; }, 10);
+                }
+                return;
+            }
+
+            const renBtn = e.target.closest('.btn-action-rename');
+            if (renBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = renBtn.dataset.id;
+                const name = renBtn.dataset.name || '';
+                const modal = document.getElementById('renameProjectModal');
+                const idInput = document.getElementById('renameProjectIdInput');
+                const nameInput = document.getElementById('renameProjectNameInput');
+                if (modal && idInput && nameInput) {
+                    idInput.value = id;
+                    nameInput.value = name;
+                    modal.style.display = 'flex';
+                    setTimeout(() => {
+                        modal.style.opacity = '1';
+                        modal.style.pointerEvents = 'auto';
+                        nameInput.focus();
+                        nameInput.select();
+                    }, 10);
                 }
                 return;
             }
@@ -2832,6 +2871,189 @@ function initBatchAndRefreshListeners() {
 // Home Page Action Cards & Dynamic Template Selector
 // ============================================
 function initHomePageActions() {
+    // Modal Helpers
+    const showModal = (modal) => {
+        if (!modal) return;
+        modal.style.display = 'flex';
+        setTimeout(() => { modal.style.opacity = '1'; modal.style.pointerEvents = 'auto'; }, 10);
+    };
+    const hideModal = (modal) => {
+        if (!modal) return;
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    };
+
+    // Close listeners on backdrop or close/cancel buttons
+    [
+        { modalId: 'newProjectModal', closeIds: ['btnCloseNewProjectModal', 'btnCancelNewProject'] },
+        { modalId: 'renameProjectModal', closeIds: ['btnCloseRenameModal', 'btnCancelRenameProject'] },
+        { modalId: 'deleteProjectModal', closeIds: ['btnCloseDeleteModal', 'btnCancelDeleteProject'] }
+    ].forEach(({ modalId, closeIds }) => {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        closeIds.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) btn.addEventListener('click', () => hideModal(modal));
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideModal(modal);
+        });
+    });
+
+    // Top New Project button & Home New Project triggers
+    const triggerNewProjModal = () => {
+        const modal = document.getElementById('newProjectModal');
+        const nameInput = document.getElementById('newProjectNameInput');
+        if (nameInput) nameInput.value = '';
+        showModal(modal);
+        if (nameInput) setTimeout(() => nameInput.focus(), 50);
+    };
+
+    const btnTopNewProj = document.getElementById('btnTopNewProject');
+    if (btnTopNewProj) btnTopNewProj.addEventListener('click', triggerNewProjModal);
+
+    const btnHomeNewProj = document.getElementById('btnHomeNewProject');
+    if (btnHomeNewProj) btnHomeNewProj.addEventListener('click', triggerNewProjModal);
+
+    // New Project Form Submit
+    const newProjForm = document.getElementById('newProjectForm');
+    if (newProjForm) {
+        newProjForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nameInput = document.getElementById('newProjectNameInput');
+            const aspectSelect = document.getElementById('newProjectAspectSelect');
+            const name = (nameInput ? nameInput.value : '').trim() || 'Untitled Project';
+            const aspect = aspectSelect ? aspectSelect.value : '9:16';
+            const submitBtn = document.getElementById('btnSubmitNewProject');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Creating...';
+            }
+            try {
+                const res = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, aspectRatio: aspect, settings: { aspect: aspect } })
+                });
+                const data = await res.json();
+                const projId = data.id || (data.project && data.project.id);
+                if (projId) {
+                    localStorage.setItem('upclip_active_project_id', projId);
+                    hideModal(document.getElementById('newProjectModal'));
+                    if (window.UpClipToast) window.UpClipToast.show('Project created!', 'success');
+                    window.location.href = `/dashboard?project_id=${projId}`;
+                } else {
+                    if (window.UpClipToast) window.UpClipToast.show('Failed to create project', 'error');
+                }
+            } catch (err) {
+                console.error('Project creation failed:', err);
+                if (window.UpClipToast) window.UpClipToast.show('Error creating project: ' + err.message, 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<svg data-lucide="plus" width="14" height="14"></svg><span>Create Project</span>';
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+        });
+    }
+
+    // Rename Project Form Submit
+    const renameProjForm = document.getElementById('renameProjectForm');
+    if (renameProjForm) {
+        renameProjForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('renameProjectIdInput')?.value;
+            const newName = (document.getElementById('renameProjectNameInput')?.value || '').trim();
+            if (!id || !newName) return;
+            const submitBtn = document.getElementById('btnSubmitRenameProject');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span> Saving...';
+            }
+            try {
+                const res = await fetch(`/api/projects/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName })
+                });
+                if (res.ok) {
+                    hideModal(document.getElementById('renameProjectModal'));
+                    if (window.UpClipToast) window.UpClipToast.show('Project renamed', 'success');
+                    loadProjects();
+                } else {
+                    if (window.UpClipToast) window.UpClipToast.show('Failed to rename project', 'error');
+                }
+            } catch (err) {
+                console.error('Rename failed:', err);
+                if (window.UpClipToast) window.UpClipToast.show('Rename failed: ' + err.message, 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<svg data-lucide="check" width="14" height="14"></svg><span>Save</span>';
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+        });
+    }
+
+    // Confirm Delete Project Button
+    const btnConfirmDelete = document.getElementById('btnConfirmDeleteProject');
+    if (btnConfirmDelete) {
+        btnConfirmDelete.addEventListener('click', async () => {
+            const id = document.getElementById('deleteProjectIdInput')?.value;
+            if (!id) return;
+            btnConfirmDelete.disabled = true;
+            btnConfirmDelete.innerHTML = '<span class="spinner"></span> Deleting...';
+            try {
+                const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    hideModal(document.getElementById('deleteProjectModal'));
+                    if (window.UpClipToast) window.UpClipToast.show('Project deleted', 'success');
+                    loadProjects();
+                } else {
+                    if (window.UpClipToast) window.UpClipToast.show('Failed to delete project', 'error');
+                }
+            } catch (err) {
+                console.error('Delete failed:', err);
+                if (window.UpClipToast) window.UpClipToast.show('Delete failed: ' + err.message, 'error');
+            } finally {
+                btnConfirmDelete.disabled = false;
+                btnConfirmDelete.innerHTML = '<svg data-lucide="trash-2" width="14" height="14"></svg><span>Delete</span>';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        });
+    }
+
+    // Live Activity Metrics
+    (async function fetchLiveActivityMetrics() {
+        try {
+            const [diagRes, tplRes] = await Promise.all([
+                fetch('/api/editor/diagnostics').then(r => r.json()).catch(() => null),
+                fetch('/api/templates').then(r => r.json()).catch(() => null)
+            ]);
+            if (diagRes && diagRes.diagnostics) {
+                const vEl = document.getElementById('metricVideoStatus');
+                if (vEl) {
+                    vEl.textContent = 'FFmpeg Acceleration';
+                }
+                const sEl = document.getElementById('metricSpeechStatus');
+                if (sEl) {
+                    sEl.textContent = 'Whisper AI Ready';
+                }
+            }
+            if (tplRes && Array.isArray(tplRes.templates)) {
+                const cEl = document.getElementById('metricCaptionCount');
+                if (cEl) {
+                    cEl.textContent = `${tplRes.templates.length} Active Styles`;
+                }
+            }
+        } catch (e) {
+            console.warn('Live activity metrics fetch error:', e);
+        }
+    })();
+
     // 1. Diagnostics button
     const btnDiag = document.getElementById('btnOpenFfmpegDiag');
     if (btnDiag) {
@@ -2839,7 +3061,7 @@ function initHomePageActions() {
             btnDiag.disabled = true;
             btnDiag.innerHTML = '<span class="spinner"></span> Checking...';
             try {
-                const res = await fetch('/editor/api/editor/diagnostics');
+                const res = await fetch('/api/editor/diagnostics');
                 const data = await res.json();
                 if (data.success && data.diagnostics) {
                     const d = data.diagnostics;
@@ -2887,31 +3109,7 @@ function initHomePageActions() {
         });
     }
 
-    // 3. New Project button
-    const btnNewProj = document.getElementById('btnHomeNewProject');
-    if (btnNewProj) {
-        btnNewProj.addEventListener('click', async () => {
-            btnNewProj.disabled = true;
-            btnNewProj.innerHTML = '<span class="spinner"></span> Creating...';
-            try {
-                const res = await fetch('/api/projects', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'Project ' + new Date().toLocaleDateString(), settings: { aspect: '9:16' } })
-                });
-                const data = await res.json();
-                if (data.success && data.project) {
-                    window.location.href = `/caption-studio?project_id=${data.project.id}`;
-                } else {
-                    window.location.href = '/caption-studio';
-                }
-            } catch (e) {
-                window.location.href = '/caption-studio';
-            }
-        });
-    }
-
-    // 4. Refresh projects button
+    // 3. Refresh projects button
     const btnRefreshProj = document.getElementById('btnRefreshProjects');
     if (btnRefreshProj) {
         btnRefreshProj.addEventListener('click', () => {
@@ -2930,7 +3128,7 @@ async function initHomeTemplateSelector() {
     const grid = document.getElementById('homeTemplateGrid');
     if (!grid) return;
 
-    grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-muted);"><span class="spinner" style="margin-right: 8px;"></span> Loading templates…</div>';
+    grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 32px; color: var(--text-muted);"><span class="spinner" style="margin-right: 8px;"></span> Loading visual templates…</div>';
 
     // Tabs listener
     const tabs = document.getElementById('templateCategoryTabs');
@@ -2940,7 +3138,7 @@ async function initHomeTemplateSelector() {
             if (!btn) return;
             tabs.querySelectorAll('.template-tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentTemplateCategory = btn.dataset.cat || 'all';
+            currentTemplateCategory = (btn.dataset.cat || 'all').toLowerCase();
             renderHomeTemplates();
         });
     }
@@ -2954,23 +3152,37 @@ async function initHomeTemplateSelector() {
         });
     }
 
-    // Use selected template button
+    // Use selected template top button
     const btnUse = document.getElementById('btnUseSelectedTemplate');
     if (btnUse) {
         btnUse.addEventListener('click', () => {
             if (!selectedTemplateId) return;
             const t = homeTemplates.find(x => x.id === selectedTemplateId);
             if (t) {
-                openTemplateModal(t);
+                openTemplateModal(t, 'preview');
             }
         });
     }
 
     try {
-        const res = await fetch('/api/templates');
-        const data = await res.json();
-        if (data.success && Array.isArray(data.templates)) {
-            homeTemplates = data.templates;
+        // Fetch templates and active global preference in parallel
+        const [tplRes, prefRes] = await Promise.all([
+            fetch('/api/templates').then(r => r.json()).catch(() => ({ success: false })),
+            fetch('/api/templates/global-preferred').then(r => r.json()).catch(() => ({ success: false }))
+        ]);
+
+        if (prefRes.success && prefRes.preferred_template) {
+            window.activeGlobalPreferredTemplate = prefRes.preferred_template;
+            if (!selectedTemplateId) {
+                selectedTemplateId = prefRes.preferred_template;
+            }
+        }
+
+        if (tplRes.success && Array.isArray(tplRes.templates)) {
+            homeTemplates = tplRes.templates;
+            if (!selectedTemplateId && homeTemplates.length > 0) {
+                selectedTemplateId = homeTemplates[0].id;
+            }
             renderHomeTemplates();
         } else {
             grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px;">No templates available.</div>';
@@ -2981,117 +3193,16 @@ async function initHomeTemplateSelector() {
     }
 }
 
-function openTemplateModal(t) {
-    if (!t) return;
-    selectedTemplateId = t.id;
-    const modal = document.getElementById('templateActionModal');
-    if (!modal) {
-        // Fallback: create project and go to editor directly
-        fetch(`/api/templates/${t.id}/create-project`, { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.project) {
-                    window.location.href = `/editor?project_id=${data.project.id}`;
-                }
-            });
-        return;
-    }
-
-    const iconEl = document.getElementById('modalTemplateIcon');
-    const titleEl = document.getElementById('modalTemplateTitle');
-    const catEl = document.getElementById('modalTemplateCategory');
-    const aspectEl = document.getElementById('modalTemplateAspect');
-    const descEl = document.getElementById('modalTemplateDesc');
-    const captionEl = document.getElementById('modalTemplateCaption');
-    const graphicsEl = document.getElementById('modalTemplateGraphics');
-    const audioEl = document.getElementById('modalTemplateAudio');
-    const canvasEl = document.getElementById('modalTemplateCanvas');
-    const btnOpenEditor = document.getElementById('btnTemplateOpenEditor');
-    const btnOpenClipStudio = document.getElementById('btnTemplateOpenClipStudio');
-    const btnClose = document.getElementById('btnTemplateModalClose');
-
-    const aspect = t.aspect || t.aspectRatio || (t.data && t.data.aspectRatio) || '9:16';
-    const icon = t.thumbnailIcon || (t.category === 'Podcast' ? '🎙' : (t.category === 'Shorts' ? '🔥' : '🎬'));
-
-    if (iconEl) iconEl.textContent = icon;
-    if (titleEl) titleEl.textContent = t.name;
-    if (catEl) catEl.textContent = t.category || 'Preset';
-    if (aspectEl) aspectEl.textContent = aspect;
-    if (descEl) descEl.textContent = t.description || 'Pre-configured timeline preset with synchronized audio and graphics.';
-
-    const captionStyle = t.data && t.data.captionStyle;
-    if (captionEl) {
-        captionEl.textContent = captionStyle ? `${captionStyle.fontFamily || 'Bold'}, ${captionStyle.animation || 'Pop'} animation` : 'Standard Subtitles';
-    }
-
-    const graphics = t.data && t.data.graphics;
-    if (graphicsEl) {
-        graphicsEl.textContent = (graphics && graphics.length) ? `${graphics.length} graphic elements included` : 'Default graphics preset';
-    }
-
-    const audioTracks = t.data && t.data.audioTracks;
-    if (audioEl) {
-        audioEl.textContent = (audioTracks && audioTracks.length) ? `${audioTracks.length} tracks with smart ducking` : 'Stereo Audio Ducking';
-    }
-
-    if (canvasEl) {
-        canvasEl.textContent = `${aspect} ${aspect === '9:16' ? '(Shorts / Reels / TikTok)' : (aspect === '16:9' ? '(YouTube Landscape)' : '(Square)')}`;
-    }
-
-    // Modal open animation
-    modal.style.display = 'flex';
-    requestAnimationFrame(() => {
-        modal.style.opacity = '1';
-        modal.style.pointerEvents = 'auto';
-    });
-
-    const closeModal = () => {
-        modal.style.opacity = '0';
-        modal.style.pointerEvents = 'none';
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 200);
-    };
-
-    if (btnClose) btnClose.onclick = closeModal;
-    modal.onclick = (e) => {
-        if (e.target === modal) closeModal();
-    };
-
-    if (btnOpenEditor) {
-        btnOpenEditor.disabled = false;
-        btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="16" height="16"></svg><span>Open in Timeline Editor</span>';
-        btnOpenEditor.onclick = async () => {
-            btnOpenEditor.disabled = true;
-            btnOpenEditor.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span> Creating Project...';
-            try {
-                const res = await fetch(`/api/templates/${t.id}/create-project`, { method: 'POST' });
-                const data = await res.json();
-                if (data.success && data.project) {
-                    if (window.UpClipToast) window.UpClipToast.show('Project created from template!', 'success');
-                    window.location.href = `/editor?project_id=${data.project.id}`;
-                } else {
-                    alert('Failed to create project: ' + (data.error || 'Unknown error'));
-                    btnOpenEditor.disabled = false;
-                    btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="16" height="16"></svg><span>Open in Timeline Editor</span>';
-                    if (window.lucide) window.lucide.createIcons();
-                }
-            } catch (err) {
-                alert('Error creating project: ' + err.message);
-                btnOpenEditor.disabled = false;
-                btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="16" height="16"></svg><span>Open in Timeline Editor</span>';
-                if (window.lucide) window.lucide.createIcons();
-            }
-        };
-    }
-
-    if (btnOpenClipStudio) {
-        btnOpenClipStudio.onclick = () => {
-            window.location.href = `/dashboard?template_id=${encodeURIComponent(t.id)}&aspect=${encodeURIComponent(aspect)}`;
-        };
-    }
-
-    if (window.lucide) window.lucide.createIcons();
+function formatAnimationLabel(anim) {
+    if (!anim) return 'Karaoke Highlight';
+    const clean = anim.toLowerCase().replace(/[-_]/g, ' ');
+    if (clean.includes('pop')) return 'Pop Scale Overshoot';
+    if (clean.includes('bounce')) return 'Elastic Bounce';
+    if (clean.includes('fade')) return 'Smooth Line Fade';
+    if (clean.includes('slide')) return 'Slide Reveal';
+    if (clean.includes('typewriter')) return 'Typewriter Effect';
+    if (clean.includes('line')) return 'Line-by-Line Reveal';
+    return 'Word-by-Word Karaoke';
 }
 
 function renderHomeTemplates() {
@@ -3099,7 +3210,7 @@ function renderHomeTemplates() {
     if (!grid) return;
 
     let filtered = homeTemplates;
-    if (currentTemplateCategory !== 'all') {
+    if (currentTemplateCategory && currentTemplateCategory !== 'all') {
         filtered = filtered.filter(t => (t.category || '').toLowerCase() === currentTemplateCategory.toLowerCase());
     }
     if (currentTemplateQuery) {
@@ -3107,68 +3218,661 @@ function renderHomeTemplates() {
             (t.name || '').toLowerCase().includes(currentTemplateQuery) ||
             (t.description || '').toLowerCase().includes(currentTemplateQuery) ||
             (t.category || '').toLowerCase().includes(currentTemplateQuery) ||
-            (t.aspect || '').toLowerCase().includes(currentTemplateQuery)
+            (t.aspect || t.aspect_ratio || '').toLowerCase().includes(currentTemplateQuery)
         );
     }
 
     if (!filtered.length) {
-        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 24px; border: 1px dashed var(--border); border-radius: var(--radius-sm);">No templates match your search criteria.</div>';
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 32px; border: 1px dashed var(--border); border-radius: var(--radius-sm);">No templates match your search criteria.</div>';
         return;
     }
 
     grid.innerHTML = filtered.map(t => {
         const isSelected = selectedTemplateId === t.id;
-        const aspect = t.aspect || (t.data && t.data.aspectRatio) || '9:16';
-        const icon = t.thumbnailIcon || (t.category === 'Podcast' ? '🎙' : (t.category === 'Shorts' ? '🔥' : '🎬'));
+        const thumbUrl = t.thumbnail_url || `/static/img/templates/${t.id}.svg`;
+        const safeName = escapeHtml(t.name);
+
         return `
-        <div class="template-card ${isSelected ? 'selected' : ''}" data-id="${t.id}" tabindex="0" role="button" aria-label="Use template ${t.name}">
-            <div class="template-card-preview">
-                <div class="template-preview-badge">${aspect}</div>
-                <div style="font-size: var(--text-2xl, 28px); opacity: 0.95;">${icon}</div>
-                ${isSelected ? '<div class="template-selected-badge">✓ Selected</div>' : ''}
+        <div class="template-card ${isSelected ? 'selected' : ''}" data-id="${t.id}" tabindex="0" role="button" aria-label="Template ${safeName}">
+            <!-- Portrait Preview Image -->
+            <div class="template-card-preview" data-id="${t.id}">
+                ${isSelected ? '<div class="template-selected-badge" title="Active Default"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>' : ''}
+                <img src="${thumbUrl}" alt="${safeName}" onerror="this.onerror=null; this.src='/static/img/default_thumb.png';">
             </div>
+
+            <!-- Card Metadata -->
             <div class="template-card-body">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
-                    <h3 class="template-card-title">${t.name}</h3>
-                    <span class="template-card-category">${t.category || 'Preset'}</span>
-                </div>
-                <p class="template-card-desc">${t.description || ''}</p>
+                <h3 class="template-card-title" title="${safeName}">${safeName}</h3>
+
+                <!-- Footer Buttons: Preview & Select -->
                 <div class="template-card-footer">
-                    <button type="button" class="btn btn-primary btn-sm btn-use-template w-full" data-id="${t.id}" aria-label="Use template ${t.name}">
-                        <span>Use Template</span>
-                        <svg data-lucide="arrow-right" width="12" height="12" aria-hidden="true"></svg>
+                    <button type="button" class="btn btn-secondary btn-sm btn-preview-template" data-id="${t.id}" aria-label="Preview ${safeName}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span>Preview</span>
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm btn-select-template" data-id="${t.id}" aria-label="Select ${safeName}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>${isSelected ? 'Selected' : 'Select'}</span>
                     </button>
                 </div>
             </div>
         </div>`;
     }).join('');
 
+    // Attach click events
     grid.querySelectorAll('.template-card').forEach(card => {
-        const handleCardAction = (e) => {
-            const id = card.dataset.id;
-            selectedTemplateId = id;
-            const t = homeTemplates.find(x => x.id === id);
-            const actionWrap = document.getElementById('templateActionWrap');
-            const textSpan = document.getElementById('btnUseSelectedTemplateText');
-            if (actionWrap) actionWrap.style.display = 'block';
-            if (textSpan && t) textSpan.textContent = `Use "${t.name}" Template`;
+        const id = card.dataset.id;
+        const t = homeTemplates.find(x => x.id === id);
 
-            grid.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
+        // Click on preview image opens player modal
+        const previewEl = card.querySelector('.template-card-preview');
+        if (previewEl) {
+            previewEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (t) openTemplateModal(t, 'preview');
+            });
+        }
 
-            if (t) openTemplateModal(t);
-        };
+        // Preview button
+        const previewBtn = card.querySelector('.btn-preview-template');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (t) openTemplateModal(t, 'preview');
+            });
+        }
 
-        card.addEventListener('click', handleCardAction);
+        // Select button
+        const selectBtn = card.querySelector('.btn-select-template');
+        if (selectBtn) {
+            selectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectTemplateAction(id);
+            });
+        }
+
+        // Entire card click
+        card.addEventListener('click', () => {
+            selectTemplateAction(id);
+        });
+
         card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                handleCardAction(e);
+                selectTemplateAction(id);
             }
         });
     });
 
     if (window.lucide) window.lucide.createIcons();
+}
+
+async function selectTemplateAction(id) {
+    selectedTemplateId = id;
+    const t = homeTemplates.find(x => x.id === id);
+    const actionWrap = document.getElementById('templateActionWrap');
+    const textSpan = document.getElementById('btnUseSelectedTemplateText');
+    if (actionWrap) actionWrap.style.display = 'block';
+    if (textSpan && t) textSpan.textContent = `Use "${t.name}" Template`;
+
+    const grid = document.getElementById('homeTemplateGrid');
+    if (grid) {
+        grid.querySelectorAll('.template-card').forEach(c => {
+            const isMatch = c.dataset.id === id;
+            if (isMatch) {
+                c.classList.add('selected');
+                let badge = c.querySelector('.template-card-preview .template-selected-badge');
+                if (!badge) {
+                    const prev = c.querySelector('.template-card-preview');
+                    if (prev) {
+                        const div = document.createElement('div');
+                        div.className = 'template-selected-badge';
+                        div.title = 'Active Default';
+                        div.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+                        prev.prepend(div);
+                    }
+                }
+                const selBtn = c.querySelector('.btn-select-template span');
+                if (selBtn) selBtn.textContent = 'Selected';
+            } else {
+                c.classList.remove('selected');
+                const badge = c.querySelector('.template-card-preview .template-selected-badge');
+                if (badge) badge.remove();
+                const selBtn = c.querySelector('.btn-select-template span');
+                if (selBtn) selBtn.textContent = 'Select';
+            }
+        });
+    }
+
+    try {
+        await fetch('/api/templates/set-global-preferred', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ template_id: id })
+        });
+        const activeProjId = localStorage.getItem('upclip_active_project_id');
+        if (activeProjId) {
+            await fetch('/api/templates/set-project-default', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_id: parseInt(activeProjId), template_id: id })
+            }).catch(() => null);
+        }
+    } catch (e) {
+        console.warn('Failed to save preferred template to backend:', e);
+    }
+
+    if (window.UpClipToast) {
+        window.UpClipToast.show(`Template "${t ? t.name : id}" selected!`, 'info');
+    }
+}
+
+function openTemplateModal(t, initialTab = 'preview') {
+    if (!t) return;
+    selectedTemplateId = t.id;
+    const modal = document.getElementById('templateActionModal');
+    if (!modal) return;
+
+    // Header info
+    const titleEl = document.getElementById('modalTemplateTitle');
+    const catEl = document.getElementById('modalTemplateCategory');
+    const aspectEl = document.getElementById('modalTemplateAspect');
+    const descEl = document.getElementById('modalTemplateDesc');
+    const iconImg = document.getElementById('modalTemplateIconImg');
+    const statusText = document.getElementById('modalActiveStatusText');
+
+    const aspect = t.aspect_ratio || t.aspect || (t.data && t.data.aspectRatio) || '9:16';
+    const thumbUrl = t.thumbnail_url || `/static/img/templates/${t.id}.svg`;
+    const previewVideoUrl = t.preview_video_url || `/static/previews/${t.id}_preview.mp4`;
+
+    if (titleEl) titleEl.textContent = t.name;
+    if (catEl) catEl.textContent = t.category || 'Preset';
+    if (aspectEl) aspectEl.textContent = `${aspect} Vertical`;
+    if (descEl) descEl.textContent = t.description || 'Pre-configured timeline layout and kinetic caption preset.';
+    if (iconImg) iconImg.src = thumbUrl;
+    if (statusText) statusText.textContent = `Ready • Active template: ${t.name}`;
+
+    // Specs
+    const specLayout = document.getElementById('specLayoutMode');
+    const specTypo = document.getElementById('specTypography');
+    const specAnim = document.getElementById('specAnimation');
+    const specGrading = document.getElementById('specGrading');
+    const specRec = document.getElementById('specRecommendedFor');
+
+    const vLayout = t.video_layout || {};
+    const capConfig = t.caption_config || (t.data && t.data.captionStyle) || {};
+    const vfx = t.visual_effects || {};
+
+    if (specLayout) {
+        const mode = vLayout.mode || 'centered_framed';
+        specLayout.textContent = mode === 'dualcast_split' ? `DualCast Split Screen (${t.dualcast_layout || 'Host Top'})` :
+                                (mode === 'framed_black' ? 'Pitch Black Luxury Frame' :
+                                (mode === 'speaker_crop' || mode === 'cinematic_crop' ? 'Full-Bleed Speaker Crop' : 'Centered Rounded Inset'));
+    }
+    if (specTypo) {
+        specTypo.textContent = `${capConfig.font_family || capConfig.fontFamily || 'Inter'} Bold, ${capConfig.font_size || capConfig.fontSize || 36}px`;
+    }
+    if (specAnim) {
+        specAnim.textContent = formatAnimationLabel(t.caption_animation || capConfig.animation);
+    }
+    if (specGrading) {
+        const grade = vfx.color_grading || 'clean_vivid';
+        specGrading.textContent = grade === 'warm_gold' ? 'Warm 24K Golden Film' :
+                                 (grade === 'cinematic_contrast' ? 'High-Retention Punch' :
+                                 (grade === 'dark_editorial' ? 'Moody Editorial' : 'Clean Vivid Modern'));
+    }
+    if (specRec) {
+        specRec.textContent = t.category === 'Podcast' ? 'Long-form interviews, debates, high-retention conversational reels, and podcast highlight shorts.' :
+                             (t.category === 'Cinematic' ? 'Cinematic storytelling, documentary shorts, luxury personal branding, and high-production value video essays.' :
+                             'Educational clips, personal branding, talking-head videos, and Hindi/Hinglish motivational content.');
+    }
+
+    // Video Player Elements
+    const videoEl = document.getElementById('templatePreviewVideo');
+    const staticImgEl = document.getElementById('templateStaticSnapshot');
+    const btnPlayPause = document.getElementById('btnPreviewPlayPause');
+    const lblPlay = document.getElementById('lblPreviewPlay');
+    const scrubber = document.getElementById('previewScrubber');
+    const timeDisplay = document.getElementById('previewTimeDisplay');
+    const btnReplay = document.getElementById('btnPreviewReplay');
+    const btnMute = document.getElementById('btnPreviewMute');
+    const btnFullscreen = document.getElementById('btnPreviewFullscreen');
+    const btnToggleAnim = document.getElementById('btnToggleAnimMode');
+    const btnToggleStatic = document.getElementById('btnToggleStaticMode');
+
+    if (videoEl) {
+        videoEl.src = previewVideoUrl;
+        videoEl.load();
+        videoEl.currentTime = 0;
+        videoEl.style.display = 'block';
+        if (staticImgEl) {
+            staticImgEl.src = thumbUrl;
+            staticImgEl.style.display = 'none';
+        }
+        if (btnToggleAnim) btnToggleAnim.classList.add('active');
+        if (btnToggleStatic) btnToggleStatic.classList.remove('active');
+
+        // Reset play button
+        if (lblPlay) lblPlay.textContent = 'Play';
+
+        videoEl.onplay = () => { if (lblPlay) lblPlay.textContent = 'Pause'; };
+        videoEl.onpause = () => { if (lblPlay) lblPlay.textContent = 'Play'; };
+        videoEl.ontimeupdate = () => {
+            if (videoEl.duration && scrubber) {
+                scrubber.value = (videoEl.currentTime / videoEl.duration) * 100;
+                if (timeDisplay) timeDisplay.textContent = `${videoEl.currentTime.toFixed(1)}s`;
+            }
+        };
+
+        if (btnPlayPause) {
+            btnPlayPause.onclick = () => {
+                if (videoEl.paused) videoEl.play().catch(() => {});
+                else videoEl.pause();
+            };
+        }
+
+        if (btnReplay) {
+            btnReplay.onclick = () => {
+                videoEl.currentTime = 0;
+                videoEl.play().catch(() => {});
+            };
+        }
+
+        if (btnMute) {
+            btnMute.onclick = () => {
+                videoEl.muted = !videoEl.muted;
+                btnMute.title = videoEl.muted ? 'Unmute' : 'Mute';
+            };
+        }
+
+        if (scrubber) {
+            scrubber.oninput = () => {
+                if (videoEl.duration) {
+                    videoEl.currentTime = (scrubber.value / 100) * videoEl.duration;
+                }
+            };
+        }
+
+        if (btnFullscreen) {
+            btnFullscreen.onclick = () => {
+                const wrapper = document.getElementById('videoPreviewWrapper');
+                if (wrapper) {
+                    if (document.fullscreenElement) document.exitFullscreen();
+                    else wrapper.requestFullscreen().catch(() => {});
+                }
+            };
+        }
+    }
+
+    if (btnToggleAnim && btnToggleStatic) {
+        btnToggleAnim.onclick = () => {
+            btnToggleAnim.classList.add('active');
+            btnToggleStatic.classList.remove('active');
+            if (videoEl) videoEl.style.display = 'block';
+            if (staticImgEl) staticImgEl.style.display = 'none';
+        };
+        btnToggleStatic.onclick = () => {
+            btnToggleStatic.classList.add('active');
+            btnToggleAnim.classList.remove('active');
+            if (videoEl) {
+                videoEl.pause();
+                videoEl.style.display = 'none';
+            }
+            if (staticImgEl) staticImgEl.style.display = 'block';
+        };
+    }
+
+    // Tab switching (Preview vs Customize)
+    const tabBtnPreview = document.getElementById('tabBtnPreview');
+    const tabBtnCustomize = document.getElementById('tabBtnCustomize');
+    const viewPreview = document.getElementById('modalViewPreview');
+    const viewCustomize = document.getElementById('modalViewCustomize');
+
+    const switchTab = (tab) => {
+        if (tab === 'customize') {
+            tabBtnCustomize.style.background = 'var(--primary)';
+            tabBtnCustomize.style.color = '#000';
+            tabBtnCustomize.style.fontWeight = '700';
+            tabBtnPreview.style.background = 'transparent';
+            tabBtnPreview.style.color = 'var(--text-secondary)';
+            tabBtnPreview.style.fontWeight = '600';
+            if (viewPreview) viewPreview.style.display = 'none';
+            if (viewCustomize) viewCustomize.style.display = 'block';
+            if (videoEl) videoEl.pause();
+        } else {
+            tabBtnPreview.style.background = 'var(--primary)';
+            tabBtnPreview.style.color = '#000';
+            tabBtnPreview.style.fontWeight = '700';
+            tabBtnCustomize.style.background = 'transparent';
+            tabBtnCustomize.style.color = 'var(--text-secondary)';
+            tabBtnCustomize.style.fontWeight = '600';
+            if (viewPreview) viewPreview.style.display = 'block';
+            if (viewCustomize) viewCustomize.style.display = 'none';
+        }
+    };
+
+    if (tabBtnPreview) tabBtnPreview.onclick = () => switchTab('preview');
+    if (tabBtnCustomize) tabBtnCustomize.onclick = () => switchTab('customize');
+    const btnSwitchCustom = document.getElementById('btnModalSwitchToCustomize');
+    if (btnSwitchCustom) btnSwitchCustom.onclick = () => switchTab('customize');
+
+    switchTab(initialTab);
+
+    // Pre-populate Customization Form Fields
+    populateCustomizationForm(t);
+
+    // Wire Modal Actions
+    wireModalActionButtons(t);
+
+    // Show modal
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
+    });
+
+    const closeModal = () => {
+        if (videoEl) videoEl.pause();
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    };
+
+    const btnClose = document.getElementById('btnTemplateModalClose');
+    if (btnClose) btnClose.onclick = closeModal;
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function populateCustomizationForm(t) {
+    const vLayout = t.video_layout || {};
+    const capConfig = t.caption_config || (t.data && t.data.captionStyle) || {};
+    const vfx = t.visual_effects || {};
+    const brand = t.branding || (t.data && t.data.branding) || {};
+
+    // Video
+    const selAspect = document.getElementById('custVideoAspect');
+    const selMode = document.getElementById('custVideoMode');
+    const selDualcast = document.getElementById('custDualcastLayout');
+    const rngRadius = document.getElementById('custBorderRadius');
+    const lblRadius = document.getElementById('lblCustRadius');
+
+    if (selAspect) selAspect.value = t.aspect_ratio || t.aspect || '9:16';
+    if (selMode) selMode.value = vLayout.mode || 'centered_framed';
+    if (selDualcast) selDualcast.value = t.dualcast_layout || 'HOST_TOP_GUEST_BOTTOM';
+    if (rngRadius) {
+        rngRadius.value = vLayout.frame_radius !== undefined ? vLayout.frame_radius : 16;
+        if (lblRadius) lblRadius.textContent = rngRadius.value;
+        rngRadius.oninput = () => { if (lblRadius) lblRadius.textContent = rngRadius.value; };
+    }
+
+    // DualCast wrap toggle
+    const dualcastWrap = document.getElementById('custDualcastLayoutWrap');
+    if (dualcastWrap && selMode) {
+        dualcastWrap.style.display = selMode.value === 'dualcast_split' ? 'block' : 'none';
+        selMode.onchange = () => {
+            dualcastWrap.style.display = selMode.value === 'dualcast_split' ? 'block' : 'none';
+        };
+    }
+
+    // Captions
+    const selFont = document.getElementById('custFontFamily');
+    const rngFontSize = document.getElementById('custFontSize');
+    const lblFontSize = document.getElementById('lblCustFontSize');
+    const colText = document.getElementById('custTextColor');
+    const txtText = document.getElementById('custTextColorText');
+    const colHigh = document.getElementById('custHighlightColor');
+    const txtHigh = document.getElementById('custHighlightColorText');
+    const rngPosY = document.getElementById('custPosY');
+    const lblPosY = document.getElementById('lblCustPosY');
+    const selMaxWords = document.getElementById('custMaxWords');
+    const selAnim = document.getElementById('custAnimation');
+    const chkUpper = document.getElementById('custUppercase');
+
+    if (selFont) selFont.value = capConfig.font_family || capConfig.fontFamily || 'Inter';
+    if (rngFontSize) {
+        rngFontSize.value = capConfig.font_size || capConfig.fontSize || 36;
+        if (lblFontSize) lblFontSize.textContent = rngFontSize.value;
+        rngFontSize.oninput = () => { if (lblFontSize) lblFontSize.textContent = rngFontSize.value; };
+    }
+    if (colText && txtText) {
+        const hex = capConfig.text_color || capConfig.textColor || '#FFFFFF';
+        colText.value = hex.startsWith('#') && hex.length === 7 ? hex : '#FFFFFF';
+        txtText.value = hex;
+        colText.oninput = () => { txtText.value = colText.value; };
+        txtText.oninput = () => { colText.value = txtText.value; };
+    }
+    if (colHigh && txtHigh) {
+        const hex = capConfig.active_word_color || capConfig.activeWordColor || '#38BDF8';
+        colHigh.value = hex.startsWith('#') && hex.length === 7 ? hex : '#38BDF8';
+        txtHigh.value = hex;
+        colHigh.oninput = () => { txtHigh.value = colHigh.value; };
+        txtHigh.oninput = () => { colHigh.value = txtHigh.value; };
+    }
+    if (rngPosY) {
+        const py = capConfig.position_y !== undefined ? Math.round(capConfig.position_y * 100) : 78;
+        rngPosY.value = py;
+        if (lblPosY) lblPosY.textContent = py;
+        rngPosY.oninput = () => { if (lblPosY) lblPosY.textContent = rngPosY.value; };
+    }
+    if (selMaxWords) {
+        selMaxWords.value = String(capConfig.max_words_per_line || 3);
+    }
+    if (selAnim) {
+        selAnim.value = t.caption_animation || capConfig.animation || 'karaoke_highlight';
+    }
+    if (chkUpper) {
+        chkUpper.checked = Boolean(capConfig.uppercase);
+    }
+
+    // VFX
+    const selGrading = document.getElementById('custGrading');
+    const chkFilmGrain = document.getElementById('custFilmGrain');
+    const chkSubtleZoom = document.getElementById('custSubtleZoom');
+
+    if (selGrading) selGrading.value = vfx.color_grading || 'clean_vivid';
+    if (chkFilmGrain) chkFilmGrain.checked = Boolean(vfx.film_grain);
+    if (chkSubtleZoom) chkSubtleZoom.checked = Boolean(vfx.subtle_zoom);
+
+    // Branding
+    const txtWatermark = document.getElementById('custWatermarkText');
+    const txtHost = document.getElementById('custHostLabel');
+    const txtGuest = document.getElementById('custGuestLabel');
+
+    if (txtWatermark) txtWatermark.value = brand.watermark_text || '';
+    if (txtHost) txtHost.value = (brand.speaker_labels && brand.speaker_labels.host) || 'HOST';
+    if (txtGuest) txtGuest.value = (brand.speaker_labels && brand.speaker_labels.guest) || 'GUEST';
+}
+
+function gatherCustomizationPayload(t) {
+    return {
+        id: t.id,
+        name: t.name,
+        category: t.category,
+        aspect_ratio: document.getElementById('custVideoAspect')?.value || '9:16',
+        dualcast_layout: document.getElementById('custDualcastLayout')?.value || 'HOST_TOP_GUEST_BOTTOM',
+        caption_animation: document.getElementById('custAnimation')?.value || 'karaoke_highlight',
+        video_layout: {
+            mode: document.getElementById('custVideoMode')?.value || 'centered_framed',
+            frame_radius: parseInt(document.getElementById('custBorderRadius')?.value || '16', 10),
+            scale: 0.92,
+            blur_background: true
+        },
+        caption_config: {
+            font_family: document.getElementById('custFontFamily')?.value || 'Inter',
+            font_size: parseInt(document.getElementById('custFontSize')?.value || '36', 10),
+            text_color: document.getElementById('custTextColorText')?.value || '#FFFFFF',
+            active_word_color: document.getElementById('custHighlightColorText')?.value || '#38BDF8',
+            position_y: (parseInt(document.getElementById('custPosY')?.value || '78', 10)) / 100,
+            max_words_per_line: parseInt(document.getElementById('custMaxWords')?.value || '3', 10),
+            uppercase: document.getElementById('custUppercase')?.checked || false,
+            animation: document.getElementById('custAnimation')?.value || 'karaoke_highlight'
+        },
+        visual_effects: {
+            color_grading: document.getElementById('custGrading')?.value || 'none',
+            film_grain: document.getElementById('custFilmGrain')?.checked || false,
+            subtle_zoom: document.getElementById('custSubtleZoom')?.checked || false
+        },
+        branding: {
+            watermark_enabled: Boolean(document.getElementById('custWatermarkText')?.value),
+            watermark_text: document.getElementById('custWatermarkText')?.value || '',
+            speaker_labels: {
+                host: document.getElementById('custHostLabel')?.value || 'HOST',
+                guest: document.getElementById('custGuestLabel')?.value || 'GUEST'
+            }
+        }
+    };
+}
+
+function wireModalActionButtons(t) {
+    const btnSetDefault = document.getElementById('btnModalSetProjectDefault');
+    const btnSetGlobal = document.getElementById('btnModalSetGlobalPref');
+    const btnSaveCustom = document.getElementById('btnSaveAsCustomTemplate');
+    const btnApplyCustom = document.getElementById('btnApplyCustomToProject');
+    const btnOpenClip = document.getElementById('btnTemplateOpenClipStudio');
+    const btnOpenEditor = document.getElementById('btnTemplateOpenEditor');
+
+    // Level 1: Project Default
+    if (btnSetDefault) {
+        btnSetDefault.onclick = async () => {
+            btnSetDefault.disabled = true;
+            btnSetDefault.innerHTML = '<span class="spinner" style="width:14px;height:14px;border:2px solid #000;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.6s linear infinite;margin-right:6px;"></span> Setting Default...';
+            try {
+                // Determine active project if any
+                const projId = window.activeProjectId || (window.currentProject && window.currentProject.id) || 1;
+                const customSettings = gatherCustomizationPayload(t);
+
+                const res = await fetch('/api/templates/set-project-default', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_id: projId, template_id: t.id, custom_settings: customSettings })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    selectTemplateAction(t.id);
+                    if (window.UpClipToast) window.UpClipToast.show(`"${t.name}" set as Project Default!`, 'success');
+                } else {
+                    selectTemplateAction(t.id);
+                    if (window.UpClipToast) window.UpClipToast.show(`"${t.name}" selected for next video export.`, 'info');
+                }
+            } catch (err) {
+                selectTemplateAction(t.id);
+            } finally {
+                btnSetDefault.disabled = false;
+                btnSetDefault.innerHTML = '<svg data-lucide="check-circle-2" width="16" height="16"></svg><span>Set as Project Default (Level 1)</span>';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+    }
+
+    // Level 3: Global Preferred Template
+    if (btnSetGlobal) {
+        btnSetGlobal.onclick = async () => {
+            btnSetGlobal.disabled = true;
+            try {
+                const res = await fetch('/api/templates/set-global-preferred', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template_id: t.id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.activeGlobalPreferredTemplate = t.id;
+                    if (window.UpClipToast) window.UpClipToast.show(`"${t.name}" saved as Global Preferred Template!`, 'success');
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btnSetGlobal.disabled = false;
+            }
+        };
+    }
+
+    // Save as Custom Template
+    if (btnSaveCustom) {
+        btnSaveCustom.onclick = async () => {
+            btnSaveCustom.disabled = true;
+            const payload = gatherCustomizationPayload(t);
+            payload.name = prompt('Enter a name for this custom template:', `${t.name} (Custom)`) || `${t.name} (Custom)`;
+            payload.id = `custom_${t.id}_${Date.now()}`;
+            try {
+                const res = await fetch(`/api/templates/${t.id}/save-custom`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.UpClipToast) window.UpClipToast.show('Custom template saved!', 'success');
+                    initHomeTemplateSelector();
+                } else {
+                    alert('Error saving custom template: ' + (data.errors || data.error));
+                }
+            } catch (err) {
+                alert('Failed to save template: ' + err.message);
+            } finally {
+                btnSaveCustom.disabled = false;
+            }
+        };
+    }
+
+    // Apply custom settings to project default
+    if (btnApplyCustom) {
+        btnApplyCustom.onclick = async () => {
+            const customSettings = gatherCustomizationPayload(t);
+            const projId = window.activeProjectId || (window.currentProject && window.currentProject.id) || 1;
+            try {
+                await fetch('/api/templates/set-project-default', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_id: projId, template_id: t.id, custom_settings: customSettings })
+                });
+                selectTemplateAction(t.id);
+                if (window.UpClipToast) window.UpClipToast.show('Custom settings applied to project default!', 'success');
+                const modal = document.getElementById('templateActionModal');
+                if (modal) {
+                    modal.style.opacity = '0';
+                    setTimeout(() => { modal.style.display = 'none'; }, 200);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+    }
+
+    // Launch in AI Clip Studio
+    if (btnOpenClip) {
+        btnOpenClip.onclick = () => {
+            const aspect = t.aspect_ratio || t.aspect || '9:16';
+            window.location.href = `/dashboard?template_id=${encodeURIComponent(t.id)}&aspect=${encodeURIComponent(aspect)}`;
+        };
+    }
+
+    // Open in Timeline Editor
+    if (btnOpenEditor) {
+        btnOpenEditor.onclick = async () => {
+            btnOpenEditor.disabled = true;
+            btnOpenEditor.innerHTML = '<span class="spinner" style="width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.6s linear infinite;margin-right:6px;"></span> Creating Project...';
+            try {
+                const res = await fetch(`/api/templates/${t.id}/create-project`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success && data.project) {
+                    window.location.href = `/editor?project_id=${data.project.id}`;
+                } else {
+                    alert('Could not create project: ' + (data.error || 'Unknown error'));
+                    btnOpenEditor.disabled = false;
+                    btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="14" height="14"></svg><span>Open in Timeline Editor</span>';
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            } catch (err) {
+                alert('Error creating project: ' + err.message);
+                btnOpenEditor.disabled = false;
+                btnOpenEditor.innerHTML = '<svg data-lucide="layout-template" width="14" height="14"></svg><span>Open in Timeline Editor</span>';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+    }
 }
 
 function initStep1AspectCards() {

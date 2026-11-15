@@ -321,7 +321,11 @@ class AnimatedCaptionRenderer:
         border_style = 3 if bg_opacity >= 0.15 else 1
 
         # Alignment calculation (ASS: 1=bot-left, 2=bot-center, 3=bot-right, 4=mid-left, 5=mid-center, 6=mid-right, 7=top-left, 8=top-center, 9=top-right)
-        align_horiz = (opts.get("text_align") or opts.get("textAlign") or opts.get("alignment") or "center").lower()
+        raw_align = opts.get("text_align") or opts.get("textAlign") or opts.get("alignment")
+        if isinstance(raw_align, int):
+            align_horiz = "left" if raw_align in (1, 4, 7) else ("right" if raw_align in (3, 6, 9) else "center")
+        else:
+            align_horiz = str(raw_align or "center").lower()
         if align_horiz == "left":
             col_offset = 0
         elif align_horiz == "right":
@@ -787,12 +791,27 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         # Windows path escaping for the ASS filter
         ass_path = str(ass_file.resolve()).replace("\\", "/").replace(":", "\\:")
 
+        # Check if template is a premium master template with full video layout & color grading
+        tmpl_id = template or merged_opts.get("template_id") or merged_opts.get("template")
+        vf_filter = f"ass='{ass_path}'"
+        try:
+            from core.template_engine import template_engine
+            prem_tmpl = template_engine.get_template(tmpl_id) if tmpl_id else None
+            if prem_tmpl and prem_tmpl.video_layout and prem_tmpl.video_layout.mode not in ("none", ""):
+                pw = merged_opts.get("play_res_x", 1080)
+                ph = merged_opts.get("play_res_y", 1920)
+                fg, meta = template_engine.build_video_filtergraph(prem_tmpl, pw, ph, pw, ph)
+                out_tag = meta.get("output_tag", "vframed")
+                vf_filter = f"{fg};[{out_tag}]ass='{ass_path}'"
+        except Exception as e:
+            print(f"[RENDER] Notice: standard ass filter used: {e}")
+
         # Try preserving audio stream (-c:a copy) first
         command = [
             self.ffmpeg,
             "-y",
             "-i", str(input_video),
-            "-vf", f"ass='{ass_path}'",
+            "-vf", vf_filter,
             "-c:v", config.VIDEO_CODEC,
             "-preset", "veryfast",
             "-crf", "23",

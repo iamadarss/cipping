@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 960" width="540" height="960">
+  <defs>
+    <linearGradient id="gold_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1C1408"/>
+      <stop offset="40%" stop-color="#2D1F08"/>
+      <stop offset="100%" stop-color="#0C0804"/>
+    </linearGradient>
+    <radialGradient id="gold_glow" cx="50%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="text_gold_glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#F59E0B" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Warm Golden Canvas -->
+  <rect width="540" height="960" fill="url(#gold_bg)"/>
+  <rect width="540" height="960" fill="url(#gold_glow)"/>
+
+  <!-- Top Badge -->
+  <g transform="translate(36, 44)">
+    <rect width="124" height="28" rx="6" fill="#F59E0B" fill-opacity="0.2" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="62" y="19" font-family="'Montserrat', sans-serif" font-size="11" font-weight="900" fill="#FBBF24" text-anchor="middle" letter-spacing="1">GOLD EDITION</text>
+  </g>
+  <text x="504" y="63" font-family="'Inter', sans-serif" font-size="12" font-weight="700" fill="#D97706" text-anchor="end">MASTERCLASS</text>
+
+  <!-- Cinematic Speaker Composition -->
+  <g transform="translate(270, 370)">
+    <circle cx="0" cy="-30" r="130" fill="#3D290F"/>
+    <circle cx="0" cy="-45" r="95" fill="#523814"/>
+    <ellipse cx="0" cy="220" rx="220" ry="180" fill="#3D290F"/>
+    <!-- Studio Mic with Warm Gold Accent -->
+    <rect x="-24" y="60" width="48" height="90" rx="24" fill="#241708" stroke="#F59E0B" stroke-width="2.5"/>
+    <line x1="0" y1="150" x2="0" y2="230" stroke="#F59E0B" stroke-width="5"/>
+  </g>
+
+  <!-- Subtle Film Grain Effect Overlay -->
+  <rect width="540" height="960" fill="#FFFFFF" opacity="0.02"/>
+
+  <!-- Luxurious Gold Captions with Soft Glow -->
+  <g transform="translate(270, 730)">
+    <text x="0" y="0" font-family="'Montserrat', sans-serif" font-size="38" font-weight="900" fill="#FFFFFF" stroke="#18181B" stroke-width="6" paint-order="stroke fill" text-anchor="middle">
+      FIND YOUR
+    </text>
+    <text x="0" y="48" font-family="'Montserrat', sans-serif" font-size="44" font-weight="900" fill="#F59E0B" stroke="#18181B" stroke-width="6" paint-order="stroke fill" text-anchor="middle" filter="url(#text_gold_glow)">
+      TRUE PURPOSE
+    </text>
+  </g>
+
+  <!-- Subtitle Tag -->
+  <text x="270" y="850" font-family="'Inter', sans-serif" font-size="13" font-weight="700" fill="#FBBF24" text-anchor="middle" letter-spacing="0.5">
+    Warm Film Grading · 24k Gold Typography
+  </text>
+</svg>
