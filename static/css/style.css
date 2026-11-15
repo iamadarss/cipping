@@ -1207,6 +1207,12 @@ input[type="checkbox"]:checked::after {
     font-weight: 700;
 }
 
+.wizard-nav #wizNext,
+.wizard-nav #wizContinue,
+.wizard-nav .wiz-next-btn {
+    margin-left: auto;
+}
+
 @media (max-width: 768px) {
     .wizard-nav {
         padding: 10px 14px;
@@ -3311,8 +3317,8 @@ input[type="checkbox"]:checked::after {
     --primary-hover: #059669;
     --primary-soft: rgba(16, 185, 129, 0.15);
     --text-primary: #f0f6fc;
-    --text-secondary: #8b949e;
-    --text-muted: #6e7681;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
     display: flex;
     flex-direction: column;
     height: 100vh;

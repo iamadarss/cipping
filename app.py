@@ -57,7 +57,7 @@ from ai.subtitle_builder import SubtitleBuilder
 from ai.subtitle_renderer import SubtitleRenderer
 from ai.ass_builder import ASSBuilder
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request, jsonify, render_template
 from extensions import db
 
 
@@ -360,6 +360,28 @@ def create_app():
             "favicon.svg",
             mimetype="image/svg+xml",
         )
+
+    @app.errorhandler(404)
+    def handle_not_found(e):
+        if request.path.startswith(("/api/", "/editor/api/")) or request.is_json:
+            return jsonify({
+                "success": False,
+                "error": "The requested API endpoint was not found",
+                "code": 404
+            }), 404
+        return render_template("404.html", error=str(e)), 404
+
+    @app.errorhandler(500)
+    def handle_server_error(e):
+        import logging
+        logging.getLogger("UpClip.App").error(f"Internal server error: {e}", exc_info=True)
+        if request.path.startswith(("/api/", "/editor/api/")) or request.is_json:
+            return jsonify({
+                "success": False,
+                "error": "An internal server error occurred",
+                "code": 500
+            }), 500
+        return render_template("500.html", error=str(e)), 500
 
     return app
 

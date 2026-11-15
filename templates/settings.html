@@ -53,13 +53,25 @@
             align-items: center;
             gap: 4px;
             background: var(--surface-1);
-            padding: 4px;
+            padding: 6px;
             border-radius: var(--radius-md);
             border: 1px solid var(--border);
             overflow-x: auto;
-            scrollbar-width: none;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-light, #334155) transparent;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
         }
-        .settings-tabs-nav::-webkit-scrollbar { display: none; }
+        .settings-tabs-nav::-webkit-scrollbar {
+            height: 4px;
+        }
+        .settings-tabs-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .settings-tabs-nav::-webkit-scrollbar-thumb {
+            background: var(--border-light, #334155);
+            border-radius: 4px;
+        }
 
         .settings-tab-btn {
             display: inline-flex;

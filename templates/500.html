@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Internal Server Error | UpClip Studio</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #090d16;
+            color: #f1f5f9;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .error-card {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 48px;
+            max-width: 520px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .error-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 72px;
+            font-weight: 800;
+            line-height: 1;
+            margin: 0 0 16px 0;
+            background: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .error-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            color: #f8fafc;
+        }
+        .error-desc {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin: 0 0 32px 0;
+        }
+        .error-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #6366f1;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover {
+            background: #4f46e5;
+        }
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #1e293b;
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            border: 1px solid #334155;
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover {
+            background: #334155;
+            color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-card">
+        <div class="error-code">500</div>
+        <h1 class="error-title">Internal Server Error</h1>
+        <p class="error-desc">An unexpected error occurred while processing your request. Please try again or return to the dashboard.</p>
+        <div class="error-actions">
+            <a href="/" class="btn-primary">Return to Home</a>
+            <a href="javascript:location.reload()" class="btn-secondary">Reload Page</a>
+        </div>
+    </div>
+</body>
+</html>
