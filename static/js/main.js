@@ -389,40 +389,46 @@ const ENGINE_SWITCH_CONFIG = [
     { toggle: 'sceneDetectionToggle', status: 'sceneDetectionStatus', subfields: 'sceneDetectionSubfields' },
     { toggle: 'sceneMergerToggle', status: 'sceneMergerStatus', subfields: 'sceneMergerSubfields' },
     { toggle: 'silenceHandlingToggle', status: 'silenceHandlingStatus', subfields: 'silenceSubfields' },
-    { toggle: 'whisperToggle', status: 'whisperStatus', subfields: 'whisperSubfields', onChange: (checked) => {
-        if (checked) {
-            const subToggle = document.getElementById('useUploadedSubtitlesToggle');
-            if (subToggle && subToggle.checked && !state.uploadedSubtitle) {
-                subToggle.checked = false;
-                updateSwitchUI('useUploadedSubtitlesToggle', 'useUploadedSubtitlesStatus', 'customSubSubfields');
+    {
+        toggle: 'whisperToggle', status: 'whisperStatus', subfields: 'whisperSubfields', onChange: (checked) => {
+            if (checked) {
+                const subToggle = document.getElementById('useUploadedSubtitlesToggle');
+                if (subToggle && subToggle.checked && !state.uploadedSubtitle) {
+                    subToggle.checked = false;
+                    updateSwitchUI('useUploadedSubtitlesToggle', 'useUploadedSubtitlesStatus', 'customSubSubfields');
+                }
             }
         }
-    }},
+    },
     { toggle: 'gpuAccelToggle', status: 'gpuAccelStatus', subfields: null },
-    { toggle: 'useUploadedSubtitlesToggle', status: 'useUploadedSubtitlesStatus', subfields: 'customSubSubfields', onChange: (checked) => {
-        const whisperToggle = document.getElementById('whisperToggle');
-        if (checked) {
-            if (whisperToggle && whisperToggle.checked) {
-                whisperToggle.checked = false;
-                updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
-                if (window.UpClipToast) window.UpClipToast.show('Whisper transcription turned OFF (using custom subtitles)', 'info');
-            }
-        } else {
-            if (whisperToggle && !whisperToggle.checked) {
-                whisperToggle.checked = true;
-                updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
+    {
+        toggle: 'useUploadedSubtitlesToggle', status: 'useUploadedSubtitlesStatus', subfields: 'customSubSubfields', onChange: (checked) => {
+            const whisperToggle = document.getElementById('whisperToggle');
+            if (checked) {
+                if (whisperToggle && whisperToggle.checked) {
+                    whisperToggle.checked = false;
+                    updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
+                    if (window.UpClipToast) window.UpClipToast.show('Whisper transcription turned OFF (using custom subtitles)', 'info');
+                }
+            } else {
+                if (whisperToggle && !whisperToggle.checked) {
+                    whisperToggle.checked = true;
+                    updateSwitchUI('whisperToggle', 'whisperStatus', 'whisperSubfields');
+                }
             }
         }
-    }},
+    },
     { toggle: 'audioEnergyToggle', status: 'audioEnergyStatus', subfields: null },
     { toggle: 'motionDetectionToggle', status: 'motionDetectionStatus', subfields: null },
     { toggle: 'emotionDetectionToggle', status: 'emotionDetectionStatus', subfields: null },
     { toggle: 'viralRankingToggle', status: 'viralRankingStatus', subfields: 'viralRankingSubfields' },
     { toggle: 'keywordExtractionToggle', status: 'keywordExtractionStatus', subfields: null },
     { toggle: 'subtitleEnabled', status: 'subtitleEnabledStatus', subfields: 'standardSubtitlesSubfields' },
-    { toggle: 'captionEnabled', status: 'captionEnabledStatus', subfields: 'animatedCaptionsSubfields', onChange: () => {
-        updateCaptionOptions();
-    }},
+    {
+        toggle: 'captionEnabled', status: 'captionEnabledStatus', subfields: 'animatedCaptionsSubfields', onChange: () => {
+            updateCaptionOptions();
+        }
+    },
     { toggle: 'hookTitleToggle', status: 'hookTitleStatus', subfields: null },
     { toggle: 'contextualEmojiToggle', status: 'contextualEmojiStatus', subfields: null },
     { toggle: 'brollToggle', status: 'brollStatus', subfields: null },
@@ -863,7 +869,7 @@ function displayVideoMetadata(metadata, thumbnail) {
         } else if (sourceStem) {
             thumbImg.src = `/download/thumbnail/${encodeURIComponent(sourceStem)}_thumb.jpg`;
         }
-        thumbImg.onerror = function() {
+        thumbImg.onerror = function () {
             this.src = '/static/img/default_thumb.png';
         };
     }
@@ -1017,7 +1023,7 @@ function buildSummary() {
         } else if (sourceStem) {
             topThumb.src = `/download/thumbnail/${encodeURIComponent(sourceStem)}_thumb.jpg`;
         }
-        topThumb.onerror = function() { this.src = '/static/img/default_thumb.png'; };
+        topThumb.onerror = function () { this.src = '/static/img/default_thumb.png'; };
     }
     const topTitle = document.getElementById('procTopTitle');
     if (topTitle) topTitle.textContent = state.currentFile || 'Video';
@@ -1298,7 +1304,7 @@ function updateProgressUI(data) {
         for (let i = currentCount; i < data.logs.length; i++) {
             const msg = data.logs[i];
             const cls = msg.startsWith('ERROR') ? 'error-line'
-                       : msg.includes('✅') ? 'success' : '';
+                : msg.includes('✅') ? 'success' : '';
             addLog(msg, cls);
         }
     }
@@ -1594,7 +1600,7 @@ function renderReviewGrid() {
         const rankBadge = clip.rank_badge || '';
         const durText = clip.duration ? `${Math.round(clip.duration)}s` : 'Clip';
         const tags = (clip.hashtags && clip.hashtags.length) ? clip.hashtags : (clip.keywords || []);
-        
+
         card.innerHTML = `
             <input type="checkbox" class="review-clip-checkbox" data-idx="${idx}" style="position: absolute; top: 10px; left: 10px; z-index: 10; width: 18px; height: 18px; cursor: pointer;">
             <div class="project-thumb-wrap" style="position: relative; aspect-ratio: ${cardAspectRatio}; background: #000; overflow: hidden; border-radius: var(--radius-sm); cursor: pointer;" data-action="preview" data-idx="${idx}">
@@ -1629,7 +1635,7 @@ function renderReviewGrid() {
                 <button class="btn-sm danger" data-action="delete" data-idx="${idx}" title="Delete Clip" style="padding: 4px 8px; font-size: 11px;">Delete</button>
             </div>
         `;
-        
+
         const chk = card.querySelector('.review-clip-checkbox');
         chk.addEventListener('change', (e) => {
             if (chk.checked) {
@@ -1993,7 +1999,7 @@ if (largeFileModal) {
 
 // Override startPipeline to check file size
 const originalStartPipeline = startPipeline;
-startPipeline = async function() {
+startPipeline = async function () {
     if (state.currentMetadata && state.currentMetadata.size_bytes > LARGE_FILE_THRESHOLD) {
         pendingPipelineStart = originalStartPipeline;
         showLargeFileWarning(state.currentMetadata.size_bytes);
@@ -2078,7 +2084,7 @@ window.UpClipToast = {
         }
         const toast = document.createElement('div');
         toast.className = `app-toast ${type}`;
-        
+
         let iconSvg = '';
         if (type === 'success') {
             iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -2089,13 +2095,13 @@ window.UpClipToast = {
         } else {
             iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
         }
-        
+
         toast.innerHTML = `
             ${iconSvg}
             <span>${message}</span>
         `;
         container.appendChild(toast);
-        
+
         setTimeout(() => {
             toast.classList.add('hiding');
             setTimeout(() => toast.remove(), 200);
@@ -2108,7 +2114,7 @@ function initSidebar() {
     const sidebar = document.getElementById('appSidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
     if (!sidebar) return;
-    
+
     const savedState = localStorage.getItem('upclip_sidebar_collapsed');
     if (savedState === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
         sidebar.classList.add('collapsed');
@@ -2117,7 +2123,7 @@ function initSidebar() {
         sidebar.classList.remove('collapsed');
         document.documentElement.classList.remove('sidebar-collapsed');
     }
-    
+
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
@@ -2191,7 +2197,7 @@ function initCommandPalette() {
         `;
         document.body.appendChild(backdrop);
     }
-    
+
     function openPalette() {
         backdrop.hidden = false;
         const input = document.getElementById('commandSearchInput');
@@ -2201,11 +2207,11 @@ function initCommandPalette() {
             filterCommands('');
         }
     }
-    
+
     function closePalette() {
         backdrop.hidden = true;
     }
-    
+
     function filterCommands(query) {
         const items = backdrop.querySelectorAll('.command-item');
         const q = query.toLowerCase().trim();
@@ -2214,29 +2220,29 @@ function initCommandPalette() {
             item.style.display = text.includes(q) ? 'flex' : 'none';
         });
     }
-    
+
     backdrop.addEventListener('click', (e) => {
         if (e.target === backdrop) closePalette();
     });
-    
+
     const input = document.getElementById('commandSearchInput');
     if (input) {
         input.addEventListener('input', (e) => filterCommands(e.target.value));
     }
-    
+
     backdrop.addEventListener('click', (e) => {
         const item = e.target.closest('.command-item');
         if (!item) return;
         const action = item.dataset.action;
         closePalette();
-        
+
         if (action === 'new-project' || action === 'open-clips') window.location.href = '/dashboard';
         else if (action === 'open-captions') window.location.href = '/caption-studio';
         else if (action === 'open-youtube') window.location.href = '/youtube-desk';
         else if (action === 'open-downloader') window.location.href = '/yt-downloader';
         else if (action === 'open-hub') window.location.href = '/studio';
     });
-    
+
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
@@ -2246,7 +2252,7 @@ function initCommandPalette() {
             closePalette();
         }
     });
-    
+
     const topbarSearch = document.getElementById('topbarCommandTrigger');
     if (topbarSearch) {
         topbarSearch.addEventListener('click', openPalette);
@@ -2365,7 +2371,7 @@ function initCustomPlayer() {
     const durationText = document.getElementById('videoDuration');
     const muteBtn = document.getElementById('videoMute');
     const volumeSlider = document.getElementById('volumeSlider');
-    
+
     if (!video || !playPause || !scrubber) return;
 
     playPause.addEventListener('click', () => {
@@ -2393,11 +2399,11 @@ function initCustomPlayer() {
         const metaResolution = document.getElementById('metaResolution');
         const metaFPS = document.getElementById('metaFPS');
         const metaSize = document.getElementById('metaSize');
-        
+
         if (metaFilename) metaFilename.textContent = state.currentFile || 'Video';
         if (metaResolution) {
-            metaResolution.textContent = state.currentMetadata ? 
-                `${state.currentMetadata.width}×${state.currentMetadata.height}` : 
+            metaResolution.textContent = state.currentMetadata ?
+                `${state.currentMetadata.width}×${state.currentMetadata.height}` :
                 `${video.videoWidth}×${video.videoHeight}`;
         }
         if (metaFPS && state.currentMetadata) metaFPS.textContent = `${state.currentMetadata.fps} FPS`;
@@ -2443,7 +2449,7 @@ function initClipPreviewModal() {
         video.pause();
         video.src = '';
     });
-    
+
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.hidden = true;
@@ -2507,10 +2513,10 @@ async function loadActiveProject() {
             }
         }
     }
-    
+
     if (project) {
         console.log("Loading active project context:", project);
-        
+
         // Update project badge in header
         const projectNameText = document.getElementById('projectNameText');
         if (projectNameText) projectNameText.textContent = project.name;
@@ -2618,13 +2624,13 @@ async function loadActiveProject() {
 
             // Display rich metadata in Step 1
             displayVideoMetadata(meta, thumbUrl);
-            
+
             // Stay on Step 1 with metadata card displayed
             showStep(1);
             return;
         }
     }
-    
+
     if (fileParam) {
         state.currentFile = fileParam;
         const sourceStem = fileParam.includes('.') ? fileParam.substring(0, fileParam.lastIndexOf('.')) : fileParam;
@@ -2653,7 +2659,7 @@ function initBatchAndRefreshListeners() {
     const batchDownloadBtn = document.getElementById('batchDownloadBtn');
     const batchOpenEditorBtn = document.getElementById('batchOpenEditorBtn');
     const refreshClipsBtn = document.getElementById('refreshClipsBtn');
-    
+
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', () => {
             document.querySelectorAll('.review-clip-checkbox').forEach(chk => {
@@ -2680,7 +2686,7 @@ function initBatchAndRefreshListeners() {
             if (!checked.length) return;
             const confirmed = confirm(`Are you sure you want to delete the ${checked.length} selected clip(s)?`);
             if (!confirmed) return;
-            
+
             for (const chk of checked) {
                 const idx = parseInt(chk.dataset.idx, 10);
                 const clip = state.clips[idx];
@@ -2691,7 +2697,7 @@ function initBatchAndRefreshListeners() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ filename: clip.name }),
                     });
-                } catch(e) { console.error(e); }
+                } catch (e) { console.error(e); }
             }
             // Remove deleted items from local state
             const remaining = [];
@@ -3097,7 +3103,7 @@ function renderHomeTemplates() {
         filtered = filtered.filter(t => (t.category || '').toLowerCase() === currentTemplateCategory.toLowerCase());
     }
     if (currentTemplateQuery) {
-        filtered = filtered.filter(t => 
+        filtered = filtered.filter(t =>
             (t.name || '').toLowerCase().includes(currentTemplateQuery) ||
             (t.description || '').toLowerCase().includes(currentTemplateQuery) ||
             (t.category || '').toLowerCase().includes(currentTemplateQuery) ||
@@ -3146,7 +3152,7 @@ function renderHomeTemplates() {
             const textSpan = document.getElementById('btnUseSelectedTemplateText');
             if (actionWrap) actionWrap.style.display = 'block';
             if (textSpan && t) textSpan.textContent = `Use "${t.name}" Template`;
-            
+
             grid.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
 
@@ -3180,7 +3186,7 @@ function initStep1AspectCards() {
                 if (typeof saveClipSettings === 'function') saveClipSettings();
             }
         }
-    } catch (_) {}
+    } catch (_) { }
 
     const radioInputs = document.querySelectorAll('input[type="radio"][name="aspect"]');
     radioInputs.forEach(radio => {
@@ -3718,7 +3724,7 @@ function openSettingsInfoModal(featureKey) {
         modalToggleStatus.textContent = srcEl.checked ? 'ON' : 'OFF';
         modalToggleStatus.className = 'switch-status-pill ' + (srcEl.checked ? 'active' : '');
 
-        modalToggle.onchange = function() {
+        modalToggle.onchange = function () {
             srcEl.checked = modalToggle.checked;
             srcEl.dispatchEvent(new Event('change', { bubbles: true }));
             modalToggleStatus.textContent = modalToggle.checked ? 'ON' : 'OFF';

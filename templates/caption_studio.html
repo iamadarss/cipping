@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,22 +19,26 @@
             if (localStorage.getItem('upclip_sidebar_collapsed') === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
                 document.documentElement.classList.add('sidebar-collapsed');
             }
-        } catch (e) {}
+        } catch (e) { }
     </script>
     <!-- Dedicated Caption Studio Stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/caption_studio/caption_studio.css') }}">
     <!-- Google Fonts Matching Project Standards -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=DM+Sans:ital,wght@0,500;0,700;1,500;1,700&family=Fira+Code:wght@500;700&family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=Mukta:wght@500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Oswald:wght@700&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@700;800&family=Poppins:wght@600;700;800;900&family=Roboto:wght@500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=DM+Sans:ital,wght@0,500;0,700;1,500;1,700&family=Fira+Code:wght@500;700&family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=Mukta:wght@500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Oswald:wght@700&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@700;800&family=Poppins:wght@600;700;800;900&family=Roboto:wght@500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="app-shell caption-studio-shell">
         <!-- Top Bar -->
         <header class="app-topbar" id="appTopbar">
             <div class="topbar-left">
                 <a href="/" class="topbar-brand" title="UpClip Studio Home">
-                    <img src="{{ url_for('static', filename='favicon.svg') }}" alt="UpClip Studio" class="brand-logo-icon" width="20" height="20">
+                    <img src="{{ url_for('static', filename='favicon.svg') }}" alt="UpClip Studio"
+                        class="brand-logo-icon" width="20" height="20">
                     <span>Up Clip Studio</span>
                 </a>
                 <div class="topbar-divider"></div>
@@ -44,10 +49,12 @@
             </div>
 
             <div class="topbar-right">
-                <button type="button" class="btn btn-icon" id="undoBtn" title="Undo (Ctrl+Z)" style="width:30px; height:30px;">
+                <button type="button" class="btn btn-icon" id="undoBtn" title="Undo (Ctrl+Z)"
+                    style="width:30px; height:30px;">
                     <svg data-lucide="undo" width="14" height="14"></svg>
                 </button>
-                <button type="button" class="btn btn-icon" id="redoBtn" title="Redo (Ctrl+Y)" style="width:30px; height:30px;">
+                <button type="button" class="btn btn-icon" id="redoBtn" title="Redo (Ctrl+Y)"
+                    style="width:30px; height:30px;">
                     <svg data-lucide="redo" width="14" height="14"></svg>
                 </button>
                 <div class="topbar-divider"></div>
@@ -55,15 +62,18 @@
                     <svg data-lucide="video" width="15" height="15"></svg>
                     <span>Import Video</span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="importCaptionsTopBtn" title="Import Caption File (.srt, .vtt, .json)">
+                <button type="button" class="btn btn-secondary btn-sm" id="importCaptionsTopBtn"
+                    title="Import Caption File (.srt, .vtt, .json)">
                     <svg data-lucide="file-text" width="15" height="15"></svg>
                     <span>Import Caption</span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="generateCaptionsTopBtn" title="Generate Captions using AI">
+                <button type="button" class="btn btn-secondary btn-sm" id="generateCaptionsTopBtn"
+                    title="Generate Captions using AI">
                     <svg data-lucide="sparkles" width="15" height="15" style="color:var(--primary);"></svg>
                     <span>Generate Caption</span>
                 </button>
-                <button type="button" class="btn btn-primary btn-sm" id="exportVideoTopBtn" title="Export Video with Captions">
+                <button type="button" class="btn btn-primary btn-sm" id="exportVideoTopBtn"
+                    title="Export Video with Captions">
                     <svg data-lucide="download" width="15" height="15"></svg>
                     <span>Export</span>
                 </button>
@@ -140,7 +150,8 @@
                         <!-- Inner Phone Screen (Strict 9:16 Ratio) -->
                         <div class="phone-screen" id="phoneScreen">
                             <!-- Hidden File Inputs for Video & Caption Loading -->
-                            <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/webm,video/*" style="display:none;">
+                            <input type="file" id="videoFileInput" accept="video/mp4,video/quicktime,video/webm,video/*"
+                                style="display:none;">
                             <input type="file" id="captionFileInput" accept=".srt,.vtt,.json" style="display:none;">
 
                             <!-- Video Upload / Drag & Drop Screen -->
@@ -150,7 +161,8 @@
                                         <svg data-lucide="clapperboard" width="34" height="34" class="drop-icon"></svg>
                                     </div>
                                     <div class="drop-title">Import Reel Video</div>
-                                    <div class="drop-subtitle">Drag & drop video here or <span class="browse-link">browse</span></div>
+                                    <div class="drop-subtitle">Drag & drop video here or <span
+                                            class="browse-link">browse</span></div>
                                     <div class="drop-specs-badge">
                                         <svg data-lucide="smartphone" width="12" height="12"></svg>
                                         <span>9:16 Shorts / Reels</span>
@@ -173,25 +185,36 @@
                             </div>
 
                             <!-- Live Watermark Overlay -->
-                            <div class="watermark-overlay-preview" id="watermarkPreview" style="display:none; position:absolute; pointer-events:none; z-index:18; transition:all 0.2s ease;">
-                                <img id="watermarkPreviewImg" src="" alt="Watermark" style="display:none; max-width:100%; height:auto; object-fit:contain; border-radius:4px;">
-                                <span id="watermarkPreviewText" style="display:none; font-family:'Arial Black', sans-serif; font-size:13px; color:#ffffff; text-shadow:0 2px 4px rgba(0,0,0,0.85); white-space:nowrap;"></span>
+                            <div class="watermark-overlay-preview" id="watermarkPreview"
+                                style="display:none; position:absolute; pointer-events:none; z-index:18; transition:all 0.2s ease;">
+                                <img id="watermarkPreviewImg" src="" alt="Watermark"
+                                    style="display:none; max-width:100%; height:auto; object-fit:contain; border-radius:4px;">
+                                <span id="watermarkPreviewText"
+                                    style="display:none; font-family:'Arial Black', sans-serif; font-size:13px; color:#ffffff; text-shadow:0 2px 4px rgba(0,0,0,0.85); white-space:nowrap;"></span>
                             </div>
 
                             <!-- Live Outro Subscribe & Bell CTA Card Preview -->
-                            <div class="outro-cta-overlay-preview" id="outroCtaPreview" style="display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:90px; width:88%; z-index:19; pointer-events:none; transition:opacity 0.3s ease;">
-                                <div class="outro-card-ui" style="background:rgba(15,18,24,0.92); border:1.5px solid rgba(255,255,255,0.22); border-radius:18px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 8px 24px rgba(0,0,0,0.7); backdrop-filter:blur(8px);">
+                            <div class="outro-cta-overlay-preview" id="outroCtaPreview"
+                                style="display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:90px; width:88%; z-index:19; pointer-events:none; transition:opacity 0.3s ease;">
+                                <div class="outro-card-ui"
+                                    style="background:rgba(15,18,24,0.92); border:1.5px solid rgba(255,255,255,0.22); border-radius:18px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 8px 24px rgba(0,0,0,0.7); backdrop-filter:blur(8px);">
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <div id="outroAvatarCircle" style="width:34px; height:34px; border-radius:50%; background:#EF4444; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; border:1.5px solid rgba(255,255,255,0.4); overflow:hidden;">
-                                            <img id="outroAvatarImg" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+                                        <div id="outroAvatarCircle"
+                                            style="width:34px; height:34px; border-radius:50%; background:#EF4444; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; border:1.5px solid rgba(255,255,255,0.4); overflow:hidden;">
+                                            <img id="outroAvatarImg" src=""
+                                                style="width:100%; height:100%; object-fit:cover; display:none;">
                                             <span id="outroAvatarLetter">U</span>
                                         </div>
                                         <div>
-                                            <div id="outroChannelNameDisplay" style="font-weight:700; font-size:12px; color:#ffffff; line-height:1.2;">UpClip Creator</div>
-                                            <div id="outroHandleDisplay" style="font-size:10px; color:#94A3B8;">@creator</div>
+                                            <div id="outroChannelNameDisplay"
+                                                style="font-weight:700; font-size:12px; color:#ffffff; line-height:1.2;">
+                                                UpClip Creator</div>
+                                            <div id="outroHandleDisplay" style="font-size:10px; color:#94A3B8;">@creator
+                                            </div>
                                         </div>
                                     </div>
-                                    <div style="background:#FF0000; color:#fff; border-radius:14px; padding:4px 10px; font-weight:800; font-size:11px; display:flex; align-items:center; gap:4px; box-shadow:0 2px 8px rgba(255,0,0,0.5);">
+                                    <div
+                                        style="background:#FF0000; color:#fff; border-radius:14px; padding:4px 10px; font-weight:800; font-size:11px; display:flex; align-items:center; gap:4px; box-shadow:0 2px 8px rgba(255,0,0,0.5);">
                                         <span id="outroBellIconAnim">🔔</span>
                                         <span>SUBSCRIBE</span>
                                     </div>
@@ -203,8 +226,10 @@
                                 <!-- Integrated Video Timeline Progress Bar -->
                                 <div class="video-timeline-wrap" id="videoTimelineWrap">
                                     <div class="video-progress-bar" id="videoProgressBar">
-                                        <div class="video-progress-fill" id="videoProgressFill" style="width: 0%;"></div>
-                                        <div class="video-progress-thumb" id="videoProgressThumb" style="left: 0%;"></div>
+                                        <div class="video-progress-fill" id="videoProgressFill" style="width: 0%;">
+                                        </div>
+                                        <div class="video-progress-thumb" id="videoProgressThumb" style="left: 0%;">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -217,19 +242,24 @@
                                     </div>
 
                                     <div class="transport-buttons-center">
-                                        <button type="button" class="transport-btn transport-btn-seek" id="btnSeekLeft" title="Rewind 5s">
+                                        <button type="button" class="transport-btn transport-btn-seek" id="btnSeekLeft"
+                                            title="Rewind 5s">
                                             <svg data-lucide="rotate-ccw" width="15" height="15"></svg>
                                         </button>
-                                        <button type="button" class="transport-btn transport-btn-play" id="btnPlayPause" title="Play / Pause">
-                                            <svg data-lucide="play" width="16" height="16" id="playPauseIcon" style="margin-left: 1px;"></svg>
+                                        <button type="button" class="transport-btn transport-btn-play" id="btnPlayPause"
+                                            title="Play / Pause">
+                                            <svg data-lucide="play" width="16" height="16" id="playPauseIcon"
+                                                style="margin-left: 1px;"></svg>
                                         </button>
-                                        <button type="button" class="transport-btn transport-btn-seek" id="btnSeekRight" title="Forward 5s">
+                                        <button type="button" class="transport-btn transport-btn-seek" id="btnSeekRight"
+                                            title="Forward 5s">
                                             <svg data-lucide="rotate-cw" width="15" height="15"></svg>
                                         </button>
                                     </div>
 
                                     <div class="transport-actions-right">
-                                        <button type="button" class="transport-btn transport-btn-action" id="btnToggleMute" title="Mute / Unmute">
+                                        <button type="button" class="transport-btn transport-btn-action"
+                                            id="btnToggleMute" title="Mute / Unmute">
                                             <svg data-lucide="volume-2" width="14" height="14" id="muteIcon"></svg>
                                         </button>
                                     </div>
@@ -255,9 +285,12 @@
                         <!-- Category Filter Pills -->
                         <div class="preset-filter-pills" id="presetFilterPills">
                             <button type="button" class="filter-pill active" data-category="all">All (24)</button>
-                            <button type="button" class="filter-pill" data-category="cinematic master">Cinematic Master</button>
-                            <button type="button" class="filter-pill" data-category="card & aesthetic">Card & Aesthetic</button>
-                            <button type="button" class="filter-pill" data-category="loud captions">Loud Captions</button>
+                            <button type="button" class="filter-pill" data-category="cinematic master">Cinematic
+                                Master</button>
+                            <button type="button" class="filter-pill" data-category="card & aesthetic">Card &
+                                Aesthetic</button>
+                            <button type="button" class="filter-pill" data-category="loud captions">Loud
+                                Captions</button>
                             <button type="button" class="filter-pill" data-category="custom">My Presets</button>
                         </div>
 
@@ -271,19 +304,23 @@
                     <section class="workspace-panel panel-settings" id="colSettings">
                         <div class="panel-header">
                             <div class="panel-header-title">
-                                <svg data-lucide="sliders-horizontal" width="16" height="16" style="color:var(--primary);"></svg>
+                                <svg data-lucide="sliders-horizontal" width="16" height="16"
+                                    style="color:var(--primary);"></svg>
                                 <span>Caption Styling</span>
                             </div>
                             <div class="panel-header-actions" style="display:flex; align-items:center; gap:6px;">
-                                <button type="button" class="btn btn-primary btn-xs" id="savePresetBtn" title="Save current styling as a custom preset">
+                                <button type="button" class="btn btn-primary btn-xs" id="savePresetBtn"
+                                    title="Save current styling as a custom preset">
                                     <svg data-lucide="bookmark-plus" width="12" height="12"></svg>
                                     <span>Save Preset</span>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-xs" id="myPresetsBtn" title="View your saved custom presets">
+                                <button type="button" class="btn btn-secondary btn-xs" id="myPresetsBtn"
+                                    title="View your saved custom presets">
                                     <svg data-lucide="folder-heart" width="12" height="12"></svg>
                                     <span>My Presets</span>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-xs" id="resetStyleBtn" title="Reset to default">
+                                <button type="button" class="btn btn-secondary btn-xs" id="resetStyleBtn"
+                                    title="Reset to default">
                                     <svg data-lucide="rotate-ccw" width="12" height="12"></svg>
                                     <span>Reset</span>
                                 </button>
@@ -297,12 +334,14 @@
                             <div class="accordion-group open" id="accordionFont">
                                 <div class="accordion-header" data-target="accordionFont">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="type" width="15" height="15" style="color:var(--primary);"></svg>
+                                        <svg data-lucide="type" width="15" height="15"
+                                            style="color:var(--primary);"></svg>
                                         <span>Typography & Font</span>
                                     </div>
                                     <div class="accordion-header-right">
                                         <span class="accordion-meta-badge" id="fontMetaBadge">Inter • 42px</span>
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -342,7 +381,8 @@
                                         <span class="setting-label">Font Size</span>
                                         <div class="slider-stepper-control">
                                             <button type="button" class="stepper-btn" id="fontSizeDecBtn">-</button>
-                                            <input type="range" id="fontSizeRange" class="emerald-range-slider" min="16" max="96" value="42">
+                                            <input type="range" id="fontSizeRange" class="emerald-range-slider" min="16"
+                                                max="96" value="42">
                                             <button type="button" class="stepper-btn" id="fontSizeIncBtn">+</button>
                                             <span class="value-badge"><span id="fontSizeDisplay">42</span>px</span>
                                         </div>
@@ -352,7 +392,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Letter Spacing</span>
                                         <div class="slider-control">
-                                            <input type="range" id="letterSpacingRange" class="emerald-range-slider" min="-2" max="12" value="0">
+                                            <input type="range" id="letterSpacingRange" class="emerald-range-slider"
+                                                min="-2" max="12" value="0">
                                             <span class="value-badge"><span id="letterSpacingDisplay">0</span>px</span>
                                         </div>
                                     </div>
@@ -361,7 +402,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Line Height</span>
                                         <div class="slider-control">
-                                            <input type="range" id="lineHeightRange" class="emerald-range-slider" min="0.8" max="2.0" step="0.1" value="1.2">
+                                            <input type="range" id="lineHeightRange" class="emerald-range-slider"
+                                                min="0.8" max="2.0" step="0.1" value="1.2">
                                             <span class="value-badge"><span id="lineHeightDisplay">1.2</span></span>
                                         </div>
                                     </div>
@@ -372,11 +414,13 @@
                             <div class="accordion-group open" id="accordionPosition">
                                 <div class="accordion-header" data-target="accordionPosition">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="move" width="15" height="15" style="color:var(--primary);"></svg>
+                                        <svg data-lucide="move" width="15" height="15"
+                                            style="color:var(--primary);"></svg>
                                         <span>Location & Position</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -384,9 +428,12 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Quick Anchor</span>
                                         <div class="button-group-segment">
-                                            <button type="button" class="segment-btn" id="posTopBtn" data-y="18">Top</button>
-                                            <button type="button" class="segment-btn" id="posMiddleBtn" data-y="50">Middle</button>
-                                            <button type="button" class="segment-btn active" id="posBottomBtn" data-y="82">Bottom</button>
+                                            <button type="button" class="segment-btn" id="posTopBtn"
+                                                data-y="18">Top</button>
+                                            <button type="button" class="segment-btn" id="posMiddleBtn"
+                                                data-y="50">Middle</button>
+                                            <button type="button" class="segment-btn active" id="posBottomBtn"
+                                                data-y="82">Bottom</button>
                                         </div>
                                     </div>
 
@@ -394,13 +441,16 @@
                                     <div class="setting-row" id="accordionSettingsType">
                                         <span class="setting-label">Alignment</span>
                                         <div class="button-group-segment">
-                                            <button type="button" class="segment-btn" id="alignLeftBtn" data-align="left">
+                                            <button type="button" class="segment-btn" id="alignLeftBtn"
+                                                data-align="left">
                                                 <svg data-lucide="align-left" width="13" height="13"></svg>
                                             </button>
-                                            <button type="button" class="segment-btn active" id="alignCenterBtn" data-align="center">
+                                            <button type="button" class="segment-btn active" id="alignCenterBtn"
+                                                data-align="center">
                                                 <svg data-lucide="align-center" width="13" height="13"></svg>
                                             </button>
-                                            <button type="button" class="segment-btn" id="alignRightBtn" data-align="right">
+                                            <button type="button" class="segment-btn" id="alignRightBtn"
+                                                data-align="right">
                                                 <svg data-lucide="align-right" width="13" height="13"></svg>
                                             </button>
                                         </div>
@@ -410,7 +460,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Vertical (Y)</span>
                                         <div class="slider-control">
-                                            <input type="range" id="posYPercentRange" class="emerald-range-slider" min="5" max="95" value="82">
+                                            <input type="range" id="posYPercentRange" class="emerald-range-slider"
+                                                min="5" max="95" value="82">
                                             <span class="value-badge"><span id="posYPercentDisplay">82</span>%</span>
                                         </div>
                                     </div>
@@ -419,7 +470,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Horizontal (X)</span>
                                         <div class="slider-control">
-                                            <input type="range" id="posXPercentRange" class="emerald-range-slider" min="10" max="90" value="50">
+                                            <input type="range" id="posXPercentRange" class="emerald-range-slider"
+                                                min="10" max="90" value="50">
                                             <span class="value-badge"><span id="posXPercentDisplay">50</span>%</span>
                                         </div>
                                     </div>
@@ -428,7 +480,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Scale</span>
                                         <div class="slider-control">
-                                            <input type="range" id="captionScaleSlider" class="emerald-range-slider" min="50" max="180" value="100">
+                                            <input type="range" id="captionScaleSlider" class="emerald-range-slider"
+                                                min="50" max="180" value="100">
                                             <span class="value-badge"><span id="captionScaleDisplay">100</span>%</span>
                                         </div>
                                     </div>
@@ -439,11 +492,13 @@
                             <div class="accordion-group open" id="accordionText">
                                 <div class="accordion-header" data-target="accordionText">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="palette" width="15" height="15" style="color:var(--primary);"></svg>
+                                        <svg data-lucide="palette" width="15" height="15"
+                                            style="color:var(--primary);"></svg>
                                         <span>Colors & Highlight</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -451,7 +506,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Text Color</span>
                                         <div class="color-picker-wrap">
-                                            <input type="color" id="textColorPicker" value="#FFFFFF" class="color-swatch-input">
+                                            <input type="color" id="textColorPicker" value="#FFFFFF"
+                                                class="color-swatch-input">
                                             <span class="color-hex-text" id="textColorHex">#FFFFFF</span>
                                         </div>
                                     </div>
@@ -460,8 +516,10 @@
                                     <div class="setting-row" id="accordionKaraoke">
                                         <span class="setting-label">Karaoke Accent</span>
                                         <div class="color-picker-wrap">
-                                            <input type="color" id="activeWordColorPicker" value="#10B981" class="color-swatch-input">
-                                            <span class="color-hex-text" id="activeWordColorHex" style="color:var(--primary); font-weight:700;">#10B981</span>
+                                            <input type="color" id="activeWordColorPicker" value="#10B981"
+                                                class="color-swatch-input">
+                                            <span class="color-hex-text" id="activeWordColorHex"
+                                                style="color:var(--primary); font-weight:700;">#10B981</span>
                                         </div>
                                     </div>
 
@@ -469,8 +527,10 @@
                                     <div class="setting-row" id="rowWordPillColor">
                                         <span class="setting-label">Word Pill Accent</span>
                                         <div class="color-picker-wrap">
-                                            <input type="color" id="wordBoxColorPicker" value="#10B981" class="color-swatch-input">
-                                            <span class="color-hex-text" id="wordBoxColorHex" style="color:var(--primary); font-weight:700;">#10B981</span>
+                                            <input type="color" id="wordBoxColorPicker" value="#10B981"
+                                                class="color-swatch-input">
+                                            <span class="color-hex-text" id="wordBoxColorHex"
+                                                style="color:var(--primary); font-weight:700;">#10B981</span>
                                         </div>
                                     </div>
 
@@ -478,7 +538,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Opacity</span>
                                         <div class="slider-control">
-                                            <input type="range" id="textOpacityRange" class="emerald-range-slider" min="20" max="100" value="100">
+                                            <input type="range" id="textOpacityRange" class="emerald-range-slider"
+                                                min="20" max="100" value="100">
                                             <span class="value-badge"><span id="textOpacityDisplay">100</span>%</span>
                                         </div>
                                     </div>
@@ -489,11 +550,13 @@
                             <div class="accordion-group" id="accordionStroke">
                                 <div class="accordion-header" data-target="accordionStroke">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="square" width="15" height="15" style="color:var(--primary);"></svg>
+                                        <svg data-lucide="square" width="15" height="15"
+                                            style="color:var(--primary);"></svg>
                                         <span>Border & Stroke</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -501,7 +564,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Stroke Color</span>
                                         <div class="color-picker-wrap">
-                                            <input type="color" id="strokeColorPicker" value="#000000" class="color-swatch-input">
+                                            <input type="color" id="strokeColorPicker" value="#000000"
+                                                class="color-swatch-input">
                                             <span class="color-hex-text" id="strokeColorHex">#000000</span>
                                         </div>
                                     </div>
@@ -510,7 +574,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Stroke Width</span>
                                         <div class="slider-control">
-                                            <input type="range" id="strokeWidthRange" class="emerald-range-slider" min="0" max="12" value="3">
+                                            <input type="range" id="strokeWidthRange" class="emerald-range-slider"
+                                                min="0" max="12" value="3">
                                             <span class="value-badge"><span id="strokeWidthDisplay">3</span>px</span>
                                         </div>
                                     </div>
@@ -521,11 +586,13 @@
                             <div class="accordion-group" id="accordionShadow">
                                 <div class="accordion-header" data-target="accordionShadow">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="sun" width="15" height="15" style="color:var(--primary);"></svg>
+                                        <svg data-lucide="sun" width="15" height="15"
+                                            style="color:var(--primary);"></svg>
                                         <span>Shadow & Glow</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -540,20 +607,23 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Shadow Color</span>
                                         <div class="color-picker-wrap">
-                                            <input type="color" id="shadowColorPicker" value="#000000" class="color-swatch-input">
+                                            <input type="color" id="shadowColorPicker" value="#000000"
+                                                class="color-swatch-input">
                                         </div>
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Shadow Blur</span>
                                         <div class="slider-control">
-                                            <input type="range" id="shadowBlurRange" class="emerald-range-slider" min="0" max="24" value="6">
+                                            <input type="range" id="shadowBlurRange" class="emerald-range-slider"
+                                                min="0" max="24" value="6">
                                             <span class="value-badge"><span id="shadowBlurDisplay">6</span>px</span>
                                         </div>
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Vertical Offset</span>
                                         <div class="slider-control">
-                                            <input type="range" id="shadowYRange" class="emerald-range-slider" min="0" max="16" value="2">
+                                            <input type="range" id="shadowYRange" class="emerald-range-slider" min="0"
+                                                max="16" value="2">
                                             <span class="value-badge"><span id="shadowYDisplay">2</span>px</span>
                                         </div>
                                     </div>
@@ -569,13 +639,15 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Glow Color</span>
                                         <div class="color-picker-wrap">
-                                            <input type="color" id="glowColorPicker" value="#10B981" class="color-swatch-input">
+                                            <input type="color" id="glowColorPicker" value="#10B981"
+                                                class="color-swatch-input">
                                         </div>
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Glow Intensity</span>
                                         <div class="slider-control">
-                                            <input type="range" id="glowIntensityRange" class="emerald-range-slider" min="0" max="36" value="12">
+                                            <input type="range" id="glowIntensityRange" class="emerald-range-slider"
+                                                min="0" max="36" value="12">
                                             <span class="value-badge"><span id="glowIntensityDisplay">12</span></span>
                                         </div>
                                     </div>
@@ -586,11 +658,13 @@
                             <div class="accordion-group" id="accordionBackground">
                                 <div class="accordion-header" data-target="accordionBackground">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="layout-template" width="15" height="15" style="color:var(--primary);"></svg>
+                                        <svg data-lucide="layout-template" width="15" height="15"
+                                            style="color:var(--primary);"></svg>
                                         <span>Background & Box</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -609,7 +683,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Box Color</span>
                                         <div class="color-picker-wrap">
-                                            <input type="color" id="bgColorPicker" value="#000000" class="color-swatch-input">
+                                            <input type="color" id="bgColorPicker" value="#000000"
+                                                class="color-swatch-input">
                                         </div>
                                     </div>
 
@@ -617,7 +692,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Box Opacity</span>
                                         <div class="slider-control">
-                                            <input type="range" id="bgOpacityRange" class="emerald-range-slider" min="0" max="100" value="0">
+                                            <input type="range" id="bgOpacityRange" class="emerald-range-slider" min="0"
+                                                max="100" value="0">
                                             <span class="value-badge"><span id="bgOpacityDisplay">0</span>%</span>
                                         </div>
                                     </div>
@@ -626,7 +702,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Padding</span>
                                         <div class="slider-control">
-                                            <input type="range" id="bgPaddingRange" class="emerald-range-slider" min="4" max="24" value="10">
+                                            <input type="range" id="bgPaddingRange" class="emerald-range-slider" min="4"
+                                                max="24" value="10">
                                             <span class="value-badge"><span id="bgPaddingDisplay">10</span>px</span>
                                         </div>
                                     </div>
@@ -635,7 +712,8 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Corner Radius</span>
                                         <div class="slider-control">
-                                            <input type="range" id="bgRadiusRange" class="emerald-range-slider" min="0" max="30" value="8">
+                                            <input type="range" id="bgRadiusRange" class="emerald-range-slider" min="0"
+                                                max="30" value="8">
                                             <span class="value-badge"><span id="bgRadiusDisplay">8</span>px</span>
                                         </div>
                                     </div>
@@ -646,11 +724,13 @@
                             <div class="accordion-group" id="accordionAnimation">
                                 <div class="accordion-header" data-target="accordionAnimation">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="play-circle" width="15" height="15" style="color:var(--primary);"></svg>
+                                        <svg data-lucide="play-circle" width="15" height="15"
+                                            style="color:var(--primary);"></svg>
                                         <span>Animation & Case</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -661,7 +741,8 @@
                                             <option value="color_karaoke" selected>✨ Color Karaoke (Sweep)</option>
                                             <option value="smooth_fade">🌊 Smooth Fade (Subtle Focus)</option>
                                             <option value="soft_pop">💥 Soft Pop (Gentle Bounce)</option>
-                                            <option value="active_word_pill">💊 Active Word Pill (Box Highlight)</option>
+                                            <option value="active_word_pill">💊 Active Word Pill (Box Highlight)
+                                            </option>
                                             <option value="slide_up">⬆️ Slide Up (Kinetic Rise)</option>
                                             <option value="slide_down">⬇️ Slide Down (Top Drop)</option>
                                             <option value="typewriter">⌨️ Typewriter (Crisp Cut)</option>
@@ -676,8 +757,10 @@
                                     <div class="setting-row" id="rowAnimationSpeed">
                                         <span class="setting-label">Motion Speed</span>
                                         <div class="slider-control">
-                                            <input type="range" id="animationSpeedRange" class="emerald-range-slider" min="0.5" max="2.0" step="0.1" value="1.0">
-                                            <span class="value-badge"><span id="animationSpeedDisplay">1.0</span>x</span>
+                                            <input type="range" id="animationSpeedRange" class="emerald-range-slider"
+                                                min="0.5" max="2.0" step="0.1" value="1.0">
+                                            <span class="value-badge"><span
+                                                    id="animationSpeedDisplay">1.0</span>x</span>
                                         </div>
                                     </div>
 
@@ -685,9 +768,12 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Text Case</span>
                                         <div class="button-group-segment">
-                                            <button type="button" class="segment-btn active" id="caseUpperBtn" data-case="uppercase">UPPER</button>
-                                            <button type="button" class="segment-btn" id="caseTitleBtn" data-case="capitalize">Title</button>
-                                            <button type="button" class="segment-btn" id="caseNormalBtn" data-case="normal">Normal</button>
+                                            <button type="button" class="segment-btn active" id="caseUpperBtn"
+                                                data-case="uppercase">UPPER</button>
+                                            <button type="button" class="segment-btn" id="caseTitleBtn"
+                                                data-case="capitalize">Title</button>
+                                            <button type="button" class="segment-btn" id="caseNormalBtn"
+                                                data-case="normal">Normal</button>
                                         </div>
                                     </div>
                                 </div>
@@ -697,11 +783,13 @@
                             <div class="accordion-group" id="accordionWatermark">
                                 <div class="accordion-header" data-target="accordionWatermark">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="shield-check" width="15" height="15" style="color:#38BDF8;"></svg>
+                                        <svg data-lucide="shield-check" width="15" height="15"
+                                            style="color:#38BDF8;"></svg>
                                         <span>Channel Logo & Watermark</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -715,8 +803,11 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Upload Logo</span>
                                         <div style="display:flex; align-items:center; gap:8px; width:60%;">
-                                            <input type="file" id="watermarkFileInput" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none;">
-                                            <button type="button" class="btn btn-secondary btn-xs" id="watermarkUploadBtn" style="flex:1;">
+                                            <input type="file" id="watermarkFileInput"
+                                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                                style="display:none;">
+                                            <button type="button" class="btn btn-secondary btn-xs"
+                                                id="watermarkUploadBtn" style="flex:1;">
                                                 <svg data-lucide="upload" width="12" height="12"></svg>
                                                 <span>Choose PNG/JPG</span>
                                             </button>
@@ -725,13 +816,17 @@
                                     <div class="setting-row" id="watermarkPreviewRow" style="display:none;">
                                         <span class="setting-label">Loaded Logo</span>
                                         <div style="display:flex; align-items:center; gap:8px;">
-                                            <img id="watermarkThumbImg" src="" style="width:34px; height:34px; object-fit:contain; border-radius:6px; background:#1E293B; border:1px solid rgba(255,255,255,0.1);">
-                                            <button type="button" class="btn btn-danger btn-xs" id="watermarkRemoveBtn" title="Remove Logo">✕</button>
+                                            <img id="watermarkThumbImg" src=""
+                                                style="width:34px; height:34px; object-fit:contain; border-radius:6px; background:#1E293B; border:1px solid rgba(255,255,255,0.1);">
+                                            <button type="button" class="btn btn-danger btn-xs" id="watermarkRemoveBtn"
+                                                title="Remove Logo">✕</button>
                                         </div>
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Text Watermark</span>
-                                        <input type="text" id="watermarkTextInput" class="form-control input-sm" placeholder="e.g. @MyChannel" style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                        <input type="text" id="watermarkTextInput" class="form-control input-sm"
+                                            placeholder="e.g. @MyChannel"
+                                            style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Corner Position</span>
@@ -746,15 +841,18 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Size (% of screen)</span>
                                         <div class="slider-control">
-                                            <input type="range" id="watermarkScaleRange" class="emerald-range-slider" min="8" max="35" value="16">
+                                            <input type="range" id="watermarkScaleRange" class="emerald-range-slider"
+                                                min="8" max="35" value="16">
                                             <span class="value-badge"><span id="watermarkScaleDisplay">16</span>%</span>
                                         </div>
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Opacity</span>
                                         <div class="slider-control">
-                                            <input type="range" id="watermarkOpacityRange" class="emerald-range-slider" min="15" max="100" value="80">
-                                            <span class="value-badge"><span id="watermarkOpacityDisplay">80</span>%</span>
+                                            <input type="range" id="watermarkOpacityRange" class="emerald-range-slider"
+                                                min="15" max="100" value="80">
+                                            <span class="value-badge"><span
+                                                    id="watermarkOpacityDisplay">80</span>%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -764,11 +862,13 @@
                             <div class="accordion-group" id="accordionOutro">
                                 <div class="accordion-header" data-target="accordionOutro">
                                     <div class="accordion-header-left">
-                                        <svg data-lucide="bell-ring" width="15" height="15" style="color:#EF4444;"></svg>
+                                        <svg data-lucide="bell-ring" width="15" height="15"
+                                            style="color:#EF4444;"></svg>
                                         <span>Subscribe & Bell Outro CTA</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -781,16 +881,21 @@
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Channel Name</span>
-                                        <input type="text" id="outroChannelNameInput" class="form-control input-sm" placeholder="Your Channel Name" value="UpClip Creator" style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                        <input type="text" id="outroChannelNameInput" class="form-control input-sm"
+                                            placeholder="Your Channel Name" value="UpClip Creator"
+                                            style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Channel Handle</span>
-                                        <input type="text" id="outroHandleInput" class="form-control input-sm" placeholder="@creator" value="@creator" style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                        <input type="text" id="outroHandleInput" class="form-control input-sm"
+                                            placeholder="@creator" value="@creator"
+                                            style="width:60%; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Duration (End of video)</span>
                                         <div class="slider-control">
-                                            <input type="range" id="outroDurationRange" class="emerald-range-slider" min="2" max="7" value="4">
+                                            <input type="range" id="outroDurationRange" class="emerald-range-slider"
+                                                min="2" max="7" value="4">
                                             <span class="value-badge"><span id="outroDurationDisplay">4</span>s</span>
                                         </div>
                                     </div>
@@ -805,7 +910,8 @@
                                         <span>Viral Sound Effects (SFX)</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -836,13 +942,15 @@
                                     <div class="setting-row">
                                         <span class="setting-label">SFX Volume</span>
                                         <div class="slider-control">
-                                            <input type="range" id="sfxVolumeRange" class="emerald-range-slider" min="10" max="100" value="70">
+                                            <input type="range" id="sfxVolumeRange" class="emerald-range-slider"
+                                                min="10" max="100" value="70">
                                             <span class="value-badge"><span id="sfxVolumeDisplay">70</span>%</span>
                                         </div>
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Preview Audio</span>
-                                        <button type="button" class="btn btn-secondary btn-xs" id="sfxPreviewPlayBtn" style="display:flex; align-items:center; gap:4px;">
+                                        <button type="button" class="btn btn-secondary btn-xs" id="sfxPreviewPlayBtn"
+                                            style="display:flex; align-items:center; gap:4px;">
                                             <svg data-lucide="play" width="12" height="12"></svg>
                                             <span>Test Sound Effect</span>
                                         </button>
@@ -858,7 +966,8 @@
                                         <span>B-Roll Cutaway Overlay</span>
                                     </div>
                                     <div class="accordion-header-right">
-                                        <svg data-lucide="chevron-down" width="14" height="14" class="accordion-arrow"></svg>
+                                        <svg data-lucide="chevron-down" width="14" height="14"
+                                            class="accordion-arrow"></svg>
                                     </div>
                                 </div>
                                 <div class="accordion-body">
@@ -872,8 +981,11 @@
                                     <div class="setting-row">
                                         <span class="setting-label">Upload Clip</span>
                                         <div style="display:flex; align-items:center; gap:8px; width:60%;">
-                                            <input type="file" id="brollFileInput" accept="video/mp4,video/quicktime,video/webm,image/*" style="display:none;">
-                                            <button type="button" class="btn btn-secondary btn-xs" id="brollUploadBtn" style="flex:1;">
+                                            <input type="file" id="brollFileInput"
+                                                accept="video/mp4,video/quicktime,video/webm,image/*"
+                                                style="display:none;">
+                                            <button type="button" class="btn btn-secondary btn-xs" id="brollUploadBtn"
+                                                style="flex:1;">
                                                 <svg data-lucide="upload" width="12" height="12"></svg>
                                                 <span>Choose Video / Pic</span>
                                             </button>
@@ -882,8 +994,10 @@
                                     <div class="setting-row" id="brollPreviewRow" style="display:none;">
                                         <span class="setting-label">Attached Clip</span>
                                         <div style="display:flex; align-items:center; gap:8px;">
-                                            <span id="brollNameBadge" style="font-size:11px; color:#38BDF8; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">clip.mp4</span>
-                                            <button type="button" class="btn btn-danger btn-xs" id="brollRemoveBtn">✕</button>
+                                            <span id="brollNameBadge"
+                                                style="font-size:11px; color:#38BDF8; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">clip.mp4</span>
+                                            <button type="button" class="btn btn-danger btn-xs"
+                                                id="brollRemoveBtn">✕</button>
                                         </div>
                                     </div>
                                     <div class="setting-row">
@@ -895,11 +1009,15 @@
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Start Time (sec)</span>
-                                        <input type="number" id="brollStartInput" min="0" step="0.5" value="2.0" class="form-control input-sm" style="width:70px; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                        <input type="number" id="brollStartInput" min="0" step="0.5" value="2.0"
+                                            class="form-control input-sm"
+                                            style="width:70px; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
                                     </div>
                                     <div class="setting-row">
                                         <span class="setting-label">Duration (sec)</span>
-                                        <input type="number" id="brollDurationInput" min="0.5" max="30" step="0.5" value="3.0" class="form-control input-sm" style="width:70px; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
+                                        <input type="number" id="brollDurationInput" min="0.5" max="30" step="0.5"
+                                            value="3.0" class="form-control input-sm"
+                                            style="width:70px; padding:4px 8px; font-size:12px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:#fff;">
                                     </div>
                                 </div>
                             </div>
@@ -911,13 +1029,12 @@
     </div>
 
     <!-- Hidden Context Data from Flask -->
-    <div id="captionContextData"
-         data-project-id="{{ project_id or '' }}"
-         data-preload='{% if preload_video %}{{ preload_video|tojson }}{% else %}null{% endif %}'
-         data-source-file="{{ source_filename or '' }}"
-         data-saved-captions='{% if saved_captions %}{{ saved_captions|tojson }}{% else %}null{% endif %}'
-         data-saved-style='{% if saved_style %}{{ saved_style|tojson }}{% else %}null{% endif %}'
-         style="display:none;"></div>
+    <div id="captionContextData" data-project-id="{{ project_id or '' }}"
+        data-preload='{% if preload_video %}{{ preload_video|tojson }}{% else %}null{% endif %}'
+        data-source-file="{{ source_filename or '' }}"
+        data-saved-captions='{% if saved_captions %}{{ saved_captions|tojson }}{% else %}null{% endif %}'
+        data-saved-style='{% if saved_style %}{{ saved_style|tojson }}{% else %}null{% endif %}' style="display:none;">
+    </div>
 
     <!-- Central Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
@@ -936,12 +1053,14 @@
                 <div class="modal-field-group">
                     <label class="modal-label">Spoken Audio Language</label>
                     <select id="genLanguageSelect" class="modal-select">
-                        <option value="hinglish" selected>Hinglish (Hindi in English Script - e.g. "vah kutta hai") ⭐</option>
+                        <option value="hinglish" selected>Hinglish (Hindi in English Script - e.g. "vah kutta hai") ⭐
+                        </option>
                         <option value="hi">Hindi (हिंदी - Devanagari Script)</option>
                         <option value="en">English (US / UK / Global)</option>
                         <option value="auto">Auto-Detect Language</option>
                     </select>
-                    <span class="modal-hint">Hinglish creates high-retention phonetic English captions for Hindi videos (e.g. "Mujhe video banana hai").</span>
+                    <span class="modal-hint">Hinglish creates high-retention phonetic English captions for Hindi videos
+                        (e.g. "Mujhe video banana hai").</span>
                 </div>
 
                 <div class="modal-field-group">
@@ -968,13 +1087,18 @@
                 </div>
 
                 <!-- Captions Ready / Review Panel -->
-                <div class="modal-progress-panel" id="genReadyPanel" style="display:none; flex-direction:column; align-items:stretch; gap:10px; padding:14px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.3); border-radius:8px;">
-                    <div style="display:flex; align-items:center; gap:8px; color:var(--primary, #22C55E); font-weight:700; font-size:13px;">
+                <div class="modal-progress-panel" id="genReadyPanel"
+                    style="display:none; flex-direction:column; align-items:stretch; gap:10px; padding:14px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.3); border-radius:8px;">
+                    <div
+                        style="display:flex; align-items:center; gap:8px; color:var(--primary, #22C55E); font-weight:700; font-size:13px;">
                         <svg data-lucide="check-circle" width="16" height="16"></svg>
                         <span id="genReadyCountText">Generated Captions Ready!</span>
                     </div>
-                    <div id="genPreviewBox" style="max-height:90px; overflow-y:auto; font-size:11px; color:var(--text-secondary, #CBD5E1); background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; line-height:1.5;"></div>
-                    <div style="font-size:11px; color:var(--text-muted, #94A3B8);">Click "Apply Captions" below to apply these captions to your reel preview and timeline.</div>
+                    <div id="genPreviewBox"
+                        style="max-height:90px; overflow-y:auto; font-size:11px; color:var(--text-secondary, #CBD5E1); background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; line-height:1.5;">
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted, #94A3B8);">Click "Apply Captions" below to apply
+                        these captions to your reel preview and timeline.</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -983,7 +1107,8 @@
                     <svg data-lucide="sparkles" width="14" height="14"></svg>
                     <span>✦ Generate Captions</span>
                 </button>
-                <button type="button" class="btn btn-primary btn-sm" id="genApplyBtn" style="display:none; background:#16a34a; border-color:#16a34a;">
+                <button type="button" class="btn btn-primary btn-sm" id="genApplyBtn"
+                    style="display:none; background:#16a34a; border-color:#16a34a;">
                     <svg data-lucide="check" width="14" height="14"></svg>
                     <span>✓ Apply Captions</span>
                 </button>
@@ -1004,10 +1129,15 @@
             <div class="modal-body">
                 <div class="modal-field-group">
                     <label class="modal-label">Preset Name</label>
-                    <input type="text" id="presetNameInput" class="modal-select" placeholder="e.g. My Viral Glow, Yellow Punch..." maxlength="40" style="padding:10px 12px; font-size:13px;">
-                    <span class="modal-hint">Saves all active typography, colors, borders, shadows, glow, and background box settings.</span>
+                    <input type="text" id="presetNameInput" class="modal-select"
+                        placeholder="e.g. My Viral Glow, Yellow Punch..." maxlength="40"
+                        style="padding:10px 12px; font-size:13px;">
+                    <span class="modal-hint">Saves all active typography, colors, borders, shadows, glow, and background
+                        box settings.</span>
                 </div>
-                <div id="presetSaveSummary" style="font-size:11px; color:var(--text-secondary); background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px; line-height:1.6;"></div>
+                <div id="presetSaveSummary"
+                    style="font-size:11px; color:var(--text-secondary); background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px; line-height:1.6;">
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary btn-sm" id="savePresetCancelBtn">Cancel</button>
@@ -1077,14 +1207,18 @@
                 <!-- Export Progress Panel -->
                 <div class="modal-progress-panel" id="exportProgressPanel" style="display:none;">
                     <div class="modal-progress-spinner" id="exportProgressSpinner"></div>
-                    <div class="modal-progress-text" id="exportStatusText">Rendering video with burned captions via FFmpeg...</div>
+                    <div class="modal-progress-text" id="exportStatusText">Rendering video with burned captions via
+                        FFmpeg...</div>
                 </div>
             </div>
             <div class="modal-footer modal-footer-between">
                 <div class="modal-subtitles-download">
-                    <button type="button" class="btn btn-secondary btn-xs" id="exportSrtOnlyBtn" title="Download .SRT">.SRT</button>
-                    <button type="button" class="btn btn-secondary btn-xs" id="exportVttOnlyBtn" title="Download .VTT">.VTT</button>
-                    <button type="button" class="btn btn-secondary btn-xs" id="exportJsonOnlyBtn" title="Download .JSON">.JSON</button>
+                    <button type="button" class="btn btn-secondary btn-xs" id="exportSrtOnlyBtn"
+                        title="Download .SRT">.SRT</button>
+                    <button type="button" class="btn btn-secondary btn-xs" id="exportVttOnlyBtn"
+                        title="Download .VTT">.VTT</button>
+                    <button type="button" class="btn btn-secondary btn-xs" id="exportJsonOnlyBtn"
+                        title="Download .JSON">.JSON</button>
                 </div>
                 <div class="modal-actions-right">
                     <button type="button" class="btn btn-secondary btn-sm" id="exportCancelBtn">Cancel</button>
@@ -1092,7 +1226,8 @@
                         <svg data-lucide="clapperboard" width="14" height="14"></svg>
                         <span>✦ Render Video</span>
                     </button>
-                    <a id="exportDownloadLinkBtn" class="btn btn-primary btn-sm" style="display:none; text-decoration:none;" download>
+                    <a id="exportDownloadLinkBtn" class="btn btn-primary btn-sm"
+                        style="display:none; text-decoration:none;" download>
                         <svg data-lucide="download" width="14" height="14"></svg>
                         <span>⬇ Download Video</span>
                     </a>
@@ -1106,4 +1241,5 @@
     <!-- Dedicated Caption Studio JavaScript -->
     <script src="{{ url_for('static', filename='js/caption_studio/caption_studio.js') }}"></script>
 </body>
+
 </html>
