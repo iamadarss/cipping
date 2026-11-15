@@ -2833,7 +2833,7 @@ function initHomePageActions() {
             btnDiag.disabled = true;
             btnDiag.innerHTML = '<span class="spinner"></span> Checking...';
             try {
-                const res = await fetch('/api/editor/diagnostics');
+                const res = await fetch('/editor/api/editor/diagnostics');
                 const data = await res.json();
                 if (data.success && data.diagnostics) {
                     const d = data.diagnostics;
