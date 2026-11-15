@@ -19,6 +19,7 @@ from ai.subtitle_builder import SubtitleBuilder
 from ai.subtitle_renderer import SubtitleRenderer
 from ai.animated_caption_renderer import AnimatedCaptionRenderer
 from ai.translation import translate_transcript
+from core.settings_manager import settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +273,15 @@ def run_pipeline_job(job, app=None):
             "highlight_color": settings.get("caption_highlight_color", "#FFDD00"),
         }
         # Resolve canonical template / preset from CaptionPresetRegistry
-        tmpl_id = settings.get("template") or settings.get("template_id") or settings.get("preset_id") or settings.get("caption_template")
+        tmpl_id = (
+            settings.get("template")
+            or settings.get("template_id")
+            or settings.get("preset_id")
+            or settings.get("caption_template")
+            or settings_manager.get("general.preferredTemplate")
+            or settings_manager.get("captions.preferredTemplate")
+            or "clean_creator"
+        )
         if tmpl_id:
             try:
                 from ai.caption_presets import get_preset, CaptionPresetRegistry
@@ -563,7 +572,8 @@ def run_pipeline_job(job, app=None):
         if workflow_mode:
             try:
                 from ai.workflows import (
-                    WORKFLOWS,
+                    WorkflowSpec,
+                    WorkflowOptions,
                     run_highlights_workflow,
                     run_series_workflow,
                     run_topic_workflow,
@@ -579,7 +589,10 @@ def run_pipeline_job(job, app=None):
                     "trailer": run_trailer_workflow,
                 }
                 if wf_name in wf_runner_map:
-                    spec = WORKFLOWS.get(wf_name)
+                    wf_options_raw = settings.get("workflow_options") or {}
+                    wf_options = WorkflowOptions.from_json(wf_options_raw)
+                    clip_len_pref = settings.get("clip_length") or settings.get("clip_duration_preset") or "auto"
+                    spec = WorkflowSpec(workflow=wf_name, options=wf_options, clip_length=str(clip_len_pref))
                     runner = wf_runner_map[wf_name]
 
                     # Extract word-level timestamps from transcript
@@ -589,11 +602,12 @@ def run_pipeline_job(job, app=None):
                         if isinstance(item, dict):
                             if "words" in item and isinstance(item["words"], list):
                                 for w in item["words"]:
-                                    transcript_words.append({
-                                        "word": w.get("word", ""),
-                                        "start": float(w.get("start", 0.0)),
-                                        "end": float(w.get("end", 0.0))
-                                    })
+                                    if isinstance(w, dict):
+                                        transcript_words.append({
+                                            "word": str(w.get("word") or w.get("text") or ""),
+                                            "start": float(w.get("start", 0.0)),
+                                            "end": float(w.get("end", 0.0))
+                                        })
                             elif "text" in item and "start" in item and "end" in item:
                                 text_words = str(item.get("text", "")).split()
                                 st = float(item.get("start", 0.0))
@@ -606,23 +620,31 @@ def run_pipeline_job(job, app=None):
                                         "start": round(st + i * w_dur, 2),
                                         "end": round(st + (i + 1) * w_dur, 2)
                                     })
+                        elif isinstance(item, (list, tuple)) and len(item) >= 3:
+                            transcript_words.append({
+                                "word": str(item[0]),
+                                "start": float(item[1]),
+                                "end": float(item[2])
+                            })
 
-                    wf_res = runner(spec, transcript_words, total_dur)
-                    if wf_res and wf_res.candidates:
-                        job.add_log(f"AI Workflow '{spec.title}': {len(wf_res.candidates)} segments curated ({spec.tagline})")
+                    wf_res = runner(spec, transcript_words)
+                    if wf_res and getattr(wf_res, "candidates", None):
+                        job.add_log(f"AI Workflow '{wf_name.capitalize()}': {len(wf_res.candidates)} segments curated")
                         expected_segments = [
                             {
-                                "start": c.start,
-                                "end": c.end,
-                                "title": c.title,
-                                "virality_score": c.virality_score,
-                                "hook_type": c.hook_type
+                                "start": getattr(c, "start_time", getattr(c, "start", 0.0)),
+                                "end": getattr(c, "end_time", getattr(c, "end", 0.0)),
+                                "title": getattr(c, "hook_title", getattr(c, "title", f"Clip {idx}")),
+                                "hook_title": getattr(c, "hook_title", getattr(c, "title", "")),
+                                "virality_score": getattr(c, "virality_score", 70),
+                                "hook_type": getattr(c, "hook_type", "statement"),
+                                "point_labels": getattr(c, "point_labels", None),
                             }
-                            for c in wf_res.candidates
+                            for idx, c in enumerate(wf_res.candidates, start=1)
                         ]
                         merged_scenes = [
-                            {"start": c.start, "end": c.end}
-                            for c in wf_res.candidates
+                            {"start": s["start"], "end": s["end"]}
+                            for s in expected_segments
                         ]
             except Exception as wf_err:
                 job.add_log(f"Workflow engine note: {wf_err}")
@@ -813,7 +835,9 @@ def run_pipeline_job(job, app=None):
                 except Exception as e:
                     logger.debug(f"Could not load project template overrides: {e}")
 
-            export_container = settings_manager.get("general.defaultExportFormat", "mp4").lower().lstrip(".")
+            export_container = (
+                (job.settings.get("format") or job.settings.get("container") or settings_manager.get("general.defaultExportFormat", "mp4"))
+            ).lower().lstrip(".")
             if export_container not in ("mp4", "mkv", "mov"):
                 export_container = "mp4"
 
