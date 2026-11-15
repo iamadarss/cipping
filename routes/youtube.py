@@ -22,6 +22,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from flask import current_app as _app
 
+logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------
 # Configuration & Environment
 # ---------------------------------------------------------------
@@ -114,7 +116,7 @@ def get_db():
     for col in ["channel_handle", "channel_subscribers", "channel_video_count"]:
         try:
             conn.execute(f"ALTER TABLE tokens ADD COLUMN {col} TEXT")
-        except Exception:
+        except sqlite3.OperationalError:
             pass
 
     conn.execute("""
@@ -261,13 +263,13 @@ def get_db():
     # Ensure youtube_video_id column exists in upload_queue
     try:
         conn.execute("ALTER TABLE upload_queue ADD COLUMN youtube_video_id TEXT")
-    except Exception:
+    except sqlite3.OperationalError:
         pass
 
     # Ensure updated_at column exists in schedules
     try:
         conn.execute("ALTER TABLE schedules ADD COLUMN updated_at INTEGER DEFAULT 0")
-    except Exception:
+    except sqlite3.OperationalError:
         pass
 
     conn.commit()
@@ -381,8 +383,8 @@ def dict_to_credentials(d: Dict[str, Any]) -> Credentials:
         try:
             from datetime import datetime, timezone
             expiry = datetime.fromtimestamp(float(d["expires_at"]), tz=timezone.utc).replace(tzinfo=None)
-        except Exception:
-            pass
+        except (ValueError, TypeError, OverflowError) as exp_err:
+            logger.warning("Token expires_at parse warning: %s", exp_err)
     return Credentials(
         token=d["access_token"],
         refresh_token=d.get("refresh_token"),
@@ -934,8 +936,8 @@ def get_metadata():
                 loader = VideoLoader(video_path)
                 loader.thumbnail(thumb_path)
                 loader.close()
-            except Exception:
-                pass
+            except Exception as thumb_err:
+                logger.warning("Thumbnail generation error: %s", thumb_err)
         if thumb_path.exists():
             result["thumbnail"] = f"/download/thumbnail/{thumb_name}"
     else:
@@ -1070,8 +1072,8 @@ def _ensure_thumbnail(video_path, metadata):
             loader = VideoLoader(video_path)
             loader.thumbnail(thumb_path)
             loader.close()
-        except Exception:
-            pass
+        except Exception as thumb_err:
+            logger.warning("Thumbnail generation error: %s", thumb_err)
     if thumb_path.exists():
         return f"/download/thumbnail/{thumb_name}"
     # Fallback: use the metadata thumbnail if the upload returned one
@@ -1188,8 +1190,8 @@ def list_videos():
                     loader.close()
                     if thumb_path.exists():
                         d["thumbnail"] = f"/download/thumbnail/{thumb_name}"
-                except Exception:
-                    pass
+                except Exception as thumb_err:
+                    logger.warning("Thumbnail generation error: %s", thumb_err)
         videos.append(d)
     return jsonify({"success": True, "videos": videos})
 
@@ -1638,7 +1640,7 @@ def upload_chunk():
         return jsonify({"success": False, "error": "Video not found"}), 404
 
     try:
-        youtube = get_youtube_service()
+        get_youtube_service()
 
         # Return status
         file_size = video_row["file_size"] or 1
@@ -1944,8 +1946,8 @@ def list_playlists():
             conn.close()
             if rows:
                 return jsonify({"success": True, "playlists": [dict(r) for r in rows]})
-        except Exception:
-            pass
+        except Exception as db_err:
+            logger.warning("Playlist DB fallback error: %s", db_err)
         return jsonify({"success": True, "playlists": [], "warning": str(e)})
 
 
@@ -2628,8 +2630,8 @@ def capture_thumbnail():
             conn.close()
             if row:
                 filename = row["filename"]
-        except Exception:
-            pass
+        except Exception as db_err:
+            logger.warning("Video filename lookup error: %s", db_err)
 
     if not filename:
         return jsonify({"success": False, "error": "Filename required"}), 400
@@ -2844,17 +2846,18 @@ def smart_schedule_advice():
     
     # Determine base reference time
     ref_time = now
-    if latest_sched and latest_sched["scheduled_at"]:
+    target_ref = latest_sched["scheduled_at"] if (latest_sched and latest_sched["scheduled_at"]) else (latest_history["published_at"] if (latest_history and latest_history["published_at"]) else None)
+    if target_ref:
         try:
-            val = latest_sched["scheduled_at"]
-            if isinstance(val, (int, float)) or (isinstance(val, str) and val.isdigit()):
+            val = target_ref
+            if isinstance(val, (int, float)) or (isinstance(val, str) and str(val).isdigit()):
                 s_dt = datetime.fromtimestamp(int(val))
             else:
                 s_dt = datetime.fromisoformat(str(val).replace("Z", ""))
             if s_dt > ref_time:
                 ref_time = s_dt
-        except Exception:
-            pass
+        except (ValueError, TypeError, OverflowError) as date_err:
+            logger.warning("Could not parse schedule time: %s", date_err)
 
     # Spacing rule: 1 hour automated interval after ref_time
     min_next_time = ref_time + timedelta(hours=1.0)
@@ -2866,6 +2869,7 @@ def smart_schedule_advice():
     return jsonify({
         "success": True,
         "advice": {
+            "peak_hours": peak_hours,
             "peak_slots": [
                 {"label": "Morning Kickoff", "time": "09:00 AM", "audience": "Commute & Morning Feed"},
                 {"label": "Lunch Break", "time": "01:00 PM", "audience": "Quick Mobile Browsing"},

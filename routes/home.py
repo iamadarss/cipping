@@ -3,6 +3,7 @@
 import config
 from flask import Blueprint, render_template, request
 from models.project import Project
+from extensions import db
 from core.project_state import project_state
 
 home_bp = Blueprint("home", __name__)
@@ -46,7 +47,7 @@ def dashboard():
         
     if project_id_raw:
         try:
-            db_proj = Project.query.get(int(project_id_raw))
+            db_proj = db.session.get(Project, int(project_id_raw))
             if db_proj:
                 selected_project = db_proj.to_dict()
                 # Sync in-memory project state

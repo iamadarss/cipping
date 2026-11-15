@@ -201,9 +201,10 @@ def get_project_state(project_id):
         try:
             import json
             from models.project import Project
+            from extensions import db
             from core.project_state import MediaItem
             clean_id = int(str(project_id).replace("proj_", ""))
-            db_proj = Project.query.get(clean_id)
+            db_proj = db.session.get(Project, clean_id)
             if db_proj:
                 in_mem = project_state.create_project(
                     db_proj.source_path or "",

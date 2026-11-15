@@ -2,6 +2,7 @@
 
 import threading
 import time
+import logging
 from pathlib import Path
 
 import config
@@ -18,6 +19,8 @@ from ai.subtitle_builder import SubtitleBuilder
 from ai.subtitle_renderer import SubtitleRenderer
 from ai.animated_caption_renderer import AnimatedCaptionRenderer
 from ai.translation import translate_transcript
+
+logger = logging.getLogger(__name__)
 
 process_bp = Blueprint("process", __name__, url_prefix="/process")
 
@@ -311,6 +314,12 @@ def run_pipeline_job(job, app=None):
         hook_title_enabled = settings.get("hook_title_enabled", True)
         contextual_emoji_enabled = settings.get("contextual_emoji_enabled", True)
         broll_enabled = settings.get("broll_enabled", True)
+
+        caption_opts["emoji"] = bool(contextual_emoji_enabled)
+        if broll_enabled:
+            job.add_log("B-Roll Cutaways: Enabled (speech cue alignment active)")
+        else:
+            job.add_log("B-Roll Cutaways: Disabled by user settings")
 
         # 1. FFmpeg check
         job.set_step(1, "Checking FFmpeg")
@@ -657,9 +666,11 @@ def run_pipeline_job(job, app=None):
             reframe_x=reframe_x,
             prefix=naming_prefix,
             format_str=naming_format,
+            audio_normalization=audio_normalization_enabled,
         )
         clip_files = [Path(c).name for c in clips]
         job.add_log(f"Clips generated: {len(clips)} (Framed to {aspect_key})")
+        job.add_log(f"Audio Normalization (EBU R128): {'Enabled' if audio_normalization_enabled else 'Disabled'}")
 
         # Map clip files to segments
         clip_segment_map = {}
@@ -680,8 +691,8 @@ def run_pipeline_job(job, app=None):
             try:
                 from ai.keyword_extractor import KeywordExtractor
                 keyword_extractor = KeywordExtractor()
-            except Exception:
-                pass
+            except Exception as kw_err:
+                logger.warning("Keyword extractor initialization error: %s", kw_err)
 
         candidate_items = []
         for name in clip_files:
@@ -700,10 +711,10 @@ def run_pipeline_job(job, app=None):
                     hashtags = [f"#{kw['word'].capitalize()}" for kw in kw_list[:4]]
                     if hashtags:
                         hashtags.extend(["#Shorts", "#Viral"])
-                except Exception:
-                    pass
+                except Exception as kw_run_err:
+                    logger.warning("Keyword extraction failed for clip: %s", kw_run_err)
 
-            candidate_items.append({
+            c_item = {
                 "name": name,
                 "url": f"/download/clip/{name}",
                 "start": clip_start,
@@ -714,17 +725,40 @@ def run_pipeline_job(job, app=None):
                 "audio_energy": 75.0 if audio_energy_enabled else 60.0,
                 "motion_score": 72.0 if motion_detection_enabled else 60.0,
                 "face_score": 80.0 if smart_reframe_enabled else 70.0,
-            })
+                "broll_enabled": bool(broll_enabled),
+            }
+
+            if emotion_detection_enabled and clip_text:
+                try:
+                    from ai.emotion_detector import EmotionDetector
+                    emo_det = EmotionDetector()
+                    emo_info = emo_det.detect_in_text(clip_text, audio_energy=75.0 if audio_energy_enabled else 60.0)
+                    if emo_info and emo_info.get("emotion") != "neutral":
+                        c_item["emotion"] = emo_info.get("emotion")
+                        c_item["emotion_label"] = emo_info.get("label")
+                        c_item["emotion_emoji"] = emo_info.get("emoji")
+                except Exception as emo_err:
+                    logger.warning("Emotion detection note: %s", emo_err)
+
+            candidate_items.append(c_item)
 
         if viral_ranking_enabled:
             try:
                 from ai.clip_ranker import ClipRanker
                 ranker = ClipRanker()
                 ranked_items = ranker.rank_clips(candidate_items)
+                if min_viral_score > 0 and len(ranked_items) > 1:
+                    qualifying = [item for item in ranked_items if item.get("score", 0) >= min_viral_score]
+                    if qualifying:
+                        ranked_items = qualifying
+                        job.add_log(f"Filtered {len(candidate_items) - len(qualifying)} clips below min viral score {min_viral_score:.1f}.")
+                    else:
+                        ranked_items = ranked_items[:1]
+                        job.add_log(f"No clips exceeded min viral score {min_viral_score:.1f}; retaining top candidate.")
                 job.clips_meta = ranked_items
                 job.add_log(f"AI Viral Ranking complete: scored & ranked {len(ranked_items)} clips.")
             except Exception as rank_err:
-                print(f"[PROCESS] Ranking note: {rank_err}")
+                logger.warning("Ranking error: %s", rank_err)
                 job.clips_meta = candidate_items
         else:
             job.clips_meta = candidate_items
@@ -850,7 +884,7 @@ def run_pipeline_job(job, app=None):
 
             db_proj = None
             if project_id and str(project_id).isdigit():
-                db_proj = Project.query.get(int(project_id))
+                db_proj = db.session.get(Project, int(project_id))
             if not db_proj and job.filename:
                 db_proj = Project.query.filter_by(source_path=job.filename).first()
 

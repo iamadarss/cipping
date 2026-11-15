@@ -648,4 +648,27 @@ def test_viral_enhancer_features_and_routes():
     assert outro_json["url"].startswith("/static/uploads/previews/")
 
 
+def test_caption_studio_page_handles_query_params_safely_no_unbound_error():
+    """Verify A2 fix: query params with or without project/video do not trigger UnboundLocalError."""
+    app = create_app()
+    client = app.test_client()
+
+    # 1. No params
+    res1 = client.get("/caption-studio")
+    assert res1.status_code == 200
+
+    # 2. Non-existent project ID
+    res2 = client.get("/caption-studio?project_id=999999")
+    assert res2.status_code == 200
+
+    # 3. Invalid/malformed project ID
+    res3 = client.get("/caption-studio?project_id=not_a_number&src=non_existent.mp4")
+    assert res3.status_code == 200
+
+    # 4. With video param
+    res4 = client.get("/caption-studio?video=sample.mp4")
+    assert res4.status_code == 200
+
+
+
 

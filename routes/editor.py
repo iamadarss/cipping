@@ -25,7 +25,7 @@ def editor_view():
     
     if project_id_raw:
         try:
-            db_proj = Project.query.get(int(project_id_raw))
+            db_proj = db.session.get(Project, int(project_id_raw))
             if db_proj:
                 selected_project = db_proj.to_dict()
                 
@@ -360,7 +360,7 @@ def analyze_video_project():
     project_data = data.get("projectData", {})
 
     if not filename and project_id:
-        proj = Project.query.get(project_id)
+        proj = db.session.get(Project, int(project_id)) if str(project_id).isdigit() else None
         if proj and proj.source_path:
             filename = proj.source_path
 

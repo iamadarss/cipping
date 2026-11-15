@@ -4,11 +4,15 @@ import os
 import json
 import re
 import time
+import logging
 from pathlib import Path
 from flask import Blueprint, request, jsonify, send_file, render_template, session, redirect, current_app
 
 import config
+from extensions import db
 from core.project_manager import project_manager
+
+logger = logging.getLogger(__name__)
 
 caption_studio_bp = Blueprint("caption_studio", __name__)
 
@@ -18,6 +22,7 @@ def caption_studio_page():
     project_id = request.args.get("project_id", "") or request.args.get("projectId", "")
     filename = request.args.get("src", "")
     video_param = request.args.get("video", "")
+    video_to_load = video_param or filename or ""
     inherited_style = None
     caption_files = []
     preload_video = None
@@ -29,7 +34,7 @@ def caption_studio_page():
             from models.project import Project
             clean_id = project_id.replace("proj_", "")
             if clean_id.isdigit():
-                p = Project.query.get(int(clean_id))
+                p = db.session.get(Project, int(clean_id))
                 if p:
                     db_project = p.to_dict()
                     project_manager.record_recent_project(
@@ -42,18 +47,16 @@ def caption_studio_page():
                 p = Project.query.filter_by(name=project_id).first()
                 if p:
                     db_project = p.to_dict()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caption studio project lookup failed for %s: %s", project_id, e)
 
         if db_project and db_project.get("editor_state"):
             try:
-                import json
                 ed_state = json.loads(db_project["editor_state"])
-                if isinstance(ed_state, dict):
-                    if not video_to_load:
-                        video_to_load = ed_state.get("video_filename") or ed_state.get("source_video") or ""
-            except Exception:
-                pass
+                if isinstance(ed_state, dict) and not video_to_load:
+                    video_to_load = ed_state.get("video_filename") or ed_state.get("source_video") or ""
+            except Exception as e:
+                logger.warning("Caption studio editor_state parse error: %s", e)
 
         try:
             from core.project_state import project_state
@@ -62,11 +65,10 @@ def caption_studio_page():
                 inherited_style = project.caption_style
                 if filename:
                     caption_files = project_state.get_clip_caption_files(project_id, filename)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caption studio project_state access error: %s", e)
 
-    # Resolve video source
-    video_to_load = video_param or filename
+    # Resolve fallback video source from db_project if still not resolved
     if not video_to_load and db_project:
         video_to_load = db_project.get("source_path") or ""
 
@@ -74,15 +76,14 @@ def caption_studio_page():
     saved_style = None
     if db_project and db_project.get("editor_state"):
         try:
-            import json
             ed_state = json.loads(db_project["editor_state"])
             if isinstance(ed_state, dict):
                 saved_captions = ed_state.get("captions", [])
                 saved_style = ed_state.get("caption_style")
                 if not video_to_load:
                     video_to_load = ed_state.get("video_filename") or ed_state.get("source_video") or ""
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Caption studio saved captions parse error: %s", e)
 
     if video_to_load:
         # Check input dir first, then clips dir, then final dir
@@ -199,8 +200,8 @@ def auto_caption():
             if cp.exists() and cp.is_file() and cp.stat().st_size > 0:
                 video_path = cp
                 break
-        except Exception:
-            pass
+        except (OSError, ValueError) as err:
+            logger.debug("Candidate path check error for %s: %s", cp, err)
 
     # If still not found, search by name stem ONLY among valid media files (>1KB)
     if not video_path:
@@ -216,8 +217,8 @@ def auto_caption():
                         if p.stat().st_size > 1024:
                             video_path = p
                             break
-                except Exception:
-                    pass
+                except (OSError, ValueError):
+                    continue
             if video_path:
                 break
             # Try fuzzy match only on valid video files
@@ -227,8 +228,8 @@ def auto_caption():
                         if p.stat().st_size > 1024:
                             video_path = p
                             break
-                except Exception:
-                    pass
+                except (OSError, ValueError):
+                    continue
             if video_path:
                 break
 
@@ -283,10 +284,7 @@ def auto_caption():
                 if converted_text and converted_text.strip():
                     raw_text = converted_text.strip()
             except Exception as conv_err:
-                try:
-                    current_app.logger.warning("Language conversion fallback: %s", conv_err)
-                except Exception:
-                    pass
+                logger.warning("Language conversion fallback: %s", conv_err)
 
             words = raw_text.split()
             if not words:
@@ -348,19 +346,11 @@ def auto_caption():
                 project_state.add_caption_file(project_id, srt_file.name, "srt", f"/download/subtitle/{srt_file.name}")
                 project_state.add_caption_file(project_id, vtt_file.name, "vtt", f"/download/subtitle/{vtt_file.name}")
             except Exception as sub_err:
-                try:
-                    current_app.logger.warning("Could not persist initial project subtitle: %s", sub_err)
-                except Exception:
-                    pass
+                logger.warning("Could not persist initial project subtitle: %s", sub_err)
 
         return jsonify({"success": True, "captions": captions})
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        try:
-            current_app.logger.error("Auto caption failure: %s", e, exc_info=True)
-        except Exception:
-            pass
+        logger.error("Auto caption failure: %s", e, exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -443,10 +433,10 @@ def export_video():
                     try:
                         output_path.unlink(missing_ok=True)
                         enhanced_path.replace(output_path)
-                    except Exception:
-                        pass
+                    except OSError as rep_err:
+                        logger.warning("Could not replace output with enhanced video: %s", rep_err)
             except Exception as enh_err:
-                print(f"[CAPTION_STUDIO] Viral enhancements processing note: {enh_err}")
+                logger.warning("Viral enhancements processing note: %s", enh_err)
 
         # Save matching SRT & VTT in subtitle directory
         srt_path = config.SUBTITLE_DIR / f"{stem}_captions.srt"
@@ -458,8 +448,8 @@ def export_video():
             try:
                 from core.project_state import project_state
                 project_state.add_final_export(project_id, output_path.name, f"/download/final/{output_path.name}")
-            except Exception:
-                pass
+            except Exception as exp_err:
+                logger.warning("Could not register final export: %s", exp_err)
 
         return jsonify({
             "success": True,
@@ -492,7 +482,7 @@ def save_caption_state():
         if project_id:
             clean_id = str(project_id).replace("proj_", "")
             if clean_id.isdigit():
-                project = Project.query.get(int(clean_id))
+                project = db.session.get(Project, int(clean_id))
             if not project:
                 project = Project.query.filter_by(name=project_id).first()
 
@@ -569,7 +559,7 @@ def load_caption_state():
         clean_id = project_id.replace("proj_", "")
         project = None
         if clean_id.isdigit():
-            project = Project.query.get(int(clean_id))
+            project = db.session.get(Project, int(clean_id))
         if not project:
             project = Project.query.filter_by(name=project_id).first()
 
@@ -1267,8 +1257,8 @@ def save_caption_style():
                 current_styles.append(new_style)
                 project.caption_styles = current_styles
                 return jsonify({"success": True, "style": new_style, "styles": current_styles})
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Project style update error: %s", e)
 
     return jsonify({"success": True, "style": {"id": f"cstyle_{int(time.time())}", "name": name, "style": style}})
 
@@ -1324,8 +1314,8 @@ def list_caption_styles():
             project = project_state.get_project(project_id)
             if project and getattr(project, "caption_styles", None):
                 user_styles = project.caption_styles
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Could not read project caption_styles: %s", e)
 
     return jsonify({"success": True, "styles": builtin_presets + user_styles})
 
@@ -1339,18 +1329,17 @@ def _load_custom_presets():
     if not _PRESETS_FILE.exists():
         return []
     try:
-        import json
         return json.loads(_PRESETS_FILE.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        logger.warning("Could not read custom presets file: %s", e)
         return []
 
 def _save_custom_presets(presets):
     try:
-        import json
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
         _PRESETS_FILE.write_text(json.dumps(presets, indent=2), encoding="utf-8")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Could not save custom presets file: %s", e)
 
 
 @caption_studio_bp.route("/api/caption-studio/presets/save", methods=["POST"])

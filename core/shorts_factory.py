@@ -32,7 +32,7 @@ class ShortsFactory:
         Create an independent, fully editable Child Short Project linked to parent project.
         """
         with self._get_app_context():
-            parent = Project.query.get(parent_project_id)
+            parent = db.session.get(Project, parent_project_id)
             if not parent:
                 parent_name = f"Project {parent_project_id}"
                 source_fn = config.INPUT_DIR / "AI_Spark_Clip_001_1080p (1).mp4"
@@ -126,7 +126,7 @@ class ShortsFactory:
         enqueued_jobs = []
         with self._get_app_context():
             for pid in project_ids:
-                proj = Project.query.get(pid)
+                proj = db.session.get(Project, pid)
                 if not proj:
                     continue
 

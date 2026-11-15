@@ -112,16 +112,18 @@ class ClipGenerator:
         fps=None,
         quality=config.DEFAULT_QUALITY,
         reframe_x=None,
+        normalize_audio=False,
     ):
         """
         Create one MP4 clip using FFmpeg.
 
-        start_time  : float start (seconds)
-        duration    : float duration (seconds)
-        output_file : Path output file
-        aspect_key  : config.ASPECT_OPTIONS key (e.g. 'original', '9:16')
-        quality     : config.QUALITY_PRESETS key (e.g. 'original', '1080p')
-        reframe_x   : optional horizontal subject offset or center ratio
+        start_time      : float start (seconds)
+        duration        : float duration (seconds)
+        output_file     : Path output file
+        aspect_key      : config.ASPECT_OPTIONS key (e.g. 'original', '9:16')
+        quality         : config.QUALITY_PRESETS key (e.g. 'original', '1080p')
+        reframe_x       : optional horizontal subject offset or center ratio
+        normalize_audio : whether to apply EBU R128 audio loudnorm filter
         """
 
         output_file = Path(output_file)
@@ -155,6 +157,10 @@ class ClipGenerator:
 
         if filters:
             command += ["-vf", ",".join(filters)]
+
+        # Optional audio normalization (EBU R128 standard)
+        if normalize_audio:
+            command += ["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"]
 
         # Optional FPS (only when explicitly requested to avoid re-encode)
         if fps:
@@ -460,6 +466,7 @@ class ClipGenerator:
         reframe_x=None,
         prefix=None,
         format_str=None,
+        audio_normalization=False,
     ):
 
         if clip_duration is None:
@@ -498,6 +505,7 @@ class ClipGenerator:
                 fps=fps,
                 quality=quality,
                 reframe_x=reframe_x,
+                normalize_audio=audio_normalization,
             )
 
             if clip:
@@ -533,6 +541,7 @@ class ClipGenerator:
         reframe_x=None,
         prefix=None,
         format_str=None,
+        audio_normalization=False,
     ):
         """
         Generate clips from detected scenes according to user clipping mode.
@@ -554,6 +563,7 @@ class ClipGenerator:
                 reframe_x=reframe_x,
                 prefix=prefix,
                 format_str=format_str,
+                audio_normalization=audio_normalization,
             )
 
         if mode == config.CLIPPING_COUNT:
@@ -568,6 +578,7 @@ class ClipGenerator:
                 reframe_x=reframe_x,
                 prefix=prefix,
                 format_str=format_str,
+                audio_normalization=audio_normalization,
             )
 
         # Default: AI mode generates one unique edited clip per scene.
@@ -583,6 +594,7 @@ class ClipGenerator:
             reframe_x=reframe_x,
             prefix=prefix,
             format_str=format_str,
+            audio_normalization=audio_normalization,
         )
 
     # ======================================================
@@ -601,6 +613,7 @@ class ClipGenerator:
         reframe_x=None,
         prefix=None,
         format_str=None,
+        audio_normalization=False,
     ):
         """Pick `clip_count` best scenes evenly spaced through the video."""
         clips = []
@@ -641,6 +654,7 @@ class ClipGenerator:
                 fps=fps,
                 quality=quality,
                 reframe_x=reframe_x,
+                normalize_audio=audio_normalization,
             )
 
             if clip:
@@ -669,6 +683,7 @@ class ClipGenerator:
         reframe_x=None,
         prefix=None,
         format_str=None,
+        audio_normalization=False,
     ):
 
         clips = []
@@ -708,6 +723,7 @@ class ClipGenerator:
                 fps=fps,
                 quality=quality,
                 reframe_x=reframe_x,
+                normalize_audio=audio_normalization,
             )
 
             if clip:

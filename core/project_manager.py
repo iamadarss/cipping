@@ -281,8 +281,9 @@ class ProjectManager:
         """
         try:
             from models.project import Project
+            from extensions import db
             pid = int(str(project_id).replace("proj_", ""))
-            return Project.query.get(pid)
+            return db.session.get(Project, pid)
         except Exception:
             return self.get_recovery_snapshot(project_id)
 

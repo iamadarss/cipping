@@ -8,6 +8,7 @@ import os
 import re
 import time
 import json
+import logging
 from pathlib import Path
 
 import config
@@ -15,6 +16,8 @@ from ai.silence_detector import SilenceDetector
 from ai.highlight_engine import HighlightEngine
 from ai.smart_reframe import SmartReframer
 from ai.ai_advisor import AIAdvisor
+
+logger = logging.getLogger(__name__)
 
 DATA_DIR = config.ROOT_DIR / "data"
 COPILOT_HISTORY_FILE = DATA_DIR / "copilot_history.json"
@@ -39,24 +42,24 @@ class AICopilotEngine:
             try:
                 with open(COPILOT_HISTORY_FILE, "r", encoding="utf-8") as f:
                     return json.load(f)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Could not load copilot history: %s", e)
         return []
 
     def _save_history(self):
         try:
             with open(COPILOT_HISTORY_FILE, "w", encoding="utf-8") as f:
                 json.dump(self.history[-30:], f, indent=2)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Could not save copilot history: %s", e)
 
     def _load_settings(self):
         if COPILOT_SETTINGS_FILE.exists():
             try:
                 with open(COPILOT_SETTINGS_FILE, "r", encoding="utf-8") as f:
                     return { **DEFAULT_SETTINGS, **json.load(f) }
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Could not load copilot settings: %s", e)
         return DEFAULT_SETTINGS
 
     def save_settings(self, new_settings):
@@ -64,8 +67,8 @@ class AICopilotEngine:
         try:
             with open(COPILOT_SETTINGS_FILE, "w", encoding="utf-8") as f:
                 json.dump(self.settings, f, indent=2)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Could not save copilot settings: %s", e)
         return self.settings
 
     # =========================================================================
@@ -76,12 +79,6 @@ class AICopilotEngine:
         Parse natural language prompt in editor context and generate previewable structured action.
         """
         p_lower = prompt.lower().strip()
-        clips = context.get("clips", [])
-        audio_tracks = context.get("audioTracks", [])
-        audio_clips = context.get("audioClips", [])
-        graphics = context.get("graphics", [])
-        selected_clip_id = context.get("selectedClipId")
-        playhead_time = float(context.get("playheadTime", 0.0))
 
         # 1. Safety Guard Check: Block destructive filesystem commands
         destructive_patterns = ["delete all", "drop table", "remove files", "rm -rf", "delete source", "wipe disk", "format"]
@@ -140,8 +137,8 @@ class AICopilotEngine:
                     detector = SilenceDetector(noise_threshold_db=-30, min_duration_sec=0.5)
                     sil_data = detector.detect_silence(src_path)
                     silences = sil_data.get("silences", [])
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("SilenceDetector in copilot error: %s", e)
 
         if not silences or len(silences) == 0:
             silences = [
@@ -287,6 +284,7 @@ class AICopilotEngine:
             },
             "action": {
                 "type": "balance_audio",
+                "trackId": music_track.get("id") if music_track else "track_music",
                 "musicVolume": target_vol,
                 "ducking": True
             }
