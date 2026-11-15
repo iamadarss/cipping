@@ -100,6 +100,33 @@ class ViralEnhancer:
         img.save(output_path, "PNG")
         return output_path
 
+    @staticmethod
+    def _draw_vector_bell_icon(draw, cx, cy, size=28, fill=(255, 255, 255, 255)):
+        """Draw a crisp vector Bell & notification icon with dome, rim, clapper, and vibration waves."""
+        w = size
+        h = int(size * 1.1)
+        top_y = cy - h // 2
+        bot_y = cy + h // 2
+        # Top handle loop
+        draw.ellipse([cx - 4, top_y - 5, cx + 4, top_y + 2], outline=fill, width=2)
+        # Bell body flared polygon
+        pts = [
+            (cx - 5, top_y + 2),
+            (cx + 5, top_y + 2),
+            (cx + 9, top_y + int(h * 0.42)),
+            (cx + w // 2, bot_y - 4),
+            (cx - w // 2, bot_y - 4),
+            (cx - 9, top_y + int(h * 0.42)),
+        ]
+        draw.polygon(pts, fill=fill)
+        # Flared bottom rim
+        draw.rounded_rectangle([cx - w // 2 - 3, bot_y - 5, cx + w // 2 + 3, bot_y], radius=3, fill=fill)
+        # Clapper at bottom center
+        draw.ellipse([cx - 4, bot_y - 1, cx + 4, bot_y + 6], fill=fill)
+        # Subtle vibration sound waves
+        draw.arc([cx - w // 2 - 9, cy - 8, cx - w // 2 - 3, cy + 8], start=110, end=250, fill=fill, width=2)
+        draw.arc([cx + w // 2 + 3, cy - 8, cx + w // 2 + 9, cy + 8], start=-70, end=70, fill=fill, width=2)
+
     def generate_outro_cta_card(self, channel_name="UpClip Creator", handle="@creator", logo_path=None, output_path=None, card_width=860, card_height=240):
         """
         Dynamically draw a high-resolution, modern YouTube/Instagram style
@@ -141,7 +168,6 @@ class ViralEnhancer:
         font_title = _get_font(40, bold=True)
         font_handle = _get_font(24, bold=False)
         font_btn = _get_font(28, bold=True)
-        font_icon = _get_font(34, bold=True)
 
         # 3. Channel Avatar / Logo circle
         avatar_x = 40
@@ -176,7 +202,7 @@ class ViralEnhancer:
         draw.text((text_x, avatar_y + 80), handle if handle.startswith("@") else f"@{handle}", fill=(160, 174, 192, 255), font=font_handle)
 
         # 5. Red Subscribe Pill Button
-        btn_w = 210
+        btn_w = 230
         btn_h = 72
         btn_x = card_width - btn_w - 45
         btn_y = (card_height - btn_h) // 2
@@ -187,9 +213,9 @@ class ViralEnhancer:
             radius=36,
             fill=(255, 0, 0, 255)
         )
-        # Bell icon + SUBSCRIBE text
-        draw.text((btn_x + 28, btn_y + 16), "🔔", fill=(255, 255, 255, 255), font=font_icon)
-        draw.text((btn_x + 72, btn_y + 20), "SUBSCRIBE", fill=(255, 255, 255, 255), font=font_btn)
+        # Vector Bell Icon + SUBSCRIBE text
+        self._draw_vector_bell_icon(draw, btn_x + 36, btn_y + btn_h // 2, size=28, fill=(255, 255, 255, 255))
+        draw.text((btn_x + 64, btn_y + (btn_h - 28) // 2 - 2), "SUBSCRIBE", fill=(255, 255, 255, 255), font=font_btn)
 
         card.save(output_path, "PNG")
         return output_path
@@ -297,7 +323,7 @@ class ViralEnhancer:
             if logo_img_path and logo_img_path.exists():
                 wm_idx = current_input_index
                 current_input_index += 1
-                video_inputs.extend(["-i", str(logo_img_path)])
+                video_inputs.extend(["-loop", "1", "-i", str(logo_img_path)])
 
                 # Position math
                 if "left" in w_pos:
@@ -319,7 +345,7 @@ class ViralEnhancer:
                     f"[{wm_idx}:v]scale={logo_target_w}:-1,format=rgba,colorchannelmixer=aa={w_opacity:.2f}{wm_scaled}"
                 )
                 next_v = f"[v_wm_{wm_idx}]"
-                filter_chains.append(f"{last_v_stream}{wm_scaled}overlay=x={calc_x}:y={calc_y}{next_v}")
+                filter_chains.append(f"{last_v_stream}{wm_scaled}overlay=x={calc_x}:y={calc_y}:shortest=1{next_v}")
                 last_v_stream = next_v
 
         # -------------------------------------------------------------
@@ -332,8 +358,8 @@ class ViralEnhancer:
             handle = outro_cta.get("handle", "@creator")
             ch_logo = outro_cta.get("logo_path")
 
-            # Desired card width in video coordinates (~85% of screen width)
-            c_width = min(920, int(video_w * 0.85))
+            # Desired card width in video coordinates (~85% of screen width, clamped sensibly)
+            c_width = min(960, max(360, int(video_w * 0.85)))
             c_height = int(c_width * 0.28)
 
             card_path = temp_dir / f"outro_card_{int(time.time() * 1000)}.png"
@@ -349,19 +375,19 @@ class ViralEnhancer:
 
             card_idx = current_input_index
             current_input_index += 1
-            video_inputs.extend(["-i", str(card_path)])
+            video_inputs.extend(["-loop", "1", "-i", str(card_path)])
 
             # Card position centered horizontally, lower-third vertically
             pos_x = "(W-w)/2"
-            pos_y = f"H-h-{int(video_h * 0.16)}"
+            pos_y = f"H-h-{int(video_h * 0.14)}"
 
             card_scaled = f"[card_fade_{card_idx}]"
-            # Fade in over 0.5 seconds at outro_start
-            fade_expr = f"fade=t=in:st={outro_start:.2f}:d=0.5:alpha=1"
+            # Fade in over 0.4 seconds at outro_start
+            fade_expr = f"fade=t=in:st={outro_start:.2f}:d=0.4:alpha=1"
             filter_chains.append(f"[{card_idx}:v]format=rgba,{fade_expr}{card_scaled}")
 
             next_v = f"[v_outro_{card_idx}]"
-            filter_chains.append(f"{last_v_stream}{card_scaled}overlay=x={pos_x}:y={pos_y}:enable='between(t,{outro_start:.2f},{duration:.2f})'{next_v}")
+            filter_chains.append(f"{last_v_stream}{card_scaled}overlay=x={pos_x}:y={pos_y}:enable='between(t,{outro_start:.2f},{duration:.2f})':shortest=1{next_v}")
             last_v_stream = next_v
 
         # -------------------------------------------------------------

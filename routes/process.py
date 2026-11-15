@@ -271,6 +271,20 @@ def run_pipeline_job(job, app=None):
             "words_per_chunk": user_words_per_chunk,
             "highlight_color": settings.get("caption_highlight_color", "#FFDD00"),
         }
+        # Resolve canonical template / preset from CaptionPresetRegistry
+        tmpl_id = settings.get("template") or settings.get("template_id") or settings.get("preset_id") or settings.get("caption_template")
+        if tmpl_id:
+            try:
+                from ai.caption_presets import get_preset, CaptionPresetRegistry
+                preset_obj = get_preset(tmpl_id)
+                if preset_obj:
+                    p_dict = preset_obj.to_dict()
+                    caption_opts.update(p_dict)
+                    caption_opts["id"] = preset_obj.id
+                    caption_opts["preset_id"] = preset_obj.id
+            except Exception:
+                pass
+
         # Merge custom Caption Studio preset style if supplied (supporting both camelCase & snake_case)
         custom_cs_style = settings.get("custom_caption_style") or {}
         if custom_cs_style:
@@ -845,6 +859,27 @@ def run_pipeline_job(job, app=None):
 
             if not captioned_clips:
                 captioned_clips = list(clips)
+
+            # Apply Watermark Logo & Outro Subscribe CTA to generated clips if configured
+            watermark_settings = settings.get("watermark")
+            outro_settings = settings.get("outro_cta")
+            if (watermark_settings and watermark_settings.get("enabled")) or \
+               (outro_settings and outro_settings.get("enabled")):
+                try:
+                    from ai.viral_enhancer import viral_enhancer
+                    job.add_log("Applying branding & outro CTA card to generated clips...")
+                    for c_path in captioned_clips:
+                        enhanced_c = c_path.with_name(f"{c_path.stem}_enh.{export_container}")
+                        e_res = viral_enhancer.composite_enhancements(
+                            input_video=c_path,
+                            output_video=enhanced_c,
+                            watermark=watermark_settings,
+                            outro_cta=outro_settings
+                        )
+                        if e_res and enhanced_c.exists():
+                            enhanced_c.replace(c_path)
+                except Exception as e_clip_err:
+                    logger.warning("Clip enhancements notice: %s", e_clip_err)
 
             job.add_log(f"Captions/subtitles rendered for {len(captioned_clips)} clips.")
         else:

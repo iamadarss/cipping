@@ -1976,9 +1976,18 @@
 
         // Merge preset style into activeStyle
         Object.assign(activeStyle, preset.style);
+        activeStyle.id = preset.id;
+        activeStyle.preset_id = preset.id;
+        activeStyle.twoLineHierarchy = Boolean(preset.style.twoLineHierarchy || preset.style.two_line_hierarchy);
+        activeStyle.keywordScale = parseFloat(preset.style.keywordScale || preset.style.keyword_scale || 1.0);
+        activeStyle.secondaryFontFamily = preset.style.secondaryFontFamily || preset.style.secondary_font_family || '';
+        activeStyle.emphasisColor = preset.style.emphasisColor || preset.style.emphasis_color || '';
 
         updatePresetCardActiveUI();
         applyStyleToControls(activeStyle);
+        if (el.captionDragBox) {
+            el.captionDragBox.removeAttribute('data-current-text');
+        }
         updateLiveCaptionOverlay();
         showToast(`Preset: ${preset.name} applied`, 'success', 1500);
     }
@@ -2898,7 +2907,14 @@
         const payload = {
             videoFileName: state.serverFilename,
             captions: captionsToExport,
-            style: activeStyle,
+            style: {
+                ...activeStyle,
+                id: state.activePresetId || activeStyle.id || '',
+                preset_id: state.activePresetId || activeStyle.id || '',
+                twoLineHierarchy: Boolean(activeStyle.twoLineHierarchy || activeStyle.two_line_hierarchy),
+                keywordScale: parseFloat(activeStyle.keywordScale || activeStyle.keyword_scale || 1.0),
+                emphasisColor: activeStyle.emphasisColor || activeStyle.emphasis_color || '',
+            },
             project_id: state.projectId || '',
             resolution: el.exportResolutionSelect ? el.exportResolutionSelect.value : '9:16_1080p',
             fps: el.exportFpsSelect ? parseInt(el.exportFpsSelect.value, 10) : 30,
@@ -3015,17 +3031,47 @@
 
         const words = cap.words && cap.words.length > 0 ? cap.words : cap.text.split(' ').map(w => ({ text: w, start: cap.start, end: cap.end }));
 
-        // Rebuild tokens if text changed
-        const currentText = words.map(w => w.text).join(' ');
-        if (box.getAttribute('data-current-text') !== currentText) {
-            box.setAttribute('data-current-text', currentText);
+        const presetId = (activeStyle.preset_id || activeStyle.id || '').toLowerCase();
+        const twoLine = Boolean(activeStyle.twoLineHierarchy || activeStyle.two_line_hierarchy);
+        const kwScale = parseFloat(activeStyle.keywordScale || activeStyle.keyword_scale || 1.0);
+
+        // Determine split index for two-line hierarchy
+        let breakAfterIdx = -1;
+        if (words.length >= 2) {
+            if (presetId === 'cinematic_creator') {
+                breakAfterIdx = Math.max(0, Math.floor(words.length / 2) - 1);
+            } else if (presetId === 'bold_keyword_yellow') {
+                breakAfterIdx = 0;
+            } else if (presetId === 'editorial_layered') {
+                breakAfterIdx = 0;
+            } else if (twoLine || kwScale > 1.15) {
+                breakAfterIdx = words.length <= 3 ? 0 : Math.max(0, Math.floor(words.length / 2) - 1);
+            }
+        }
+
+        // Rebuild tokens if text or hierarchy layout changed
+        const currentKey = `${words.map(w => w.text).join(' ')}__${presetId}__${breakAfterIdx}`;
+        if (box.getAttribute('data-current-text') !== currentKey) {
+            box.setAttribute('data-current-text', currentKey);
             box.innerHTML = '';
             words.forEach((w, idx) => {
                 const span = document.createElement('span');
                 span.className = 'caption-word-token';
                 span.id = `capWord_${idx}`;
                 span.textContent = w.text;
+                span.setAttribute('data-word-idx', idx);
                 box.appendChild(span);
+
+                if (idx === breakAfterIdx && breakAfterIdx < words.length - 1) {
+                    const br = document.createElement('div');
+                    br.className = 'caption-flex-break';
+                    br.style.flexBasis = '100%';
+                    br.style.width = '100%';
+                    br.style.height = '0';
+                    br.style.margin = '0';
+                    br.style.padding = '0';
+                    box.appendChild(br);
+                }
             });
         }
 
@@ -3057,8 +3103,25 @@
         // Box & Alignment
         const rotateStr = activeStyle.isTilted ? ` rotate(${activeStyle.tiltAngle || -1.5}deg)` : '';
         box.style.transform = `scale(${scaleVal})${rotateStr}`;
-        box.style.justifyContent = activeStyle.textAlign === 'left' ? 'flex-start' :
-                                   activeStyle.textAlign === 'right' ? 'flex-end' : 'center';
+        const alignVal = activeStyle.textAlign === 'left' ? 'flex-start' :
+                         activeStyle.textAlign === 'right' ? 'flex-end' : 'center';
+        box.style.justifyContent = alignVal;
+        overlay.style.justifyContent = alignVal;
+        box.style.textAlign = activeStyle.textAlign || 'center';
+
+        // If no captions loaded yet, render demo preview words with full hierarchy support
+        if (!state.captions || state.captions.length === 0) {
+            renderCaptionWords({
+                text: 'morning matcha routine.',
+                start: 0,
+                end: 3,
+                words: [
+                    { text: 'morning', start: 0, end: 1 },
+                    { text: 'matcha', start: 1, end: 2 },
+                    { text: 'routine.', start: 2, end: 3 }
+                ]
+            }, 1.5);
+        }
 
         // Background
         if (activeStyle.bgMode === 'semi') {
@@ -3127,12 +3190,97 @@
         // Animation name normalization
         const anim = (activeStyle.animation || 'color_karaoke').toLowerCase().replace('-', '_');
 
-        // Typography styling for all word tokens
         const words = box.querySelectorAll('.caption-word-token');
-        words.forEach(w => {
-            w.style.fontFamily = `'${activeStyle.fontFamily}', sans-serif`;
-            w.style.fontWeight = activeStyle.fontWeight;
-            w.style.fontSize = `${activeStyle.fontSize}px`;
+        const numWords = words.length;
+        const presetId = (activeStyle.preset_id || activeStyle.id || '').toLowerCase();
+        const twoLine = Boolean(activeStyle.twoLineHierarchy || activeStyle.two_line_hierarchy);
+        const kwScale = parseFloat(activeStyle.keywordScale || activeStyle.keyword_scale || 1.0);
+        const baseFontSize = activeStyle.fontSize || 38;
+        const suppFontSize = Math.max(16, Math.round(baseFontSize * 0.85));
+        const kwFontSize = Math.max(20, Math.round(baseFontSize * Math.max(1.0, kwScale)));
+
+        // Typography styling for all word tokens with word-level hierarchy
+        words.forEach((w, idx) => {
+            let wordFontSize = baseFontSize;
+            let isKeywordRole = false;
+            let defaultWordColor = activeStyle.textColor || '#FFFFFF';
+            w.style.fontStyle = 'normal';
+
+            if (presetId === 'cinematic_creator' && numWords >= 2) {
+                const splitIdx = Math.max(1, Math.floor(numWords / 2));
+                if (idx < splitIdx) {
+                    wordFontSize = suppFontSize;
+                    defaultWordColor = '#FFFFFF';
+                } else {
+                    wordFontSize = kwFontSize;
+                    defaultWordColor = activeStyle.emphasisColor || '#FFD880';
+                    isKeywordRole = true;
+                }
+            } else if (presetId === 'bold_keyword_yellow' && numWords >= 2) {
+                if (idx === 0) {
+                    wordFontSize = kwFontSize;
+                    defaultWordColor = activeStyle.emphasisColor || '#00EAFF';
+                    isKeywordRole = true;
+                } else {
+                    wordFontSize = suppFontSize;
+                    defaultWordColor = '#FFFFFF';
+                }
+            } else if (presetId === 'modern_kinetic_cyan' && numWords >= 2) {
+                if (numWords >= 3) {
+                    if (idx === 1) {
+                        wordFontSize = kwFontSize;
+                        defaultWordColor = activeStyle.emphasisColor || '#FFFF00';
+                        isKeywordRole = true;
+                    } else {
+                        wordFontSize = suppFontSize;
+                        defaultWordColor = '#FFFFFF';
+                    }
+                } else {
+                    if (idx === 1) {
+                        wordFontSize = kwFontSize;
+                        defaultWordColor = activeStyle.emphasisColor || '#FFFF00';
+                        isKeywordRole = true;
+                    } else {
+                        wordFontSize = suppFontSize;
+                        defaultWordColor = '#FFFFFF';
+                    }
+                }
+            } else if (presetId === 'editorial_layered' && numWords >= 2) {
+                if (idx === 0) {
+                    wordFontSize = kwFontSize;
+                    defaultWordColor = '#E9F6FD';
+                    isKeywordRole = true;
+                } else {
+                    wordFontSize = suppFontSize;
+                    defaultWordColor = '#E9F6FD';
+                    w.style.fontStyle = 'italic';
+                }
+            } else if ((twoLine || kwScale > 1.15) && numWords >= 2) {
+                const splitIdx = numWords <= 3 ? 1 : Math.max(1, Math.floor(numWords / 2));
+                if (idx < splitIdx) {
+                    wordFontSize = suppFontSize;
+                    defaultWordColor = activeStyle.textColor || '#FFFFFF';
+                } else {
+                    wordFontSize = kwFontSize;
+                    defaultWordColor = activeStyle.emphasisColor || activeStyle.activeWordColor || '#00F0FF';
+                    isKeywordRole = true;
+                }
+            } else if (numWords === 3 && kwScale > 1.05) {
+                if (idx < 2) {
+                    wordFontSize = suppFontSize;
+                    defaultWordColor = activeStyle.textColor || '#FFFFFF';
+                } else {
+                    wordFontSize = kwFontSize;
+                    defaultWordColor = activeStyle.emphasisColor || activeStyle.activeWordColor || '#FFE600';
+                    isKeywordRole = true;
+                }
+            }
+
+            w.style.fontFamily = (isKeywordRole && activeStyle.secondaryFontFamily) ?
+                                 `'${activeStyle.secondaryFontFamily}', sans-serif` :
+                                 `'${activeStyle.fontFamily}', sans-serif`;
+            w.style.fontWeight = isKeywordRole ? '800' : activeStyle.fontWeight;
+            w.style.fontSize = `${wordFontSize}px`;
             w.style.letterSpacing = `${activeStyle.letterSpacing || 0}px`;
             w.style.lineHeight = activeStyle.lineHeight || 1.2;
             w.style.textTransform = textTransform;
@@ -3219,12 +3367,17 @@
                     w.style.opacity = '1';
                 }
             } else {
-                w.style.color = activeStyle.textColor || '#FFFFFF';
+                w.style.color = defaultWordColor;
                 w.style.background = 'transparent';
                 w.style.padding = '0';
                 w.style.borderRadius = '0';
                 w.style.transform = 'none';
                 w.style.boxShadow = 'none';
+                if (anim === 'smooth_fade') {
+                    w.style.opacity = Math.max(0.40, alpha * 0.65);
+                } else {
+                    w.style.opacity = alpha;
+                }
                 if (anim === 'smooth_fade') {
                     w.style.opacity = Math.max(0.40, alpha * 0.65);
                 } else {

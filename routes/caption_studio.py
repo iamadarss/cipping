@@ -11,6 +11,7 @@ from flask import Blueprint, request, jsonify, send_file, render_template, sessi
 import config
 from extensions import db
 from core.project_manager import project_manager
+from core.settings_manager import settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -419,28 +420,53 @@ def export_video():
         output_filename = f"captioned_{stem}.{container}"
         output_path = config.FINAL_DIR / output_filename
 
-        # Render burned captions using AnimatedCaptionRenderer with full styling
+        # Apply layer-ordered compositing:
+        # Layer 1: B-Roll Cutaways (overlay onto base video first)
+        b_rolls = data.get("b_rolls")
+        active_b_rolls = [b for b in b_rolls if b and b.get("enabled", True)] if isinstance(b_rolls, list) else []
+        current_source_video = video_path
+
+        if active_b_rolls:
+            try:
+                from ai.viral_enhancer import viral_enhancer
+                broll_temp = config.FINAL_DIR / f"broll_base_{stem}_{int(time.time() * 1000)}.mp4"
+                broll_res = viral_enhancer.composite_enhancements(
+                    input_video=video_path,
+                    output_video=broll_temp,
+                    b_rolls=active_b_rolls
+                )
+                if broll_res and broll_temp.exists():
+                    current_source_video = broll_temp
+            except Exception as b_err:
+                logger.warning("B-roll pre-compositing note: %s", b_err)
+
+        # Layer 2: Burn animated captions on top of video + B-Roll so captions are never hidden!
         renderer = AnimatedCaptionRenderer()
         result = renderer.render(
-            input_video=video_path,
+            input_video=current_source_video,
             transcript=captions,
             output_video=output_path,
             opts=style,
         )
 
+        # Clean up temporary broll base if used
+        if current_source_video != video_path and current_source_video.exists():
+            try:
+                current_source_video.unlink(missing_ok=True)
+            except Exception:
+                pass
+
         if not result or not output_path.exists():
             return jsonify({"success": False, "error": "FFmpeg caption rendering failed."}), 500
 
-        # Apply Viral Enhancements (Watermark Logo, Outro Subscribe CTA, SFX audio, B-Rolls) if enabled
+        # Layer 3 & 4: Watermark Logo & Outro Subscribe CTA Card & SFX
         watermark = data.get("watermark")
         outro_cta = data.get("outro_cta")
         sfx = data.get("sfx")
-        b_rolls = data.get("b_rolls")
 
         if (watermark and watermark.get("enabled")) or \
            (outro_cta and outro_cta.get("enabled")) or \
-           (sfx and sfx.get("enabled")) or \
-           (b_rolls and isinstance(b_rolls, list) and len(b_rolls) > 0):
+           (sfx and sfx.get("enabled")):
             try:
                 from ai.viral_enhancer import viral_enhancer
                 enhanced_path = config.FINAL_DIR / f"enhanced_{stem}_{int(time.time() * 1000)}.mp4"
@@ -450,7 +476,6 @@ def export_video():
                     watermark=watermark,
                     outro_cta=outro_cta,
                     sfx=sfx,
-                    b_rolls=b_rolls,
                     captions=captions
                 )
                 if enh_res and enhanced_path.exists():
