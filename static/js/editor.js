@@ -247,7 +247,7 @@ class UpClipEditor {
 
     async loadFonts() {
         try {
-            const res = await fetch(`${EDITOR_API}/fonts');
+            const res = await fetch(`${EDITOR_API}/fonts`);
             const data = await res.json();
             if (data.success && data.categories) {
                 this.populateFontSelects(data.categories);
@@ -442,7 +442,7 @@ class UpClipEditor {
 
         try {
             const filename = this.project.source_path || (this.clips[0] ? this.clips[0].filename : '');
-            const res = await fetch(`${EDITOR_API}/ai/analyze', {
+            const res = await fetch(`${EDITOR_API}/ai/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -772,7 +772,7 @@ class UpClipEditor {
         if (!list) return;
 
         try {
-            const res = await fetch(`${EDITOR_API}/audio-library');
+            const res = await fetch(`${EDITOR_API}/audio-library`);
             const data = await res.json();
             if (data.success && data.assets) {
                 this.renderAudioLibraryList(data.assets, filterCat);
@@ -885,7 +885,7 @@ class UpClipEditor {
             formData.append('file', file);
 
             try {
-                const res = await fetch(`${EDITOR_API}/upload-audio', {
+                const res = await fetch(`${EDITOR_API}/upload-audio`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1543,7 +1543,7 @@ class UpClipEditor {
             formData.append('file', file);
 
             try {
-                const res = await fetch(`${EDITOR_API}/upload-asset', {
+                const res = await fetch(`${EDITOR_API}/upload-asset`, {
                     method: 'POST',
                     body: formData
                 });
@@ -2737,7 +2737,7 @@ class UpClipEditor {
 
     async saveGraphicKeyframes(graphicId, keyframes) {
         try {
-            await fetch(`${EDITOR_API}/graphics/keyframes', {
+            await fetch(`${EDITOR_API}/graphics/keyframes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ graphic_id: graphicId, keyframes }),
@@ -2967,14 +2967,14 @@ class UpClipEditor {
     async loadTemplatesAndPresets() {
         try {
             // Load templates
-            const tplRes = await fetch(`${EDITOR_API}/templates');
+            const tplRes = await fetch(`${EDITOR_API}/templates`);
             const tplData = await tplRes.json();
             if (tplData.success && tplData.templates) {
                 this.renderTemplatesGrid(tplData.templates);
             }
 
             // Load presets and brand kit
-            const preRes = await fetch(`${EDITOR_API}/presets');
+            const preRes = await fetch(`${EDITOR_API}/presets`);
             const preData = await preRes.json();
             if (preData.success && preData.presets) {
                 const p = preData.presets;
@@ -3215,7 +3215,7 @@ class UpClipEditor {
 
         // 3. Save brand kit to backend
         try {
-            await fetch(`${EDITOR_API}/brand-kit', {
+            await fetch(`${EDITOR_API}/brand-kit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -3372,7 +3372,7 @@ class UpClipEditor {
                     };
 
                     try {
-                        const res = await fetch(`${EDITOR_API}/render-queue/add', {
+                        const res = await fetch(`${EDITOR_API}/render-queue/add`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
@@ -3457,7 +3457,7 @@ class UpClipEditor {
 
             if (clearHistoryBtn) {
                 clearHistoryBtn.addEventListener('click', async () => {
-                    await fetch(`${EDITOR_API}/render-queue/clear-history', { method: 'POST' });
+                    await fetch(`${EDITOR_API}/render-queue/clear-history`, { method: 'POST' });
                     this.pollRenderQueueStatus();
                 });
             }
@@ -3475,7 +3475,7 @@ class UpClipEditor {
         listEl.innerHTML = '<div style="color:var(--text-muted);">Running ready check verification...</div>';
 
         try {
-            const res = await fetch(`${EDITOR_API}/ready-check', {
+            const res = await fetch(`${EDITOR_API}/ready-check`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -3515,7 +3515,7 @@ class UpClipEditor {
 
     async pollRenderQueueStatus() {
         try {
-            const res = await fetch(`${EDITOR_API}/render-queue/status');
+            const res = await fetch(`${EDITOR_API}/render-queue/status`);
             const data = await res.json();
             if (data.success) {
                 const badge = document.getElementById('queueBadge');
@@ -3632,7 +3632,7 @@ class UpClipEditor {
 
                 // Fetch cache stats
                 try {
-                    const res = await fetch(`${EDITOR_API}/cache');
+                    const res = await fetch(`${EDITOR_API}/cache`);
                     const data = await res.json();
                     if (data.success && cacheSizeText) {
                         cacheSizeText.textContent = `${data.cache.tempSizeMB} MB (${data.cache.tempFilesCount} temp files)`;
@@ -3644,7 +3644,7 @@ class UpClipEditor {
 
             if (clearCacheBtn) {
                 clearCacheBtn.addEventListener('click', async () => {
-                    const res = await fetch(`${EDITOR_API}/cache', { method: 'POST' });
+                    const res = await fetch(`${EDITOR_API}/cache`, { method: 'POST' });
                     const data = await res.json();
                     if (data.success) {
                         if (cacheSizeText) cacheSizeText.textContent = '0 MB (0 temp files)';
@@ -3656,7 +3656,7 @@ class UpClipEditor {
             if (packageBtn) {
                 packageBtn.addEventListener('click', async () => {
                     try {
-                        const res = await fetch(`${EDITOR_API}/project/package', {
+                        const res = await fetch(`${EDITOR_API}/project/package`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ projectId: this.project.id })
@@ -4179,7 +4179,7 @@ class UpClipEditor {
                 modal.removeAttribute('hidden');
                 if (content) content.textContent = 'Loading system diagnostic data...';
                 try {
-                    const res = await fetch(`${EDITOR_API}/diagnostics');
+                    const res = await fetch(`${EDITOR_API}/diagnostics`);
                     const data = await res.json();
                     if (data.success && data.diagnostics) {
                         lastDiag = data.diagnostics;
@@ -4303,7 +4303,7 @@ class UpClipEditor {
             applyBtn.addEventListener('click', async () => {
                 if (this.pendingCopilotAction) {
                     this.applyCopilotAction(this.pendingCopilotAction);
-                    await fetch(`${EDITOR_API}/copilot/record', {
+                    await fetch(`${EDITOR_API}/copilot/record`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -4341,7 +4341,7 @@ class UpClipEditor {
         };
 
         try {
-            const res = await fetch(`${EDITOR_API}/copilot/query', {
+            const res = await fetch(`${EDITOR_API}/copilot/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: prompt, context: context })
@@ -4725,7 +4725,7 @@ class UpClipEditor {
                     const tplName = prompt("Enter Template Name:", layer.name || "Custom Graphic Template");
                     if (tplName) {
                         try {
-                            const res = await fetch(`${EDITOR_API}/graphics/templates', {
+                            const res = await fetch(`${EDITOR_API}/graphics/templates`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -4787,7 +4787,7 @@ class UpClipEditor {
         if (!grid) return;
 
         try {
-            const res = await fetch(`${EDITOR_API}/graphics/catalog');
+            const res = await fetch(`${EDITOR_API}/graphics/catalog`);
             const data = await res.json();
             if (data.success && data.catalog) {
                 grid.innerHTML = '';
@@ -4988,7 +4988,7 @@ class UpClipEditor {
         if (!diagList) return;
 
         try {
-            const res = await fetch(`${EDITOR_API}/audio/diagnostics', {
+            const res = await fetch(`${EDITOR_API}/audio/diagnostics`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -5067,7 +5067,7 @@ class UpClipEditor {
 
     async fetchMediaLibrary() {
         try {
-            const res = await fetch(`${EDITOR_API}/media/library');
+            const res = await fetch(`${EDITOR_API}/media/library`);
             const data = await res.json();
             if (data.success && Array.isArray(data.assets)) {
                 this.mediaLibrary = data.assets;
@@ -5325,7 +5325,7 @@ class UpClipEditor {
         const newPath = prompt(`Enter absolute or relative path to relink '${asset.filename}':`, asset.filepath || '');
         if (!newPath || !newPath.trim()) return;
 
-        fetch(`${EDITOR_API}/media/relink', {
+        fetch(`${EDITOR_API}/media/relink`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ oldFilename: asset.filename, newPath: newPath.trim() })
