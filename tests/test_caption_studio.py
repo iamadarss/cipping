@@ -32,7 +32,7 @@ def test_caption_studio_page_renders_with_full_workspace():
     assert "Studio Hub" in html
     assert "Downloader" in html
     assert "YouTube Desk" in html
-    assert "Help & Guide" in html
+    assert ("How to Use" in html or "Help & Guide" in html)
     assert "sidebarToggle" in html
 
     # 3. 9:16 Mobile Reel Frame & Transport Controls

@@ -67,6 +67,14 @@ def test_youtube_status_expired_handling(monkeypatch):
 
     from routes import youtube
 
+    # Seed mock token in database so status() evaluates credential expiry
+    conn = youtube.get_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO tokens (user_id, access_token, refresh_token) VALUES ('default', 'mock_token', 'mock_refresh')"
+    )
+    conn.commit()
+    conn.close()
+
     class MockExpiredCreds:
         token = "expired_token_mock"
         refresh_token = "mock_refresh"
@@ -79,12 +87,19 @@ def test_youtube_status_expired_handling(monkeypatch):
 
     monkeypatch.setattr(youtube, "dict_to_credentials", lambda d: MockExpiredCreds())
 
-    response = client.get("/youtube/status")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["connected"] is False
-    assert data["expired"] is True
-    assert "reconnect" in data["error"].lower()
+    try:
+        response = client.get("/youtube/status")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["connected"] is False
+        assert data["expired"] is True
+        assert "reconnect" in data["error"].lower()
+    finally:
+        # Clean up seeded mock token
+        conn = youtube.get_db()
+        conn.execute("DELETE FROM tokens WHERE user_id = 'default'")
+        conn.commit()
+        conn.close()
 
 
 def test_next_schedule_slot():
