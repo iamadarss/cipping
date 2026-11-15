@@ -10,7 +10,8 @@
     // 1. Application State
     // =========================================================================
     const state = {
-        currentTab: 'download',
+        currentTab: 'video',
+        preferredType: 'video',
         analysis: null,
         selectedFormat: { id: '1080p', type: 'video', quality: '1080p', ext: 'mp4' },
         playlistSelection: new Set(),
@@ -180,17 +181,40 @@
             tab.classList.toggle('active', tab.dataset.tab === tabName);
         });
 
+        // Map sub-tabs (video, audio, playlist, download) to main download pane
+        const targetPaneId = (tabName === 'video' || tabName === 'audio' || tabName === 'playlist' || tabName === 'download')
+            ? 'tab-download'
+            : `tab-${tabName}`;
+
         dom.tabPanes.forEach(pane => {
-            const isTarget = pane.id === `tab-${tabName}`;
+            const isTarget = pane.id === targetPaneId;
             pane.style.display = isTarget ? 'block' : 'none';
             if (isTarget) pane.classList.add('active');
             else pane.classList.remove('active');
         });
 
+        if (tabName === 'video') {
+            state.preferredType = 'video';
+            dom.inputYoutubeUrl.placeholder = 'Paste video or shorts link: https://www.youtube.com/watch?v=...';
+            filterRenderedFormats('video');
+        } else if (tabName === 'audio') {
+            state.preferredType = 'audio';
+            dom.inputYoutubeUrl.placeholder = 'Paste link to extract MP3/M4A audio: https://www.youtube.com/watch?v=...';
+            filterRenderedFormats('audio');
+        } else if (tabName === 'playlist') {
+            state.preferredType = 'playlist';
+            dom.inputYoutubeUrl.placeholder = 'Paste playlist link: https://www.youtube.com/playlist?list=...';
+        }
+
         if (tabName === 'queue') loadQueue();
         if (tabName === 'library') loadLibrary();
 
         if (window.lucide) window.lucide.createIcons();
+    }
+
+    function filterRenderedFormats(typePreference) {
+        if (!state.analysisData || !state.analysisData.formats) return;
+        renderFormatPills(state.analysisData.formats);
     }
 
     dom.navTabs.forEach(tab => {

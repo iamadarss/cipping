@@ -868,6 +868,43 @@ function displayVideoMetadata(metadata, thumbnail) {
         };
     }
 
+    // Dynamically adjust preview aspect ratio based on video metadata
+    const thumbBox = document.getElementById('metaThumbBox');
+    const aspectBadge = document.getElementById('metaAspectBadge');
+    if (thumbBox && metadata.width && metadata.height) {
+        const w = metadata.width;
+        const h = metadata.height;
+        const ratio = w / h;
+        if (ratio < 0.8) {
+            // Vertical Reel (e.g. 9:16)
+            thumbBox.style.aspectRatio = '9/16';
+            thumbBox.style.width = '140px';
+            thumbBox.style.height = '248px';
+            if (aspectBadge) {
+                aspectBadge.textContent = '📱 9:16 Vertical Reel';
+                aspectBadge.style.display = 'inline-block';
+            }
+        } else if (ratio > 1.2) {
+            // Landscape (e.g. 16:9)
+            thumbBox.style.aspectRatio = '16/9';
+            thumbBox.style.width = '280px';
+            thumbBox.style.height = 'auto';
+            if (aspectBadge) {
+                aspectBadge.textContent = '🖥️ 16:9 Landscape';
+                aspectBadge.style.display = 'inline-block';
+            }
+        } else {
+            // Square (e.g. 1:1 or 4:5)
+            thumbBox.style.aspectRatio = '1/1';
+            thumbBox.style.width = '200px';
+            thumbBox.style.height = '200px';
+            if (aspectBadge) {
+                aspectBadge.textContent = '⏹️ 1:1 Square';
+                aspectBadge.style.display = 'inline-block';
+            }
+        }
+    }
+
     // Populate duration badge
     const durationBadge = document.getElementById('metaDurationBadge');
     if (durationBadge) {
@@ -940,6 +977,15 @@ function buildSummary() {
     const aspect = document.querySelector('input[name="aspect"]:checked')?.value || '9:16';
     const mode = document.querySelector('input[name="clipmode"]:checked')?.value || 'ai';
     const naming = document.querySelector('input[name="naming"]:checked')?.value || 'content';
+    const workflow = document.getElementById('selectedWorkflow')?.value || 'highlights';
+
+    const workflowLabels = {
+        highlights: 'Highlights',
+        series: 'Series (Parts)',
+        topic: 'Topic Focus',
+        recap: 'Recap',
+        trailer: 'Trailer'
+    };
 
     const modeLabels = { ai: 'AI decides', duration: 'Duration', count: 'Count' };
     const namingLabels = { content: 'Content-based', sequential: 'Sequential' };
@@ -962,6 +1008,31 @@ function buildSummary() {
         captionStyleInfo = presetLabel;
     }
 
+    // Populate Top Meta Card on Processing Screen
+    const topThumb = document.getElementById('procTopThumb');
+    if (topThumb) {
+        const sourceStem = state.currentFile ? state.currentFile.substring(0, state.currentFile.lastIndexOf('.')) : '';
+        if (state.thumbnail) {
+            topThumb.src = state.thumbnail;
+        } else if (sourceStem) {
+            topThumb.src = `/download/thumbnail/${encodeURIComponent(sourceStem)}_thumb.jpg`;
+        }
+        topThumb.onerror = function() { this.src = '/static/img/default_thumb.png'; };
+    }
+    const topTitle = document.getElementById('procTopTitle');
+    if (topTitle) topTitle.textContent = state.currentFile || 'Video';
+    const topDur = document.getElementById('procTopDuration');
+    if (topDur) topDur.textContent = state.currentMetadata ? formatTime(state.currentMetadata.duration || 0) : '0:00';
+    const topRes = document.getElementById('procTopResolution');
+    if (topRes && state.currentMetadata && state.currentMetadata.width) {
+        topRes.textContent = `${state.currentMetadata.width} × ${state.currentMetadata.height}`;
+    }
+    const topAspect = document.getElementById('procTopAspectBadge');
+    if (topAspect) topAspect.textContent = `${aspect} ${aspect === '9:16' ? 'Vertical Reel' : aspect === '16:9' ? 'Landscape' : 'Format'}`;
+    const topMode = document.getElementById('procTopModeBadge');
+    if (topMode) topMode.textContent = workflowLabels[workflow] || modeLabels[mode] || 'AI Highlights';
+
+    // Collapsible technical details
     const summaryEl = document.getElementById('settingsSummary');
     if (summaryEl) {
         summaryEl.innerHTML = `
@@ -969,7 +1040,8 @@ function buildSummary() {
             <div class="summary-row"><span class="summary-label">Transcript Language</span><span class="summary-value">${lang}</span></div>
             <div class="summary-row"><span class="summary-label">Subtitle Language</span><span class="summary-value">${subLabel}</span></div>
             <div class="summary-row"><span class="summary-label">Aspect Ratio</span><span class="summary-value">${aspect}</span></div>
-            <div class="summary-row"><span class="summary-label">Clipping</span><span class="summary-value">${modeLabels[mode] || mode} — ${clipsInfo}</span></div>
+            <div class="summary-row"><span class="summary-label">Workflow Mode</span><span class="summary-value">${workflowLabels[workflow] || workflow}</span></div>
+            <div class="summary-row"><span class="summary-label">Clipping Strategy</span><span class="summary-value">${modeLabels[mode] || mode} — ${clipsInfo}</span></div>
             <div class="summary-row"><span class="summary-label">Naming</span><span class="summary-value">${namingLabels[naming] || naming}</span></div>
             ${captionStyleInfo ? `<div class="summary-row"><span class="summary-label">Caption Style</span><span class="summary-value">${captionStyleInfo}</span></div>` : ''}
         `;
@@ -1183,18 +1255,41 @@ function startPolling(jobId) {
 }
 
 function updateProgressUI(data) {
-    const percent = Math.round((data.steps_completed / data.total_steps) * 100);
-    pipelineFill.style.width = `${percent}%`;
+    const rawStep = data.steps_completed || 0;
     const maxSteps = data.total_steps || 8;
-    for (let i = 1; i <= maxSteps; i++) {
-        if (data.status === 'error') {
-            setStepState(i, i === data.steps_completed ? 'error' : (i < data.steps_completed ? 'done' : ''));
-        } else if (i < data.steps_completed) {
-            setStepState(i, 'done');
-        } else if (i === data.steps_completed) {
-            setStepState(i, 'active');
-} else {
-            setStepState(i, '');
+    const percent = Math.min(100, Math.max(0, Math.round((rawStep / maxSteps) * 100)));
+
+    if (pipelineFill) pipelineFill.style.width = `${percent}%`;
+    if (pipelinePercent) pipelinePercent.textContent = `${percent}%`;
+
+    const stageTitle = document.getElementById('procCurrentStageTitle');
+    const stageDesc = document.getElementById('procCurrentStageDesc');
+    if (stageTitle && data.step) {
+        stageTitle.textContent = data.step.charAt(0).toUpperCase() + data.step.slice(1);
+    }
+    if (stageDesc && data.logs && data.logs.length > 0) {
+        const lastLog = data.logs[data.logs.length - 1];
+        stageDesc.textContent = lastLog;
+    }
+
+    // 7 Real Processing Stages mapping
+    for (let s = 1; s <= 7; s++) {
+        const pill = document.getElementById(`stagePill-${s}`);
+        const badge = document.getElementById(`stageBadge-${s}`);
+        if (!pill || !badge) continue;
+
+        if (data.status === 'error' && s === rawStep) {
+            pill.className = 'stage-pill failed';
+            badge.textContent = 'Failed';
+        } else if (s < rawStep || data.finished) {
+            pill.className = 'stage-pill completed';
+            badge.textContent = 'Completed';
+        } else if (s === rawStep) {
+            pill.className = 'stage-pill active';
+            badge.textContent = 'In Progress';
+        } else {
+            pill.className = 'stage-pill pending';
+            badge.textContent = 'Pending';
         }
     }
 
@@ -1213,8 +1308,20 @@ function updateProgressUI(data) {
         state.pollInterval = null;
         resetPipelineBtn();
         stopTimer();
+        if (pipelinePercent) pipelinePercent.textContent = '100%';
+        if (pipelineFill) pipelineFill.style.width = '100%';
 
         if (data.status === 'done') {
+            for (let s = 1; s <= 7; s++) {
+                const pill = document.getElementById(`stagePill-${s}`);
+                const badge = document.getElementById(`stageBadge-${s}`);
+                if (pill && badge) {
+                    pill.className = 'stage-pill completed';
+                    badge.textContent = 'Completed';
+                }
+            }
+            if (stageTitle) stageTitle.textContent = 'Clips Generated Successfully!';
+            if (stageDesc) stageDesc.textContent = 'All video clips, transcripts, and subtitles rendered.';
             addLog('✅ Pipeline completed successfully!', 'success');
             handlePipelineDone(data.result);
         } else if (data.status === 'error') {
@@ -1222,6 +1329,180 @@ function updateProgressUI(data) {
         }
     }
 }
+
+// =========================================================================
+// Interactive Dino Runner Mini-Game Controller (Phase 11)
+// =========================================================================
+(function initDinoRunner() {
+    const toggleBtn = document.getElementById('toggleDinoGameBtn');
+    const toggleText = document.getElementById('dinoToggleText');
+    const container = document.getElementById('dinoGameContainer');
+    const canvas = document.getElementById('dinoCanvas');
+    const scoreEl = document.getElementById('dinoScore');
+    const highScoreEl = document.getElementById('dinoHighScore');
+    const restartBtn = document.getElementById('dinoRestartBtn');
+
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let isGameRunning = false;
+    let animationFrameId = null;
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem('upclip_dino_highscore') || '0', 10);
+    if (highScoreEl) highScoreEl.textContent = highScore;
+
+    let dino = { x: 30, y: 70, width: 22, height: 24, vy: 0, jumpPower: -8.5, gravity: 0.5, isGrounded: true };
+    let obstacles = [];
+    let obstacleTimer = 0;
+    let gameSpeed = 3.5;
+    let gameOver = false;
+
+    function resetGame() {
+        score = 0;
+        gameSpeed = 3.5;
+        gameOver = false;
+        dino.y = 70;
+        dino.vy = 0;
+        dino.isGrounded = true;
+        obstacles = [];
+        obstacleTimer = 0;
+        if (scoreEl) scoreEl.textContent = '0';
+    }
+
+    function jump() {
+        if (gameOver) {
+            resetGame();
+            return;
+        }
+        if (dino.isGrounded) {
+            dino.vy = dino.jumpPower;
+            dino.isGrounded = false;
+        }
+    }
+
+    function spawnObstacle() {
+        const height = 16 + Math.random() * 14;
+        obstacles.push({
+            x: canvas.width + 10,
+            y: 94 - height,
+            width: 12 + Math.random() * 8,
+            height: height
+        });
+    }
+
+    function update() {
+        if (!isGameRunning) return;
+
+        if (!gameOver) {
+            dino.vy += dino.gravity;
+            dino.y += dino.vy;
+            if (dino.y >= 70) {
+                dino.y = 70;
+                dino.vy = 0;
+                dino.isGrounded = true;
+            }
+
+            obstacleTimer++;
+            if (obstacleTimer > 70 + Math.random() * 40) {
+                spawnObstacle();
+                obstacleTimer = 0;
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= gameSpeed;
+
+                if (
+                    dino.x < obs.x + obs.width &&
+                    dino.x + dino.width > obs.x &&
+                    dino.y < obs.y + obs.height &&
+                    dino.y + dino.height > obs.y
+                ) {
+                    gameOver = true;
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('upclip_dino_highscore', highScore);
+                        if (highScoreEl) highScoreEl.textContent = highScore;
+                    }
+                }
+
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(i, 1);
+                    score += 10;
+                    if (scoreEl) scoreEl.textContent = score;
+                    if (score % 100 === 0 && gameSpeed < 8) gameSpeed += 0.5;
+                }
+            }
+        }
+
+        ctx.fillStyle = '#0c0c0c';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Ground line
+        ctx.strokeStyle = '#262626';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 94);
+        ctx.lineTo(canvas.width, 94);
+        ctx.stroke();
+
+        // Draw Dino
+        ctx.fillStyle = '#10B981';
+        ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(dino.x + 14, dino.y + 4, 3, 3);
+
+        // Draw Obstacles
+        ctx.fillStyle = '#EF4444';
+        obstacles.forEach(obs => {
+            ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        });
+
+        if (gameOver) {
+            ctx.fillStyle = 'rgba(0,0,0,0.65)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over! Tap or press Space to restart', canvas.width / 2, canvas.height / 2);
+        }
+
+        animationFrameId = requestAnimationFrame(update);
+    }
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                toggleText.textContent = 'Close Game';
+                isGameRunning = true;
+                resetGame();
+                cancelAnimationFrame(animationFrameId);
+                update();
+            } else {
+                container.style.display = 'none';
+                toggleText.textContent = 'Play Mini-Game';
+                isGameRunning = false;
+                cancelAnimationFrame(animationFrameId);
+            }
+        });
+    }
+
+    if (restartBtn) restartBtn.addEventListener('click', resetGame);
+
+    window.addEventListener('keydown', (e) => {
+        if (isGameRunning && (e.code === 'Space' || e.code === 'ArrowUp')) {
+            e.preventDefault();
+            jump();
+        }
+    });
+
+    canvas.addEventListener('click', jump);
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        jump();
+    });
+})();
 
 function handlePipelineDone(result) {
     if (!result) return;
@@ -1829,15 +2110,25 @@ function initSidebar() {
     if (!sidebar) return;
     
     const savedState = localStorage.getItem('upclip_sidebar_collapsed');
-    if (savedState === 'true') {
+    if (savedState === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
         sidebar.classList.add('collapsed');
+        document.documentElement.classList.add('sidebar-collapsed');
+    } else {
+        sidebar.classList.remove('collapsed');
+        document.documentElement.classList.remove('sidebar-collapsed');
     }
     
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('upclip_sidebar_collapsed', isCollapsed);
+            localStorage.setItem('upclip_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+            localStorage.setItem('flip_sidebar_collapsed', isCollapsed ? '1' : '0');
+            if (isCollapsed) {
+                document.documentElement.classList.add('sidebar-collapsed');
+            } else {
+                document.documentElement.classList.remove('sidebar-collapsed');
+            }
         });
     }
 }

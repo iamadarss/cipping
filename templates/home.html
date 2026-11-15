@@ -13,6 +13,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Anti-FOUC script for theme & sidebar persistence -->
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('upclip_theme');
+                if (savedTheme) {
+                    document.documentElement.setAttribute('data-theme', savedTheme);
+                }
+                if (localStorage.getItem('upclip_sidebar_collapsed') === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch(e) {}
+        })();
+    </script>
 </head>
 <body>
     <div class="app-shell">
@@ -26,7 +40,7 @@
                 <div class="topbar-divider"></div>
                 <div class="topbar-workspace-title">
                     <svg data-lucide="house" width="16" height="16" style="color:var(--primary);"></svg>
-                    <span>Home & Projects</span>
+                    <span>Home &amp; Projects</span>
                 </div>
             </div>
 
@@ -41,25 +55,21 @@
             </div>
 
             <div class="topbar-right">
-                <a href="/dashboard" class="btn btn-primary btn-sm"><svg data-lucide="plus" width="14" height="14"></svg> New Project</a>
+                <a href="/dashboard" class="btn btn-primary btn-sm">
+                    <svg data-lucide="plus" width="14" height="14"></svg>
+                    <span>New Project</span>
+                </a>
             </div>
         </header>
 
         <div class="app-main">
             <!-- Sidebar Navigation -->
             <aside class="app-sidebar" id="appSidebar">
-                <div class="sidebar-header">
-                    <a href="/dashboard" class="sidebar-new-btn">
-                        <svg data-lucide="plus" width="16" height="16"></svg>
-                        <span>New Project</span>
-                    </a>
-                </div>
-
                 <nav class="sidebar-nav">
                     <div class="nav-section-label">Workspaces</div>
                     <a href="/" class="sidebar-item active" data-tooltip="Home & Projects">
                         <div class="sidebar-icon"><svg data-lucide="house" width="18" height="18"></svg></div>
-                        <span class="sidebar-label">Home & Projects</span>
+                        <span class="sidebar-label">Home &amp; Projects</span>
                     </a>
                     <a href="/dashboard" class="sidebar-item" data-tooltip="AI Clip Studio">
                         <div class="sidebar-icon"><svg data-lucide="wand-sparkles" width="18" height="18"></svg></div>
@@ -73,7 +83,7 @@
                         <div class="sidebar-icon"><svg data-lucide="shapes" width="18" height="18"></svg></div>
                         <span class="sidebar-label">Studio Hub</span>
                     </a>
-                    <a href="/yt-downloader" class="sidebar-item" data-tooltip="YT Downloader">
+                    <a href="/yt-downloader" class="sidebar-item" data-tooltip="Media Downloader">
                         <div class="sidebar-icon"><svg data-lucide="download" width="18" height="18"></svg></div>
                         <span class="sidebar-label">Downloader</span>
                     </a>
@@ -104,105 +114,128 @@
             <!-- Main Workspace -->
             <main class="app-workspace">
                 <div class="workspace-content">
-                    <!-- Hero Banner -->
-                    <div class="card" style="background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface-1) 100%); border: 1px solid var(--border); padding: var(--space-8) var(--space-6); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4); border-radius: var(--radius-card); box-shadow: var(--shadow-md); position: relative; overflow: hidden;">
-                        <div style="position: absolute; right: -60px; top: -60px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--primary-rgb), 0.18) 0%, transparent 70%); pointer-events: none;"></div>
-                        
-                        <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); background: var(--primary-soft); border: 1px solid rgba(var(--primary-rgb), 0.35); font-size: var(--text-xs); font-weight: 700; color: var(--primary);">
-                            <svg data-lucide="sparkles" width="14" height="14" aria-hidden="true"></svg>
-                            <span>Desktop AI Video Suite 2.0</span>
+                    
+                    <!-- 1. Compact Welcome / Hero Section -->
+                    <section class="home-hero-compact" aria-label="Welcome banner">
+                        <div class="home-hero-glow"></div>
+                        <div class="home-hero-content">
+                            <div class="home-badge">
+                                <svg data-lucide="sparkles" width="13" height="13" aria-hidden="true"></svg>
+                                <span>Desktop AI Video Suite 2.0</span>
+                            </div>
+                            <h1 class="home-hero-title">
+                                Welcome to <span class="text-accent">UpClip Studio</span>
+                            </h1>
+                            <p class="home-hero-subtitle">
+                                Transform long-form videos into high-retention viral shorts with automated scene detection, on-device Whisper AI speech-to-text, and cinematic creator captions.
+                            </p>
+                            <div class="home-hero-tags">
+                                <span class="hero-tag-pill">
+                                    <svg data-lucide="shield-check" width="12" height="12"></svg>
+                                    <span>100% Offline Local Processing</span>
+                                </span>
+                                <span class="hero-tag-pill">
+                                    <svg data-lucide="mic" width="12" height="12"></svg>
+                                    <span>Whisper AI Speech Engine</span>
+                                </span>
+                                <span class="hero-tag-pill">
+                                    <svg data-lucide="clapperboard" width="12" height="12"></svg>
+                                    <span>24 Creator Caption Presets</span>
+                                </span>
+                            </div>
                         </div>
-                        <h1 style="font-family: var(--font-heading); font-size: var(--text-2xl, 32px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: var(--text-primary);">
-                            Turn any long-form video into <span style="color: var(--primary); text-shadow: 0 0 20px rgba(var(--primary-rgb), 0.35);">viral shorts</span>
-                        </h1>
-                        <p style="color: var(--text-secondary); max-width: 660px; font-size: var(--text-sm); line-height: 1.6;">
-                            Automatic scene detection, Whisper AI speech-to-text, word-by-word karaoke subtitles, and multi-format reframing — run completely on your local device.
-                        </p>
-                        <div style="display: flex; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap; z-index: 2;">
-                            <a href="/dashboard" class="btn btn-primary"><svg data-lucide="wand-sparkles" width="16" height="16" aria-hidden="true"></svg> Launch Clip Studio</a>
-                            <a href="/caption-studio" class="btn btn-secondary"><svg data-lucide="captions" width="16" height="16" aria-hidden="true"></svg> Caption Studio</a>
-                            <a href="/yt-downloader" class="btn btn-secondary"><svg data-lucide="download" width="16" height="16" aria-hidden="true"></svg> YouTube Downloader</a>
-                            <a href="/settings" class="btn btn-secondary"><svg data-lucide="settings" width="16" height="16" aria-hidden="true"></svg> Settings</a>
-                        </div>
-                    </div>
+                    </section>
 
-                    <!-- Primary Action Cards (Desktop 2-col, Tablet 2-col, Mobile 1-col) -->
-                    <!-- Visually hidden H2 to restore valid document outline (H1 -> H2 -> H3) -->
-                    <h2 class="sr-only">Quick Actions</h2>
-                    <div class="home-action-grid" style="margin-top: var(--space-5);">
-                        <!-- Card 1: Upload Your Media -->
-                        <div class="home-action-card" id="homeDropTarget" style="display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; transition: all var(--transition-fast);">
-                            <div class="card-content">
-                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-3);">
-                                    <div class="card-icon" style="margin-bottom:0;">
-                                        <svg data-lucide="upload-cloud" width="22" height="22" aria-hidden="true"></svg>
+                    <!-- 2. Two Primary Workspace Cards -->
+                    <section class="home-workspaces-section" aria-labelledby="headingWorkspaces">
+                        <div class="home-workspaces-header">
+                            <h2 id="headingWorkspaces" class="section-heading-sm">Primary Workspaces</h2>
+                            <span class="section-tag-label">Video Creation Suites</span>
+                        </div>
+                        <div class="home-workspaces-grid">
+                            <!-- Card 1: AI Clip Studio -->
+                            <div class="workspace-card workspace-card-clip">
+                                <div class="workspace-card-glow clip-glow"></div>
+                                <div class="workspace-card-top">
+                                    <div class="workspace-icon-wrap clip-icon-wrap">
+                                        <svg data-lucide="wand-sparkles" width="22" height="22" aria-hidden="true"></svg>
                                     </div>
-                                    <div style="display:flex; gap:4px;">
-                                        <span class="file-chip">MP4</span>
-                                        <span class="file-chip">MOV</span>
-                                        <span class="file-chip">AUDIO</span>
+                                    <span class="workspace-badge clip-badge">AI PIPELINE</span>
+                                </div>
+                                <div class="workspace-card-body">
+                                    <h3 class="workspace-card-title">AI Clip Studio</h3>
+                                    <p class="workspace-card-desc">
+                                        Automated video clipping engine with viral scene detection, speech energy analysis, retention scoring, and smart multi-format 9:16 vertical reframing.
+                                    </p>
+                                    <div class="workspace-features-list">
+                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> 5 AI Modes (Highlights, Series, Topic, Recap, Trailer)</span>
+                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> Smart Face-Centered Video Reframing</span>
+                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> PyTorch GPU/CPU Neural Engine</span>
                                     </div>
                                 </div>
-                                <h3 class="card-title">UPLOAD YOUR MEDIA</h3>
-                                <p class="card-desc">Drag &amp; drop any long-form video or audio file here, or click to browse from your device.</p>
-                                
-                                <div id="homeSelectedFilename" style="display:none; font-size: var(--text-xs); color: var(--primary); font-weight: 600; font-family: var(--font-mono); margin-top: 8px; word-break: break-all;"></div>
-                                
-                                <div id="homeUploadProgressWrap" style="display:none; width: 100%; margin-top: 10px;">
-                                    <div style="display:flex; justify-content:space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-                                        <span id="homeUploadStatusText">Uploading media...</span>
-                                        <span id="homeUploadPercent" style="font-family: var(--font-mono); font-weight: 700; color: var(--primary);">0%</span>
-                                    </div>
-                                    <div style="height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden;">
-                                        <div id="homeUploadProgressBar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.15s ease;"></div>
-                                    </div>
+                                <div class="workspace-card-action">
+                                    <a href="/dashboard" class="btn btn-primary w-full workspace-launch-btn">
+                                        <svg data-lucide="wand-sparkles" width="15" height="15"></svg>
+                                        <span>Open AI Clip Studio</span>
+                                        <svg data-lucide="arrow-right" width="14" height="14" style="margin-left:auto;"></svg>
+                                    </a>
                                 </div>
                             </div>
-                            <div class="card-action" style="margin-top: var(--space-3);">
-                                <input type="file" id="homeFileInput" accept="video/mp4,video/quicktime,video/webm,video/*,audio/*" style="display:none;">
-                                <button type="button" class="btn btn-primary btn-sm w-full" id="btnHomeImportFile">
-                                    <svg data-lucide="folder-open" width="14" height="14" aria-hidden="true"></svg>
-                                    <span>Select File to Upload</span>
-                                </button>
+
+                            <!-- Card 2: Caption Studio -->
+                            <div class="workspace-card workspace-card-caption">
+                                <div class="workspace-card-glow caption-glow"></div>
+                                <div class="workspace-card-top">
+                                    <div class="workspace-icon-wrap caption-icon-wrap">
+                                        <svg data-lucide="captions" width="22" height="22" aria-hidden="true"></svg>
+                                    </div>
+                                    <span class="workspace-badge caption-badge">TYPOGRAPHY</span>
+                                </div>
+                                <div class="workspace-card-body">
+                                    <h3 class="workspace-card-title">Caption Studio</h3>
+                                    <p class="workspace-card-desc">
+                                        Word-by-word animated subtitle designer with 24 viral creator presets, Ice Blue neon glow, Hindi Devanagari typography, and hardburned MP4 exports.
+                                    </p>
+                                    <div class="workspace-features-list">
+                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> 24 Production Styles (Cinematic, Aesthetic, Loud)</span>
+                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> Hindi, English &amp; Hinglish Transliteration</span>
+                                        <span class="feature-chip"><svg data-lucide="check" width="11" height="11"></svg> SRT, VTT, ASS &amp; Hardburned Video Burning</span>
+                                    </div>
+                                </div>
+                                <div class="workspace-card-action">
+                                    <a href="/caption-studio" class="btn btn-secondary w-full workspace-launch-btn workspace-caption-btn">
+                                        <svg data-lucide="sparkles" width="15" height="15"></svg>
+                                        <span>Open Caption Studio</span>
+                                        <svg data-lucide="arrow-right" width="14" height="14" style="margin-left:auto;"></svg>
+                                    </a>
+                                </div>
                             </div>
                         </div>
+                    </section>
 
-                        <!-- Card 2: Premium Caption Studio -->
-                        <div class="home-action-card" style="display:flex; flex-direction:column; justify-content:space-between;">
-                            <div class="card-content">
-                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-3);">
-                                    <div class="card-icon" style="margin-bottom:0;">
-                                        <svg data-lucide="subtitles" width="22" height="22" aria-hidden="true"></svg>
-                                    </div>
-                                    <span style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-full); background: rgba(16, 185, 129, 0.12); color: var(--primary); border: 1px solid rgba(16, 185, 129, 0.25);">NEW PRESETS</span>
-                                </div>
-                                <h3 class="card-title">PREMIUM CAPTION STUDIO</h3>
-                                <p class="card-desc">Create engaging animated captions for Reels &amp; Shorts with 24 viral creator presets and karaoke word highlighting.</p>
-                                
-                                <!-- Visual Style Preview Chips -->
-                                <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top: var(--space-3);">
-                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0, 136, 255, 0.12); border: 1px solid rgba(0, 136, 255, 0.35); color: #80D8FF;">✨ Ice Blue Glow</span>
-                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(255, 234, 0, 0.12); border: 1px solid rgba(255, 234, 0, 0.35); color: #FFEA00;">⚡ Bold Yellow</span>
-                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0, 240, 255, 0.12); border: 1px solid rgba(0, 240, 255, 0.35); color: #00F0FF;">🌊 Kinetic Cyan</span>
-                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); color: #FFFFFF;">🎬 Hindi Minimal</span>
-                                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(253, 246, 233, 0.1); border: 1px solid rgba(253, 246, 233, 0.25); color: #FDF6E9; font-style: italic;">✒️ Editorial Serif</span>
-                                </div>
-                            </div>
-                            <div class="card-action" style="margin-top: var(--space-3);">
-                                <a href="/caption-studio" class="btn btn-secondary btn-sm w-full" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-                                    <svg data-lucide="sparkles" width="14" height="14" aria-hidden="true"></svg>
-                                    <span>Open Caption Studio</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Template Selector -->
-                    <div class="template-selector-wrap">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-3);">
+                    <!-- 3. Recent Projects Section -->
+                    <section class="home-projects-section" aria-labelledby="headingRecentProjects">
+                        <div class="home-section-header">
                             <div>
-                                <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--text-primary); margin:0;">Template Selector</h2>
-                                <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Choose a production-tested layout and style preset for your video.</p>
+                                <h2 id="headingRecentProjects" class="section-title">Recent Projects</h2>
+                                <p class="section-subtitle">Pick up right where you left off across all your editing sessions.</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" id="btnRefreshProjects" title="Refresh projects list">
+                                <svg data-lucide="refresh-cw" width="13" height="13"></svg>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                        <div id="projectsGrid" class="recent-projects-grid">
+                            <!-- Populated dynamically via main.js loadProjects() -->
+                        </div>
+                    </section>
+
+                    <!-- 4. Template Selector Section -->
+                    <section class="template-selector-wrap" aria-labelledby="headingTemplates">
+                        <div class="home-section-header" style="margin-bottom: var(--space-3);">
+                            <div>
+                                <h2 id="headingTemplates" class="section-title">Template Selector</h2>
+                                <p class="section-subtitle">Choose a production-tested layout and style preset for your video.</p>
                             </div>
                             <div id="templateActionWrap" style="display:none;">
                                 <button class="btn btn-primary btn-sm" id="btnUseSelectedTemplate" style="display:flex; align-items:center; gap:6px;">
@@ -230,39 +263,73 @@
 
                         <!-- Dynamic Grid Container -->
                         <div class="template-grid" id="homeTemplateGrid">
-                            <!-- Populated dynamically via JS with loading, empty, and populated states -->
-                        </div>
-                    </div>
-
-                    <!-- Recent Projects -->
-                    <div style="margin-top: var(--space-8);">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
-                            <div>
-                                <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--text-primary); margin:0;">Recent Projects</h2>
-                                <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Pick up right where you left off in your projects.</p>
-                            </div>
-                            <button class="btn btn-secondary btn-sm" id="btnRefreshProjects" title="Refresh projects list">
-                                <svg data-lucide="refresh-cw" width="13" height="13"></svg>
-                                <span>Refresh</span>
-                            </button>
-                        </div>
-                        <div id="projectsGrid" class="recent-projects-grid">
                             <!-- Populated dynamically via JS -->
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- Minimal Application Footer -->
+                    <!-- 5. Optional Project Activity & System Health Section -->
+                    <section class="home-activity-section" aria-labelledby="headingActivity">
+                        <div class="home-section-header" style="margin-bottom: var(--space-3);">
+                            <div>
+                                <h2 id="headingActivity" class="section-title">Workspace Activity &amp; Status</h2>
+                                <p class="section-subtitle">Real-time local processing engine readiness and capabilities.</p>
+                            </div>
+                            <a href="/settings?tab=diagnostics" class="btn btn-ghost btn-sm" style="font-size: 11.5px; color: var(--text-muted); text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                                <svg data-lucide="activity" width="13" height="13" style="color:var(--primary);"></svg>
+                                <span>Diagnostics &amp; Health →</span>
+                            </a>
+                        </div>
+                        <div class="home-activity-grid">
+                            <div class="activity-metric-card">
+                                <div class="metric-icon-wrap" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25);">
+                                    <svg data-lucide="shield-check" width="18" height="18"></svg>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-label">Local Processing</div>
+                                    <div class="metric-value">100% Offline</div>
+                                    <div class="metric-hint">Zero cloud uploads, total data privacy</div>
+                                </div>
+                            </div>
+                            <div class="activity-metric-card">
+                                <div class="metric-icon-wrap" style="background: rgba(99, 102, 241, 0.12); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.25);">
+                                    <svg data-lucide="mic" width="18" height="18"></svg>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-label">Speech Recognition</div>
+                                    <div class="metric-value">Whisper AI Ready</div>
+                                    <div class="metric-hint">Word timestamps &amp; VAD filtering</div>
+                                </div>
+                            </div>
+                            <div class="activity-metric-card">
+                                <div class="metric-icon-wrap" style="background: rgba(6, 182, 212, 0.12); color: #22D3EE; border: 1px solid rgba(6, 182, 212, 0.25);">
+                                    <svg data-lucide="palette" width="18" height="18"></svg>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-label">Caption Presets</div>
+                                    <div class="metric-value">24 Active Styles</div>
+                                    <div class="metric-hint">Ice Blue, Devanagari, Neon, Beast</div>
+                                </div>
+                            </div>
+                            <div class="activity-metric-card">
+                                <div class="metric-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.25);">
+                                    <svg data-lucide="cpu" width="18" height="18"></svg>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-label">Video Engine</div>
+                                    <div class="metric-value">FFmpeg Acceleration</div>
+                                    <div class="metric-hint">Multi-threaded H.264 rendering</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 6. Minimal Application Footer -->
                     <footer class="app-minimal-footer">
                         <div class="footer-left">
                             <span class="footer-brand">
                                 <svg data-lucide="sparkles" width="14" height="14" style="color:var(--primary);"></svg>
                                 <span>UpClip Studio</span>
                             </span>
-                            <span class="footer-divider">•</span>
-                            <a href="/settings?tab=diagnostics" class="footer-privacy-badge" title="All processing runs entirely on your local device">
-                                <svg data-lucide="lock" width="11" height="11"></svg>
-                                <span>Local Processing Enabled</span>
-                            </a>
                         </div>
                         <div class="footer-center">
                             <span class="footer-version">v2.4.0</span>
@@ -286,10 +353,11 @@
                             </a>
                         </div>
                     </footer>
-                    </div>
                 </div>
             </main>
         </div>
+    </div>
+
     <!-- Template Action Modal -->
     <div class="modal-overlay" id="templateActionModal" style="display:none; opacity:0; pointer-events:none; transition: opacity 0.2s ease;">
         <div class="modal" style="max-width: 520px; width: 100%; border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.6); background: var(--surface-1); padding: var(--space-6);">
@@ -322,8 +390,8 @@
                     <div style="display:flex; align-items:flex-start; gap: 8px;">
                         <span style="font-size: var(--text-sm);">🎨</span>
                         <div>
-                            <div style="font-weight:600; color:var(--text-primary);">Graphics & Badges</div>
-                            <div id="modalTemplateGraphics" style="color:var(--text-muted); font-size: var(--text-xs);">Hook cards & shapes</div>
+                            <div style="font-weight:600; color:var(--text-primary);">Graphics &amp; Badges</div>
+                            <div id="modalTemplateGraphics" style="color:var(--text-muted); font-size: var(--text-xs);">Hook cards &amp; shapes</div>
                         </div>
                     </div>
                     <div style="display:flex; align-items:flex-start; gap: 8px;">
@@ -362,111 +430,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         lucide.createIcons();
-        (function() {
-            const dropTarget = document.getElementById('homeDropTarget');
-            const fileInput = document.getElementById('homeFileInput');
-            const btnImport = document.getElementById('btnHomeImportFile');
-            const nameDisplay = document.getElementById('homeSelectedFilename');
-            const progressWrap = document.getElementById('homeUploadProgressWrap');
-            const progressBar = document.getElementById('homeUploadProgressBar');
-            const percentText = document.getElementById('homeUploadPercent');
-            const statusText = document.getElementById('homeUploadStatusText');
-
-            if (!dropTarget || !fileInput) return;
-
-            function handleFile(file) {
-                if (!file) return;
-                nameDisplay.textContent = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
-                nameDisplay.style.display = 'block';
-                progressWrap.style.display = 'block';
-                progressBar.style.width = '0%';
-                percentText.textContent = '0%';
-                statusText.textContent = 'Uploading media...';
-                if (btnImport) btnImport.disabled = true;
-
-                const formData = new FormData();
-                formData.append('video', file);
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/upload/video', true);
-
-                xhr.upload.onprogress = function(e) {
-                    if (e.lengthComputable) {
-                        const pct = Math.round((e.loaded / e.total) * 100);
-                        progressBar.style.width = pct + '%';
-                        percentText.textContent = pct + '%';
-                        if (pct >= 100) {
-                            statusText.textContent = 'Processing & opening AI Clip Studio...';
-                        }
-                    }
-                };
-
-                xhr.onload = function() {
-                    if (btnImport) btnImport.disabled = false;
-                    try {
-                        const res = JSON.parse(xhr.responseText);
-                        if (res.success && res.filename) {
-                            statusText.textContent = 'Complete! Redirecting...';
-                            window.location.href = `/dashboard?file=${encodeURIComponent(res.filename)}`;
-                        } else {
-                            statusText.textContent = 'Upload failed: ' + (res.error || 'Server error');
-                            progressBar.style.background = 'var(--error)';
-                        }
-                    } catch (err) {
-                        statusText.textContent = 'Upload error: ' + err.message;
-                    }
-                };
-
-                xhr.onerror = function() {
-                    if (btnImport) btnImport.disabled = false;
-                    statusText.textContent = 'Network error during upload';
-                    progressBar.style.background = 'var(--error)';
-                };
-
-                xhr.send(formData);
-            }
-
-            dropTarget.addEventListener('click', function(e) {
-                if (e.target !== fileInput && !e.target.closest('#btnHomeImportFile')) {
-                    fileInput.click();
-                }
-            });
-
-            if (btnImport) {
-                btnImport.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    fileInput.click();
-                });
-            }
-
-            fileInput.addEventListener('change', function(e) {
-                if (e.target.files && e.target.files.length > 0) {
-                    handleFile(e.target.files[0]);
-                }
-            });
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropTarget.addEventListener(eventName, function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropTarget.classList.add('dragover');
-                }, false);
-            });
-
-            ['dragleave', 'dragend', 'drop'].forEach(eventName => {
-                dropTarget.addEventListener(eventName, function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropTarget.classList.remove('dragover');
-                }, false);
-            });
-
-            dropTarget.addEventListener('drop', function(e) {
-                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    handleFile(e.dataTransfer.files[0]);
-                }
-            });
-        })();
     </script>
 </body>
 </html>

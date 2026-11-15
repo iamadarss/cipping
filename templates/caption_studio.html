@@ -12,6 +12,14 @@
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <!-- Base App Stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Anti-FOUC script for sidebar collapsed persistence -->
+    <script>
+        try {
+            if (localStorage.getItem('upclip_sidebar_collapsed') === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        } catch (e) {}
+    </script>
     <!-- Dedicated Caption Studio Stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/caption_studio/caption_studio.css') }}">
     <!-- Google Fonts Matching Project Standards -->

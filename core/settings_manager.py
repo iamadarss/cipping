@@ -72,11 +72,33 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
         "activeWhisperModel": "base",
         "preferredLanguage": "en"
     },
+    "stt": {
+        "engine": "whisper",
+        "model": "base",
+        "language": "auto",
+        "wordTimestamps": True,
+        "temperature": 0.0,
+        "hallucinationFilter": True,
+        "vadFilter": True
+    },
+    "tts": {
+        "provider": "edge-tts",
+        "voice": "en-US-ChristopherNeural",
+        "speechRate": "+0%",
+        "pitch": "+0Hz",
+        "volume": "+0%"
+    },
     "folders": {
         "mediaImportFolder": str(config.INPUT_DIR),
         "projectFolder": str(config.DATA_DIR / "projects"),
         "exportFolder": str(config.FINAL_DIR),
         "tempFolder": str(config.OUTPUT_DIR / "temp")
+    },
+    "privacy": {
+        "localProcessingOnly": True,
+        "telemetry": False,
+        "crashReports": False,
+        "offlineMode": True
     },
     "keyboard": {
         "playPause": "Space",

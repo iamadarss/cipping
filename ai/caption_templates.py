@@ -177,6 +177,7 @@ CAPTION_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "uppercase": False,
         "shadow": False,
         "glow": True,                   # Neon blur glow
+        "glow_blur": 4,
         "max_words_per_line": 4,
         "position_y": 0.76,
     },

@@ -11,6 +11,14 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Anti-FOUC script for sidebar collapsed persistence -->
+    <script>
+        try {
+            if (localStorage.getItem('upclip_sidebar_collapsed') === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        } catch (e) {}
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/creator_desk.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -124,9 +132,17 @@
 
                     <!-- Downloader Sub-Nav Tabs -->
                     <div class="desk-nav-bar" id="dlNavBar">
-                        <button class="desk-nav-tab active" data-tab="download">
-                            <svg data-lucide="download-cloud" width="15" height="15"></svg>
-                            <span>Download Source</span>
+                        <button class="desk-nav-tab active" data-tab="video">
+                            <svg data-lucide="video" width="15" height="15"></svg>
+                            <span>Video Downloader</span>
+                        </button>
+                        <button class="desk-nav-tab" data-tab="audio">
+                            <svg data-lucide="music" width="15" height="15"></svg>
+                            <span>Audio Downloader</span>
+                        </button>
+                        <button class="desk-nav-tab" data-tab="playlist">
+                            <svg data-lucide="list-video" width="15" height="15"></svg>
+                            <span>Playlist Downloads</span>
                         </button>
                         <button class="desk-nav-tab" data-tab="queue">
                             <svg data-lucide="layers" width="15" height="15"></svg>
@@ -135,7 +151,7 @@
                         </button>
                         <button class="desk-nav-tab" data-tab="library">
                             <svg data-lucide="folder" width="15" height="15"></svg>
-                            <span>Downloaded Media Library</span>
+                            <span>Media Library</span>
                             <span class="tab-badge" id="dlLibraryBadge">0</span>
                         </button>
                     </div>

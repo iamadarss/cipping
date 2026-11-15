@@ -520,7 +520,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         # Check glow effect
         glow_enabled = bool(opts.get("glow", False))
         glow_color = opts.get("glow_color") or "#70C8FF"
-        glow_blur = int(opts.get("glow_blur") or 6)
+        glow_blur = int(opts.get("glow_blur") or 4)
         if glow_enabled:
             glow_ass = self._to_ass_color(glow_color)
             glow_tag = r"{\blur%d\bord3\3c%s}" % (glow_blur, glow_ass)

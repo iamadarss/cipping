@@ -890,28 +890,22 @@
             const toggle = document.getElementById("sidebarToggle");
             const sidebar = document.getElementById("appSidebar");
             if (toggle && sidebar) {
+                const saved = localStorage.getItem("upclip_sidebar_collapsed") || localStorage.getItem("flip_sidebar_collapsed");
+                if (saved === "true" || saved === "1") {
+                    sidebar.classList.add("collapsed");
+                    document.documentElement.classList.add("sidebar-collapsed");
+                }
+
                 toggle.addEventListener("click", () => {
                     sidebar.classList.toggle("collapsed");
                     const isCollapsed = sidebar.classList.contains("collapsed");
+                    localStorage.setItem("upclip_sidebar_collapsed", isCollapsed ? "true" : "false");
                     localStorage.setItem("flip_sidebar_collapsed", isCollapsed ? "1" : "0");
-                });
-
-                if (localStorage.getItem("flip_sidebar_collapsed") === "1") {
-                    sidebar.classList.add("collapsed");
-                }
-            }
-
-            const settingsBtn = document.getElementById("sidebarSettingsBtn");
-            if (settingsBtn) {
-                settingsBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    // Scroll to settings accordion or open search & replace
-                    const settingsGroup = document.getElementById("accordionSettings");
-                    if (settingsGroup) {
-                        settingsGroup.classList.add("open");
-                        settingsGroup.scrollIntoView({ behavior: "smooth", block: "center" });
+                    if (isCollapsed) {
+                        document.documentElement.classList.add("sidebar-collapsed");
+                    } else {
+                        document.documentElement.classList.remove("sidebar-collapsed");
                     }
-                    this.showToast("Settings & Tools panel opened", "info");
                 });
             }
         }

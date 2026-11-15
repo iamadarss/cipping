@@ -1368,15 +1368,25 @@
     function initSidebar() {
         if (!el.appSidebar || !el.sidebarToggle) return;
 
-        const savedState = localStorage.getItem('upclip_sidebar_collapsed');
-        if (savedState === 'true') {
+        const savedState = localStorage.getItem('upclip_sidebar_collapsed') || localStorage.getItem('flip_sidebar_collapsed');
+        if (savedState === 'true' || savedState === '1') {
             el.appSidebar.classList.add('collapsed');
+            document.documentElement.classList.add('sidebar-collapsed');
+        } else {
+            el.appSidebar.classList.remove('collapsed');
+            document.documentElement.classList.remove('sidebar-collapsed');
         }
 
         el.sidebarToggle.addEventListener('click', () => {
             el.appSidebar.classList.toggle('collapsed');
             const isCollapsed = el.appSidebar.classList.contains('collapsed');
-            localStorage.setItem('upclip_sidebar_collapsed', isCollapsed);
+            localStorage.setItem('upclip_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+            localStorage.setItem('flip_sidebar_collapsed', isCollapsed ? '1' : '0');
+            if (isCollapsed) {
+                document.documentElement.classList.add('sidebar-collapsed');
+            } else {
+                document.documentElement.classList.remove('sidebar-collapsed');
+            }
         });
     }
 

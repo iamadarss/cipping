@@ -4,6 +4,16 @@
  * Settings Client, Background Task State Synchronization, and Tooltip System.
  */
 
+// Immediate Theme Synchronization
+(function initUpClipTheme() {
+    try {
+        const savedTheme = localStorage.getItem('upclip_theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+    } catch(e) {}
+})();
+
 // =========================================================================
 // 1. CENTRALIZED TOAST NOTIFICATION SYSTEM
 // =========================================================================

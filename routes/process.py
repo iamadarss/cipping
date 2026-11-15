@@ -530,35 +530,105 @@ def run_pipeline_job(job, app=None):
             old.unlink(missing_ok=True)
 
         expected_segments = []
-        if clipping_mode == config.CLIPPING_DURATION:
-            total_dur_int = int(total_dur)
-            start = 0
-            idx = 1
-            while start < total_dur_int:
-                end = min(start + (clip_duration or config.CLIP_DURATION), total_dur_int)
-                expected_segments.append({
-                    "start": start,
-                    "end": end,
-                })
-                start = end
-                idx += 1
-        elif clipping_mode == config.CLIPPING_COUNT:
-            n = len(merged_scenes) if merged_scenes else len(scenes)
-            count = clip_count or 1
-            step = max(n / count, 1)
-            for i in range(count):
-                idx = min(int(i * step), n - 1)
-                scene = (merged_scenes or scenes)[idx]
-                expected_segments.append({
-                    "start": scene["start"],
-                    "end": scene["end"],
-                })
-        else:
-            for idx, scene in enumerate(merged_scenes or scenes, start=1):
-                expected_segments.append({
-                    "start": scene["start"],
-                    "end": scene["end"],
-                })
+        # 5-Mode AI Workflows Engine Integration
+        workflow_mode = settings.get("workflow") or settings.get("workflow_mode")
+        if workflow_mode:
+            try:
+                from ai.workflows import (
+                    WORKFLOWS,
+                    run_highlights_workflow,
+                    run_series_workflow,
+                    run_topic_workflow,
+                    run_recap_workflow,
+                    run_trailer_workflow,
+                )
+                wf_name = str(workflow_mode).lower().strip()
+                wf_runner_map = {
+                    "highlights": run_highlights_workflow,
+                    "series": run_series_workflow,
+                    "topic": run_topic_workflow,
+                    "recap": run_recap_workflow,
+                    "trailer": run_trailer_workflow,
+                }
+                if wf_name in wf_runner_map:
+                    spec = WORKFLOWS.get(wf_name)
+                    runner = wf_runner_map[wf_name]
+
+                    # Extract word-level timestamps from transcript
+                    transcript_words = []
+                    raw_t = subtitle_transcript or transcript or []
+                    for item in raw_t:
+                        if isinstance(item, dict):
+                            if "words" in item and isinstance(item["words"], list):
+                                for w in item["words"]:
+                                    transcript_words.append({
+                                        "word": w.get("word", ""),
+                                        "start": float(w.get("start", 0.0)),
+                                        "end": float(w.get("end", 0.0))
+                                    })
+                            elif "text" in item and "start" in item and "end" in item:
+                                text_words = str(item.get("text", "")).split()
+                                st = float(item.get("start", 0.0))
+                                et = float(item.get("end", st + 1.0))
+                                dur = max(0.1, et - st)
+                                w_dur = dur / max(1, len(text_words))
+                                for i, tw in enumerate(text_words):
+                                    transcript_words.append({
+                                        "word": tw,
+                                        "start": round(st + i * w_dur, 2),
+                                        "end": round(st + (i + 1) * w_dur, 2)
+                                    })
+
+                    wf_res = runner(spec, transcript_words, total_dur)
+                    if wf_res and wf_res.candidates:
+                        job.add_log(f"AI Workflow '{spec.title}': {len(wf_res.candidates)} segments curated ({spec.tagline})")
+                        expected_segments = [
+                            {
+                                "start": c.start,
+                                "end": c.end,
+                                "title": c.title,
+                                "virality_score": c.virality_score,
+                                "hook_type": c.hook_type
+                            }
+                            for c in wf_res.candidates
+                        ]
+                        merged_scenes = [
+                            {"start": c.start, "end": c.end}
+                            for c in wf_res.candidates
+                        ]
+            except Exception as wf_err:
+                job.add_log(f"Workflow engine note: {wf_err}")
+
+        if not expected_segments:
+            if clipping_mode == config.CLIPPING_DURATION:
+                total_dur_int = int(total_dur)
+                start = 0
+                idx = 1
+                while start < total_dur_int:
+                    end = min(start + (clip_duration or config.CLIP_DURATION), total_dur_int)
+                    expected_segments.append({
+                        "start": start,
+                        "end": end,
+                    })
+                    start = end
+                    idx += 1
+            elif clipping_mode == config.CLIPPING_COUNT:
+                n = len(merged_scenes) if merged_scenes else len(scenes)
+                count = clip_count or 1
+                step = max(n / count, 1)
+                for i in range(count):
+                    idx = min(int(i * step), n - 1)
+                    scene = (merged_scenes or scenes)[idx]
+                    expected_segments.append({
+                        "start": scene["start"],
+                        "end": scene["end"],
+                    })
+            else:
+                for idx, scene in enumerate(merged_scenes or scenes, start=1):
+                    expected_segments.append({
+                        "start": scene["start"],
+                        "end": scene["end"],
+                    })
 
         # Smart reframing / Face tracking analysis if enabled
         reframe_x = None

@@ -11,6 +11,14 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Anti-FOUC script for sidebar collapsed persistence -->
+    <script>
+        try {
+            if (localStorage.getItem('upclip_sidebar_collapsed') === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -210,8 +218,11 @@
                                 </div>
 
                                 <div class="meta-preview-grid">
-                                    <div class="meta-thumb-box" style="position: relative; border-radius: var(--radius-sm); overflow: hidden; background: #000; border: 1px solid var(--border); aspect-ratio: 16/9; width: 300px; max-width: 100%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                        <img id="metaThumbImg" src="/static/img/default_thumb.png" alt="Video thumbnail" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='/static/img/default_thumb.png';">
+                                    <div class="meta-thumb-box" id="metaThumbBox" style="position: relative; border-radius: var(--radius-sm); overflow: hidden; background: #000; border: 1px solid var(--border); aspect-ratio: 16/9; width: 280px; max-width: 100%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+                                        <img id="metaThumbImg" src="/static/img/default_thumb.png" alt="Video thumbnail" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='/static/img/default_thumb.png';">
+                                        <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); padding: 3px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700; color: #10B981; border: 1px solid rgba(16,185,129,0.3); display: none;" id="metaAspectBadge">
+                                            📱 9:16 Vertical Reel
+                                        </div>
                                         <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); padding: 3px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #fff;" id="metaDurationBadge">
                                             00:00
                                         </div>
@@ -1201,59 +1212,157 @@
 
                         <!-- PANEL 3: AI PIPELINE ANALYSIS -->
                         <div class="wiz-panel" data-panel="3">
-                            <!-- Premium AI processing visual graphic -->
-                            <div class="ai-visual-loading" id="aiVisualLoading">
-                                <div class="ai-stars">
-                                    <span class="ai-star">✦</span>
-                                    <span class="ai-star primary">✦</span>
-                                    <span class="ai-star">✦</span>
-                                </div>
-                                <div class="ai-geometric-pulse">
-                                    <div class="pulse-ring r1"></div>
-                                    <div class="pulse-ring r2"></div>
-                                    <div class="pulse-ring r3"></div>
-                                    <div class="axis horizontal"></div>
-                                    <div class="axis vertical"></div>
-                                    <div class="center-dot"></div>
-                                </div>
-                                <div class="ai-pulse-status">AI is analyzing your video...</div>
+                            <div style="text-align: center; margin-bottom: var(--space-4);">
+                                <h2 style="font-family: var(--font-heading); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Creating Your Clips</h2>
+                                <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Analyzing your video and finding the most engaging moments.</p>
                             </div>
 
-                            <div class="summary-card" id="settingsSummary" style="margin-bottom: var(--space-4);"></div>
-
-                            <div class="pipeline-progress-wrap" id="pipelineWrap" hidden>
-                                <div class="pipeline-progress-bar">
-                                    <div class="pipeline-progress-fill" id="pipelineFill"></div>
+                            <!-- Top Section: Compact Video Information Card -->
+                            <div class="processing-top-meta-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+                                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                                    <img id="procTopThumb" src="/static/img/default_thumb.png" alt="Video thumbnail" style="width: 52px; height: 34px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0;" onerror="this.onerror=null; this.src='/static/img/default_thumb.png';">
+                                    <div style="min-width: 0;">
+                                        <div id="procTopTitle" style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">Video File</div>
+                                        <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                            <span id="procTopDuration">0:00</span>
+                                            <span>•</span>
+                                            <span id="procTopResolution">1080p</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                                    <div class="pipeline-percent" id="pipelinePercent">0%</div>
-                                    <div class="pipeline-timer" id="pipelineTimerWrap">
-                                        <svg data-lucide="timer" width="14" height="14"></svg>
-                                        <span id="pipelineTimer" style="font-family: var(--font-mono);">0:00</span>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span class="badge" id="procTopAspectBadge" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">9:16 Vertical</span>
+                                    <span class="badge" id="procTopModeBadge" style="background: rgba(59, 130, 246, 0.12); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">Highlights</span>
+                                </div>
+                            </div>
+
+                            <!-- Main Visual Processing Stage (Waveform & Timeline Scan) -->
+                            <div class="processing-visual-stage" style="padding: 24px 20px; background: linear-gradient(180deg, var(--surface-1) 0%, rgba(20, 20, 20, 0.9) 100%); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: var(--space-4); text-align: center; position: relative; overflow: hidden;">
+                                <!-- Scanning timeline beam -->
+                                <div class="timeline-scan-bar" style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.06); overflow: hidden;">
+                                    <div class="timeline-scan-beam" style="width: 140px; height: 100%; background: linear-gradient(90deg, transparent, var(--primary), transparent); animation: sweepScan 2s infinite linear;"></div>
+                                </div>
+
+                                <!-- Audio Waveform Frequency Visualizer -->
+                                <div class="waveform-anim-wrap" style="display: flex; align-items: center; justify-content: center; gap: 4px; height: 50px; margin-bottom: 12px;">
+                                    <div class="wf-bar b1"></div>
+                                    <div class="wf-bar b2"></div>
+                                    <div class="wf-bar b3"></div>
+                                    <div class="wf-bar b4"></div>
+                                    <div class="wf-bar b5"></div>
+                                    <div class="wf-bar b6"></div>
+                                    <div class="wf-bar b7"></div>
+                                    <div class="wf-bar b8"></div>
+                                    <div class="wf-bar b9"></div>
+                                    <div class="wf-bar b10"></div>
+                                    <div class="wf-bar b11"></div>
+                                    <div class="wf-bar b12"></div>
+                                    <div class="wf-bar b13"></div>
+                                    <div class="wf-bar b14"></div>
+                                    <div class="wf-bar b15"></div>
+                                    <div class="wf-bar b16"></div>
+                                </div>
+
+                                <div id="procCurrentStageTitle" style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">Preparing Video Pipeline...</div>
+                                <div id="procCurrentStageDesc" style="font-size: 12px; color: var(--text-secondary);">Initializing local Whisper transcription and scene cutting engines.</div>
+
+                                <!-- Synchronized Progress Bar & Percent -->
+                                <div class="pipeline-progress-wrap" id="pipelineWrap" style="margin-top: 14px; max-width: 580px; margin-left: auto; margin-right: auto;">
+                                    <div class="pipeline-progress-bar" style="height: 10px; background: var(--surface-0); border-radius: 6px; overflow: hidden; border: 1px solid var(--border);">
+                                        <div class="pipeline-progress-fill" id="pipelineFill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary) 0%, #34D399 100%); transition: width 0.3s ease;"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                        <div class="pipeline-percent" id="pipelinePercent" style="font-size: 13px; font-weight: 800; font-family: var(--font-mono); color: var(--primary);">0%</div>
+                                        <div class="pipeline-timer" id="pipelineTimerWrap" style="display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-secondary);">
+                                            <svg data-lucide="timer" width="13" height="13"></svg>
+                                            <span>Elapsed: <strong id="pipelineTimer" style="font-family: var(--font-mono); color: var(--text-primary);">0:00</strong></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="steps" id="stepsContainer">
-                                <div class="step" data-step="1"><div class="step-num">1</div><span>FFmpeg</span></div>
-                                <div class="step" data-step="2"><div class="step-num">2</div><span>Load</span></div>
-                                <div class="step" data-step="3"><div class="step-num">3</div><span>Speech/Subs</span></div>
-                                <div class="step" data-step="4"><div class="step-num">4</div><span>Scenes</span></div>
-                                <div class="step" data-step="5"><div class="step-num">5</div><span>Merge</span></div>
-                                <div class="step" data-step="6"><div class="step-num">6</div><span>Clips</span></div>
-                                <div class="step" data-step="7"><div class="step-num">7</div><span>AI Rank</span></div>
-                                <div class="step" data-step="8"><div class="step-num">8</div><span>Render</span></div>
+                            <!-- 7 Real Workflow Processing Stages -->
+                            <div class="card" style="margin-bottom: var(--space-4); padding: 16px;">
+                                <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 12px;">Workflow Processing Stages</h4>
+                                <div class="stages-grid" id="procStagesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                                    <div class="stage-pill active" id="stagePill-1" data-step="1">
+                                        <div class="stage-pill-num">1</div>
+                                        <div class="stage-pill-text">Preparing Video</div>
+                                        <div class="stage-pill-badge" id="stageBadge-1">In Progress</div>
+                                    </div>
+                                    <div class="stage-pill pending" id="stagePill-2" data-step="2">
+                                        <div class="stage-pill-num">2</div>
+                                        <div class="stage-pill-text">Extracting Audio</div>
+                                        <div class="stage-pill-badge" id="stageBadge-2">Pending</div>
+                                    </div>
+                                    <div class="stage-pill pending" id="stagePill-3" data-step="3">
+                                        <div class="stage-pill-num">3</div>
+                                        <div class="stage-pill-text">Transcribing Speech</div>
+                                        <div class="stage-pill-badge" id="stageBadge-3">Pending</div>
+                                    </div>
+                                    <div class="stage-pill pending" id="stagePill-4" data-step="4">
+                                        <div class="stage-pill-num">4</div>
+                                        <div class="stage-pill-text">Analyzing Scenes</div>
+                                        <div class="stage-pill-badge" id="stageBadge-4">Pending</div>
+                                    </div>
+                                    <div class="stage-pill pending" id="stagePill-5" data-step="5">
+                                        <div class="stage-pill-num">5</div>
+                                        <div class="stage-pill-text">Detecting Highlights</div>
+                                        <div class="stage-pill-badge" id="stageBadge-5">Pending</div>
+                                    </div>
+                                    <div class="stage-pill pending" id="stagePill-6" data-step="6">
+                                        <div class="stage-pill-num">6</div>
+                                        <div class="stage-pill-text">Generating Clips</div>
+                                        <div class="stage-pill-badge" id="stageBadge-6">Pending</div>
+                                    </div>
+                                    <div class="stage-pill pending" id="stagePill-7" data-step="7">
+                                        <div class="stage-pill-num">7</div>
+                                        <div class="stage-pill-text">Rendering Final Output</div>
+                                        <div class="stage-pill-badge" id="stageBadge-7">Pending</div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="log-container">
-                                <div class="log-header" style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span>Pipeline Execution Log</span>
-                                    <button class="btn btn-secondary btn-xs" id="retryPipelineBtn" style="padding: 2px 8px; font-size: 11px;" type="button">▶ Start / Retry</button>
+                            <!-- Optional Mini-Game (Interactive Dino Runner) -->
+                            <div class="dino-game-wrapper card" style="margin-bottom: var(--space-4); padding: 14px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 16px;">🎮</span>
+                                        <strong style="font-size: 13px; color: var(--text-primary);">Play while processing</strong>
+                                        <span style="font-size: 11px; color: var(--text-muted);">(Optional mini-game • Space / Up Arrow to Jump)</span>
+                                    </div>
+                                    <button class="btn btn-secondary btn-xs" id="toggleDinoGameBtn" type="button" style="padding: 4px 10px; font-size: 11px;">
+                                        <span id="dinoToggleText">Play Mini-Game</span>
+                                    </button>
                                 </div>
-                                <div class="log-body" id="logBody">
-                                    <div class="log-line muted">Waiting for pipeline execution...</div>
+                                <div id="dinoGameContainer" style="display: none; text-align: center; margin-top: 10px;">
+                                    <canvas id="dinoCanvas" width="560" height="120" style="max-width: 100%; background: #0c0c0c; border-radius: 6px; border: 1px solid var(--border); display: block; margin: 0 auto;"></canvas>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 560px; margin: 6px auto 0; font-size: 11.5px; color: var(--text-secondary);">
+                                        <div>Score: <strong id="dinoScore" style="color: var(--primary); font-family: var(--font-mono);">0</strong> | High Score: <strong id="dinoHighScore" style="color: #FBBF24; font-family: var(--font-mono);">0</strong></div>
+                                        <button id="dinoRestartBtn" class="btn btn-secondary btn-xs" type="button" style="padding: 2px 8px; font-size: 11px;">Restart</button>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Technical Details (Collapsible) -->
+                            <details class="tech-details-collapse" id="techDetailsCollapse" style="background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: var(--space-4);">
+                                <summary style="font-size: 12.5px; font-weight: 700; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                                    <span>Show Processing Details & Technical Output</span>
+                                    <span style="font-size: 11px; color: var(--text-muted);">Expand / Collapse</span>
+                                </summary>
+                                <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                                    <div class="summary-card" id="settingsSummary" style="display: none;"></div>
+                                    <div class="log-container" style="border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+                                        <div class="log-header" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--surface-0); border-bottom: 1px solid var(--border); font-size: 11.5px;">
+                                            <span>Pipeline Console Log</span>
+                                            <button class="btn btn-secondary btn-xs" id="retryPipelineBtn" style="padding: 2px 8px; font-size: 11px;" type="button">▶ Start / Retry</button>
+                                        </div>
+                                        <div class="log-body" id="logBody" style="max-height: 160px; overflow-y: auto; padding: 8px 10px; font-family: var(--font-mono); font-size: 11px; background: #080808;">
+                                            <div class="log-line muted">Waiting for pipeline execution...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
                         </div>
 
                         <!-- PANEL 4: REVIEW GENERATED CLIPS -->

@@ -13,6 +13,18 @@
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Anti-FOUC script for sidebar collapsed & theme persistence -->
+    <script>
+        try {
+            const savedTheme = localStorage.getItem('upclip_theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+            if (localStorage.getItem('upclip_sidebar_collapsed') === 'true' || localStorage.getItem('flip_sidebar_collapsed') === '1') {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -294,7 +306,11 @@
                 </button>
             </div>
 
-            <div class="topbar-right">
+            <div class="topbar-right" style="display:flex; align-items:center; gap:8px;">
+                <button id="resetGlobalSettingsBtn" class="btn btn-secondary btn-sm" title="Restore all default settings">
+                    <svg data-lucide="rotate-ccw" width="14" height="14"></svg>
+                    <span>Reset Defaults</span>
+                </button>
                 <button id="saveGlobalSettingsBtn" class="btn btn-primary btn-sm">
                     <svg data-lucide="save" width="14" height="14"></svg>
                     <span>Save Changes</span>
@@ -369,37 +385,43 @@
                             <p style="color: var(--text-secondary); font-size: 13px;">Manage AI models, system dependencies, hardware performance, storage, and project defaults.</p>
                         </div>
 
-                        <!-- 10 Navigation Tabs -->
+                        <!-- 12 Canonical Navigation Tabs -->
                         <div class="settings-tabs-nav" id="settingsTabsNav">
                             <button class="settings-tab-btn active" data-tab="general">
-                                <svg data-lucide="sliders" width="15" height="15"></svg> General
+                                <svg data-lucide="sliders" width="14" height="14"></svg> General
                             </button>
                             <button class="settings-tab-btn" data-tab="models">
-                                <svg data-lucide="cpu" width="15" height="15"></svg> AI Models
+                                <svg data-lucide="cpu" width="14" height="14"></svg> AI Models
+                            </button>
+                            <button class="settings-tab-btn" data-tab="stt">
+                                <svg data-lucide="mic" width="14" height="14"></svg> Speech to Text
+                            </button>
+                            <button class="settings-tab-btn" data-tab="tts">
+                                <svg data-lucide="volume-2" width="14" height="14"></svg> Text to Speech
                             </button>
                             <button class="settings-tab-btn" data-tab="dependencies">
-                                <svg data-lucide="layers" width="15" height="15"></svg> Dependencies
+                                <svg data-lucide="layers" width="14" height="14"></svg> Dependencies
                             </button>
                             <button class="settings-tab-btn" data-tab="downloads">
-                                <svg data-lucide="download" width="15" height="15"></svg> Downloads
+                                <svg data-lucide="download" width="14" height="14"></svg> Downloads
                             </button>
                             <button class="settings-tab-btn" data-tab="storage">
-                                <svg data-lucide="hard-drive" width="15" height="15"></svg> Storage
+                                <svg data-lucide="hard-drive" width="14" height="14"></svg> Storage
                             </button>
-                            <button class="settings-tab-btn" data-tab="folders">
-                                <svg data-lucide="folder" width="15" height="15"></svg> Folders
+                            <button class="settings-tab-btn" data-tab="folders" data-tab-alt="impexp">
+                                <svg data-lucide="folder" width="14" height="14"></svg> Import & Export
                             </button>
                             <button class="settings-tab-btn" data-tab="performance">
-                                <svg data-lucide="zap" width="15" height="15"></svg> Performance
+                                <svg data-lucide="zap" width="14" height="14"></svg> Performance
                             </button>
                             <button class="settings-tab-btn" data-tab="privacy">
-                                <svg data-lucide="shield-check" width="15" height="15"></svg> Privacy
+                                <svg data-lucide="shield-check" width="14" height="14"></svg> Privacy
                             </button>
                             <button class="settings-tab-btn" data-tab="diagnostics">
-                                <svg data-lucide="activity" width="15" height="15"></svg> Diagnostics
+                                <svg data-lucide="activity" width="14" height="14"></svg> Diagnostics
                             </button>
                             <button class="settings-tab-btn" data-tab="about">
-                                <svg data-lucide="info" width="15" height="15"></svg> About
+                                <svg data-lucide="info" width="14" height="14"></svg> About
                             </button>
                         </div>
                     </div>
@@ -413,12 +435,16 @@
                             </h3>
                             <div class="settings-grid">
                                 <div class="form-row">
-                                    <label for="cfgTheme">Application Theme</label>
+                                    <label for="cfgTheme">Project & Application Theme</label>
                                     <select id="cfgTheme" class="form-select">
-                                        <option value="dark" selected>Charcoal Dark (Default)</option>
+                                        <option value="emerald" selected>Emerald (#10B981) - Default</option>
+                                        <option value="violet">Violet (#6366F1)</option>
+                                        <option value="cyan">Cyan (#06B6D4)</option>
+                                        <option value="amber">Amber (#F59E0B)</option>
+                                        <option value="dark">Charcoal Dark</option>
                                         <option value="light">Studio Light</option>
                                     </select>
-                                    <span class="form-hint">Overall visual appearance across all workspaces.</span>
+                                    <span class="form-hint">Change workspace theme and primary project accent color.</span>
                                 </div>
 
                                 <div class="form-row">
@@ -522,6 +548,132 @@
                         <div class="settings-grid" id="modelsGridContainer">
                             <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
                                 <span class="spinner"></span> Loading AI model catalog...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: SPEECH TO TEXT -->
+                    <div class="tab-pane" id="pane-stt">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
+                                <svg data-lucide="mic" width="18" height="18" style="color:var(--primary);"></svg>
+                                Speech-to-Text & Transcription Engine
+                            </h3>
+                            <div class="settings-grid">
+                                <div class="form-row">
+                                    <label for="cfgSttEngine">Transcription Engine</label>
+                                    <select id="cfgSttEngine" class="form-select">
+                                        <option value="whisper" selected>OpenAI Whisper (Local PyTorch)</option>
+                                        <option value="faster-whisper">Faster-Whisper (CTranslate2 / INT8)</option>
+                                    </select>
+                                    <span class="form-hint">Underlying acoustic & language model execution runtime.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgSttLanguage">Default Language</label>
+                                    <select id="cfgSttLanguage" class="form-select">
+                                        <option value="auto" selected>Auto Detect (Multi-language)</option>
+                                        <option value="en">English (en)</option>
+                                        <option value="hi">Hindi (hi)</option>
+                                        <option value="hinglish">Hinglish (Hindi in Roman script)</option>
+                                        <option value="es">Spanish (es)</option>
+                                        <option value="fr">French (fr)</option>
+                                        <option value="de">German (de)</option>
+                                    </select>
+                                    <span class="form-hint">Target spoken language for Whisper decoding.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgWordTimestamps">Word-Level Timestamps</label>
+                                    <select id="cfgWordTimestamps" class="form-select">
+                                        <option value="true" selected>Enabled (Accurate Karaoke & Pops)</option>
+                                        <option value="false">Sentence-Level Only</option>
+                                    </select>
+                                    <span class="form-hint">Enables millisecond-accurate word reveal and highlight animations.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgVadFilter">Voice Activity Detection (VAD)</label>
+                                    <select id="cfgVadFilter" class="form-select">
+                                        <option value="true" selected>Enabled (Silero VAD - Filter Silence)</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <span class="form-hint">Removes non-speech silence intervals before Whisper decoding.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgHallucinationFilter">Hallucination Suppression</label>
+                                    <select id="cfgHallucinationFilter" class="form-select">
+                                        <option value="true" selected>Enabled (Filter repetitive loops)</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <span class="form-hint">Prevents Whisper from repeating phrases in silent segments.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgTemperature">Sampling Temperature</label>
+                                    <select id="cfgTemperature" class="form-select">
+                                        <option value="0.0" selected>0.0 (Deterministic / Highest Precision)</option>
+                                        <option value="0.2">0.2 (Balanced Fallback)</option>
+                                        <option value="0.4">0.4 (Creative / Accented Audio)</option>
+                                    </select>
+                                    <span class="form-hint">Controls randomness during token generation.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: TEXT TO SPEECH -->
+                    <div class="tab-pane" id="pane-tts">
+                        <div class="card">
+                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
+                                <svg data-lucide="volume-2" width="18" height="18" style="color:var(--primary);"></svg>
+                                Text-to-Speech & Voice Synthesis
+                            </h3>
+                            <div class="settings-grid">
+                                <div class="form-row">
+                                    <label for="cfgTtsProvider">Voice Synthesis Engine</label>
+                                    <select id="cfgTtsProvider" class="form-select">
+                                        <option value="edge-tts" selected>Edge Neural TTS (High Quality, Natural)</option>
+                                        <option value="piper">Piper TTS (Fast Local On-Device)</option>
+                                        <option value="coqui">Coqui TTS (Local Offline Voice Cloning)</option>
+                                    </select>
+                                    <span class="form-hint">Synthesizes voiceovers for clips, trailers, and intros.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgTtsVoice">Default Voice</label>
+                                    <select id="cfgTtsVoice" class="form-select">
+                                        <option value="en-US-ChristopherNeural" selected>Christopher (US Male - Deep & Cinematic)</option>
+                                        <option value="en-US-JennyNeural">Jenny (US Female - Friendly & Warm)</option>
+                                        <option value="en-US-GuyNeural">Guy (US Male - Energetic & Clear)</option>
+                                        <option value="en-GB-RyanNeural">Ryan (UK Male - Professional & Crisp)</option>
+                                        <option value="hi-IN-MadhurNeural">Madhur (Hindi Male - Clear Narration)</option>
+                                        <option value="hi-IN-SwaraNeural">Swara (Hindi Female - Expressive)</option>
+                                    </select>
+                                    <span class="form-hint">Selected neural voice personality.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgTtsRate">Speech Rate</label>
+                                    <select id="cfgTtsRate" class="form-select">
+                                        <option value="-20%">-20% (Slow & Deliberate)</option>
+                                        <option value="+0%" selected>Normal (1.0x)</option>
+                                        <option value="+10%">+10% (Fast)</option>
+                                        <option value="+20%">+20% (Shorts / High Paced)</option>
+                                    </select>
+                                    <span class="form-hint">Adjust playback pacing of synthesized narration.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgTtsPitch">Pitch Adjustment</label>
+                                    <select id="cfgTtsPitch" class="form-select">
+                                        <option value="-5Hz">-5 Hz (Deeper)</option>
+                                        <option value="+0Hz" selected>Normal (+0 Hz)</option>
+                                        <option value="+5Hz">+5 Hz (Higher)</option>
+                                    </select>
+                                    <span class="form-hint">Tone pitch adjustment.</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -638,13 +790,13 @@
                         </div>
                     </div>
 
-                    <!-- TAB 6: IMPORT & EXPORT FOLDERS -->
-                    <div class="tab-pane" id="pane-folders">
+                    <!-- TAB 8: IMPORT & EXPORT FOLDERS -->
+                    <div class="tab-pane" id="pane-impexp" data-alias="folders">
                         <div class="card">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
                                 <h3 class="card-title">
                                     <svg data-lucide="folder" width="18" height="18" style="color:var(--primary);"></svg>
-                                    Configured Workspace Directories
+                                    Import & Export Workspace Directories
                                 </h3>
                                 <button id="resetFoldersBtn" class="btn btn-secondary btn-sm">
                                     <svg data-lucide="rotate-ccw" width="14" height="14"></svg> Restore Defaults
@@ -798,17 +950,25 @@
                         </div>
                     </div>
 
-                    <!-- TAB 9: SYSTEM DIAGNOSTICS -->
+                    <!-- TAB 11: SYSTEM DIAGNOSTICS -->
                     <div class="tab-pane" id="pane-diagnostics">
                         <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-4);">
                                 <h3 class="card-title">
                                     <svg data-lucide="activity" width="18" height="18" style="color:var(--primary);"></svg>
                                     System Diagnostics & Health Check
                                 </h3>
-                                <button id="runDiagnosticsBtn" class="btn btn-primary btn-sm">
-                                    <svg data-lucide="play" width="14" height="14"></svg> Run Diagnostics
-                                </button>
+                                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                    <button id="copyDiagnosticsBtn" class="btn btn-secondary btn-sm" title="Copy full report to clipboard">
+                                        <svg data-lucide="copy" width="14" height="14"></svg> Copy Report
+                                    </button>
+                                    <button id="refreshDiagnosticsBtn" class="btn btn-secondary btn-sm" title="Refresh diagnostic checks">
+                                        <svg data-lucide="refresh-cw" width="14" height="14"></svg> Refresh Status
+                                    </button>
+                                    <button id="runDiagnosticsBtn" class="btn btn-primary btn-sm">
+                                        <svg data-lucide="play" width="14" height="14"></svg> Run Diagnostics
+                                    </button>
+                                </div>
                             </div>
                             <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-4);">
                                 Validates binary availability, tensor computation, storage permissions, and audio filter support.
@@ -890,9 +1050,22 @@
             const tabButtons = document.querySelectorAll(".settings-tab-btn");
             const tabPanes = document.querySelectorAll(".tab-pane");
 
-            function switchTab(tabId) {
-                tabButtons.forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
-                tabPanes.forEach(p => p.classList.toggle("active", p.id === `pane-${tabId}`));
+            function switchTab(rawTabId) {
+                let tabId = rawTabId || "general";
+                const isFolderTab = (tabId === "folders" || tabId === "impexp");
+
+                tabButtons.forEach(b => {
+                    const btnTab = b.dataset.tab;
+                    const match = (btnTab === tabId) || (isFolderTab && (btnTab === "folders" || btnTab === "impexp"));
+                    b.classList.toggle("active", match);
+                });
+
+                tabPanes.forEach(p => {
+                    const paneId = p.id;
+                    const match = (paneId === `pane-${tabId}`) || (isFolderTab && (paneId === "pane-impexp" || paneId === "pane-folders"));
+                    p.classList.toggle("active", match);
+                });
+
                 window.location.hash = tabId;
 
                 // Load tab data on demand
@@ -907,12 +1080,11 @@
                 btn.addEventListener("click", () => switchTab(btn.dataset.tab));
             });
 
-            const initialHash = window.location.hash.replace("#", "");
-            if (initialHash && document.getElementById(`pane-${initialHash}`)) {
-                switchTab(initialHash);
-            } else {
-                loadInitialSettings();
-            }
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get("tab");
+            const initialTab = tabParam || window.location.hash.replace("#", "") || "general";
+            switchTab(initialTab);
+            loadInitialSettings();
 
             // -------------------------------------------------------------
             // Load Initial Preferences
@@ -924,31 +1096,66 @@
                     if (data.success && data.settings) {
                         const s = data.settings;
                         if (s.general) {
-                            if (s.general.defaultLanguage) document.getElementById("cfgLanguage").value = s.general.defaultLanguage;
-                            if (s.general.defaultAspectRatio) document.getElementById("cfgAspectRatio").value = s.general.defaultAspectRatio;
-                            if (s.general.defaultResolution) document.getElementById("cfgResolution").value = s.general.defaultResolution;
-                            if (s.general.defaultFps) document.getElementById("cfgFps").value = s.general.defaultFps;
-                            if (s.general.defaultExportFormat) document.getElementById("cfgExportFormat").value = s.general.defaultExportFormat;
-                            if (s.general.startupWorkspace) document.getElementById("cfgStartupWorkspace").value = s.general.startupWorkspace;
-                            if (s.general.autoSaveEnabled !== undefined) document.getElementById("cfgAutoSave").value = s.general.autoSaveEnabled ? "true" : "false";
+                            if (s.general.defaultLanguage && document.getElementById("cfgLanguage")) document.getElementById("cfgLanguage").value = s.general.defaultLanguage;
+                            if (s.general.defaultAspectRatio && document.getElementById("cfgAspectRatio")) document.getElementById("cfgAspectRatio").value = s.general.defaultAspectRatio;
+                            if (s.general.defaultResolution && document.getElementById("cfgResolution")) document.getElementById("cfgResolution").value = s.general.defaultResolution;
+                            if (s.general.defaultFps && document.getElementById("cfgFps")) document.getElementById("cfgFps").value = s.general.defaultFps;
+                            if (s.general.defaultExportFormat && document.getElementById("cfgExportFormat")) document.getElementById("cfgExportFormat").value = s.general.defaultExportFormat;
+                            if (s.general.startupWorkspace && document.getElementById("cfgStartupWorkspace")) document.getElementById("cfgStartupWorkspace").value = s.general.startupWorkspace;
+                            if (s.general.autoSaveEnabled !== undefined && document.getElementById("cfgAutoSave")) document.getElementById("cfgAutoSave").value = s.general.autoSaveEnabled ? "true" : "false";
                         }
-                        if (s.appearance && s.appearance.theme) {
+                        if (s.appearance && s.appearance.theme && document.getElementById("cfgTheme")) {
                             document.getElementById("cfgTheme").value = s.appearance.theme;
+                            document.documentElement.setAttribute("data-theme", s.appearance.theme);
+                            localStorage.setItem("upclip_theme", s.appearance.theme);
+                        } else {
+                            const savedTheme = localStorage.getItem("upclip_theme");
+                            if (savedTheme && document.getElementById("cfgTheme")) {
+                                document.getElementById("cfgTheme").value = savedTheme;
+                                document.documentElement.setAttribute("data-theme", savedTheme);
+                            }
                         }
                         if (s.folders) {
-                            if (s.folders.mediaImportFolder) document.getElementById("dirMediaImport").value = s.folders.mediaImportFolder;
-                            if (s.folders.projectFolder) document.getElementById("dirProjects").value = s.folders.projectFolder;
-                            if (s.folders.exportFolder) document.getElementById("dirExports").value = s.folders.exportFolder;
-                            if (s.folders.tempFolder) document.getElementById("dirTemp").value = s.folders.tempFolder;
+                            if (s.folders.mediaImportFolder && document.getElementById("dirMediaImport")) document.getElementById("dirMediaImport").value = s.folders.mediaImportFolder;
+                            if (s.folders.projectFolder && document.getElementById("dirProjects")) document.getElementById("dirProjects").value = s.folders.projectFolder;
+                            if (s.folders.exportFolder && document.getElementById("dirExports")) document.getElementById("dirExports").value = s.folders.exportFolder;
+                            if (s.folders.tempFolder && document.getElementById("dirTemp")) document.getElementById("dirTemp").value = s.folders.tempFolder;
                         }
                         if (s.performance) {
-                            if (s.performance.hardwareAcceleration) document.getElementById("cfgHardwareAccel").value = s.performance.hardwareAcceleration;
-                            if (s.performance.maxBackgroundThreads) document.getElementById("cfgMaxThreads").value = s.performance.maxBackgroundThreads;
+                            if (s.performance.hardwareAcceleration && document.getElementById("cfgHardwareAccel")) document.getElementById("cfgHardwareAccel").value = s.performance.hardwareAcceleration;
+                            if (s.performance.maxBackgroundThreads && document.getElementById("cfgMaxThreads")) document.getElementById("cfgMaxThreads").value = s.performance.maxBackgroundThreads;
+                        }
+                        if (s.stt) {
+                            if (s.stt.engine && document.getElementById("cfgSttEngine")) document.getElementById("cfgSttEngine").value = s.stt.engine;
+                            if (s.stt.language && document.getElementById("cfgSttLanguage")) document.getElementById("cfgSttLanguage").value = s.stt.language;
+                            if (s.stt.wordTimestamps !== undefined && document.getElementById("cfgWordTimestamps")) document.getElementById("cfgWordTimestamps").value = s.stt.wordTimestamps ? "true" : "false";
+                            if (s.stt.vadFilter !== undefined && document.getElementById("cfgVadFilter")) document.getElementById("cfgVadFilter").value = s.stt.vadFilter ? "true" : "false";
+                            if (s.stt.hallucinationFilter !== undefined && document.getElementById("cfgHallucinationFilter")) document.getElementById("cfgHallucinationFilter").value = s.stt.hallucinationFilter ? "true" : "false";
+                            if (s.stt.temperature !== undefined && document.getElementById("cfgTemperature")) document.getElementById("cfgTemperature").value = String(s.stt.temperature);
+                        }
+                        if (s.tts) {
+                            if (s.tts.provider && document.getElementById("cfgTtsProvider")) document.getElementById("cfgTtsProvider").value = s.tts.provider;
+                            if (s.tts.voice && document.getElementById("cfgTtsVoice")) document.getElementById("cfgTtsVoice").value = s.tts.voice;
+                            if (s.tts.speechRate && document.getElementById("cfgTtsRate")) document.getElementById("cfgTtsRate").value = s.tts.speechRate;
+                            if (s.tts.pitch && document.getElementById("cfgTtsPitch")) document.getElementById("cfgTtsPitch").value = s.tts.pitch;
                         }
                     }
                 } catch (e) {
                     console.error("Failed to load settings:", e);
                 }
+            }
+
+            // Real-time Project Theme switcher listener
+            const themeSelect = document.getElementById("cfgTheme");
+            if (themeSelect) {
+                themeSelect.addEventListener("change", (e) => {
+                    const selectedTheme = e.target.value;
+                    document.documentElement.setAttribute("data-theme", selectedTheme);
+                    localStorage.setItem("upclip_theme", selectedTheme);
+                    if (window.UpClipToast) {
+                        window.UpClipToast.show(`Project theme set to ${selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}`, 'success');
+                    }
+                });
             }
 
             // -------------------------------------------------------------
@@ -957,26 +1164,40 @@
             document.getElementById("saveGlobalSettingsBtn").addEventListener("click", async () => {
                 const savePayload = {
                     general: {
-                        defaultLanguage: document.getElementById("cfgLanguage").value,
-                        defaultAspectRatio: document.getElementById("cfgAspectRatio").value,
-                        defaultResolution: document.getElementById("cfgResolution").value,
-                        defaultFps: parseInt(document.getElementById("cfgFps").value, 10),
-                        defaultExportFormat: document.getElementById("cfgExportFormat").value,
-                        startupWorkspace: document.getElementById("cfgStartupWorkspace").value,
-                        autoSaveEnabled: document.getElementById("cfgAutoSave").value === "true"
+                        defaultLanguage: document.getElementById("cfgLanguage") ? document.getElementById("cfgLanguage").value : "en",
+                        defaultAspectRatio: document.getElementById("cfgAspectRatio") ? document.getElementById("cfgAspectRatio").value : "9:16",
+                        defaultResolution: document.getElementById("cfgResolution") ? document.getElementById("cfgResolution").value : "1080p",
+                        defaultFps: document.getElementById("cfgFps") ? parseInt(document.getElementById("cfgFps").value, 10) : 30,
+                        defaultExportFormat: document.getElementById("cfgExportFormat") ? document.getElementById("cfgExportFormat").value : "mp4",
+                        startupWorkspace: document.getElementById("cfgStartupWorkspace") ? document.getElementById("cfgStartupWorkspace").value : "/dashboard",
+                        autoSaveEnabled: document.getElementById("cfgAutoSave") ? (document.getElementById("cfgAutoSave").value === "true") : true
                     },
                     appearance: {
-                        theme: document.getElementById("cfgTheme").value
+                        theme: document.getElementById("cfgTheme") ? document.getElementById("cfgTheme").value : "dark"
                     },
                     folders: {
-                        mediaImportFolder: document.getElementById("dirMediaImport").value,
-                        projectFolder: document.getElementById("dirProjects").value,
-                        exportFolder: document.getElementById("dirExports").value,
-                        tempFolder: document.getElementById("dirTemp").value
+                        mediaImportFolder: document.getElementById("dirMediaImport") ? document.getElementById("dirMediaImport").value : "",
+                        projectFolder: document.getElementById("dirProjects") ? document.getElementById("dirProjects").value : "",
+                        exportFolder: document.getElementById("dirExports") ? document.getElementById("dirExports").value : "",
+                        tempFolder: document.getElementById("dirTemp") ? document.getElementById("dirTemp").value : ""
                     },
                     performance: {
-                        hardwareAcceleration: document.getElementById("cfgHardwareAccel").value,
-                        maxBackgroundThreads: parseInt(document.getElementById("cfgMaxThreads").value, 10)
+                        hardwareAcceleration: document.getElementById("cfgHardwareAccel") ? document.getElementById("cfgHardwareAccel").value : "auto",
+                        maxBackgroundThreads: document.getElementById("cfgMaxThreads") ? parseInt(document.getElementById("cfgMaxThreads").value, 10) : 4
+                    },
+                    stt: {
+                        engine: document.getElementById("cfgSttEngine") ? document.getElementById("cfgSttEngine").value : "whisper",
+                        language: document.getElementById("cfgSttLanguage") ? document.getElementById("cfgSttLanguage").value : "auto",
+                        wordTimestamps: document.getElementById("cfgWordTimestamps") ? (document.getElementById("cfgWordTimestamps").value === "true") : true,
+                        vadFilter: document.getElementById("cfgVadFilter") ? (document.getElementById("cfgVadFilter").value === "true") : true,
+                        hallucinationFilter: document.getElementById("cfgHallucinationFilter") ? (document.getElementById("cfgHallucinationFilter").value === "true") : true,
+                        temperature: document.getElementById("cfgTemperature") ? parseFloat(document.getElementById("cfgTemperature").value) : 0.0
+                    },
+                    tts: {
+                        provider: document.getElementById("cfgTtsProvider") ? document.getElementById("cfgTtsProvider").value : "edge-tts",
+                        voice: document.getElementById("cfgTtsVoice") ? document.getElementById("cfgTtsVoice").value : "en-US-ChristopherNeural",
+                        speechRate: document.getElementById("cfgTtsRate") ? document.getElementById("cfgTtsRate").value : "+0%",
+                        pitch: document.getElementById("cfgTtsPitch") ? document.getElementById("cfgTtsPitch").value : "+0Hz"
                     }
                 };
 
@@ -999,12 +1220,42 @@
                             btn.disabled = false;
                             lucide.createIcons();
                         }, 2000);
+                    } else {
+                        alert("Save failed: " + (data.message || "Unknown error"));
+                        btn.disabled = false;
+                        btn.innerHTML = `<svg data-lucide="save" width="14" height="14"></svg> Save Changes`;
+                        lucide.createIcons();
                     }
                 } catch (e) {
                     alert("Error saving settings: " + e.message);
                     document.getElementById("saveGlobalSettingsBtn").disabled = false;
                 }
             });
+
+            // -------------------------------------------------------------
+            // Reset Settings to Defaults
+            // -------------------------------------------------------------
+            const resetBtn = document.getElementById("resetGlobalSettingsBtn");
+            if (resetBtn) {
+                resetBtn.addEventListener("click", () => {
+                    showConfirmModal(
+                        "Reset All Settings",
+                        "Are you sure you want to reset all preferences, paths, and configurations to factory defaults? Your media and projects will not be affected.",
+                        async () => {
+                            try {
+                                const res = await fetch("/api/settings/reset", { method: "POST" });
+                                const data = await res.json();
+                                if (data.success) {
+                                    await loadInitialSettings();
+                                    alert("All settings restored to factory defaults.");
+                                }
+                            } catch (e) {
+                                alert("Failed to reset settings: " + e.message);
+                            }
+                        }
+                    );
+                });
+            }
 
             // -------------------------------------------------------------
             // AI Models Manager
@@ -1368,33 +1619,64 @@
                 }
             }
 
+            let lastDiagnosticsData = null;
+
             async function runDiagnostics() {
                 const list = document.getElementById("diagnosticsList");
-                list.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted);"><span class="spinner"></span> Running diagnostics audit...</div>`;
+                list.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-muted);"><span class="spinner"></span> Running complete 14-point diagnostics audit...</div>`;
                 try {
                     const res = await fetch("/api/settings/diagnostics");
                     const data = await res.json();
                     if (data.success && data.diagnostics) {
+                        lastDiagnosticsData = data;
                         list.innerHTML = "";
                         data.diagnostics.forEach(d => {
                             const row = document.createElement("div");
                             row.className = "diag-item";
+
+                            let badgeStyle = "background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.35);";
+                            let iconName = "check-circle-2";
+                            let iconColor = "var(--primary)";
+
+                            if (d.status === "Missing") {
+                                badgeStyle = "background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.35);";
+                                iconName = "alert-circle";
+                                iconColor = "#EF4444";
+                            } else if (d.status === "Warning") {
+                                badgeStyle = "background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.35);";
+                                iconName = "alert-triangle";
+                                iconColor = "#F59E0B";
+                            } else if (d.status === "Not Supported") {
+                                badgeStyle = "background: rgba(148, 163, 184, 0.1); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.2);";
+                                iconName = "info";
+                                iconColor = "#94A3B8";
+                            }
+
+                            const linkHtml = d.link ? `
+                                <a href="${d.link}" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px; margin-top: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span>Configure in Settings</span>
+                                    <svg data-lucide="chevron-right" width="12" height="12"></svg>
+                                </a>
+                            ` : '';
+
                             row.innerHTML = `
-                                <div>
+                                <div style="flex: 1;">
                                     <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); display:flex; align-items:center; gap:8px;">
-                                        <svg data-lucide="${d.passed ? 'check-circle-2' : 'alert-triangle'}" width="16" height="16" style="color:${d.passed ? 'var(--primary)' : '#EF4444'};"></svg>
+                                        <svg data-lucide="${iconName}" width="16" height="16" style="color:${iconColor}; flex-shrink:0;"></svg>
                                         <span>${d.test}</span>
+                                        <span style="font-size:10.5px; background:rgba(255,255,255,0.06); padding:1px 6px; border-radius:4px; color:var(--text-muted); font-weight:500;">${d.category || 'System'}</span>
                                     </div>
                                     <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-family: var(--font-mono);">
                                         ${d.details}
                                     </div>
                                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                                        Status: ${d.recommendation}
+                                        Status: <span style="color:var(--text-secondary);">${d.recommendation}</span>
                                     </div>
+                                    ${linkHtml}
                                 </div>
-                                <div>
-                                    <span class="${d.passed ? 'badge-active' : 'badge-available'}" style="${!d.passed ? 'color:#EF4444; border-color:#EF4444;' : ''}">
-                                        ${d.passed ? 'PASS' : 'ATTENTION'}
+                                <div style="margin-left: 12px; flex-shrink: 0;">
+                                    <span style="display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px; text-transform:uppercase; ${badgeStyle}">
+                                        ${d.status || (d.passed ? 'Working' : 'Missing')}
                                     </span>
                                 </div>
                             `;
@@ -1403,11 +1685,47 @@
                         lucide.createIcons();
                     }
                 } catch (e) {
-                    list.innerHTML = `<div style="color:#EF4444; padding:20px;">Diagnostics failed: ${e.message}</div>`;
+                    list.innerHTML = `<div style="color:#EF4444; padding:20px;">Diagnostics audit failed: ${e.message}</div>`;
                 }
             }
 
-            document.getElementById("runDiagnosticsBtn").addEventListener("click", runDiagnostics);
+            const runDiagBtn = document.getElementById("runDiagnosticsBtn");
+            if (runDiagBtn) runDiagBtn.addEventListener("click", runDiagnostics);
+
+            const refreshDiagBtn = document.getElementById("refreshDiagnosticsBtn");
+            if (refreshDiagBtn) refreshDiagBtn.addEventListener("click", runDiagnostics);
+
+            const copyDiagBtn = document.getElementById("copyDiagnosticsBtn");
+            if (copyDiagBtn) {
+                copyDiagBtn.addEventListener("click", async () => {
+                    if (!lastDiagnosticsData || !lastDiagnosticsData.diagnostics) {
+                        await runDiagnostics();
+                    }
+                    if (lastDiagnosticsData && lastDiagnosticsData.diagnostics) {
+                        let text = `# UpClip Studio System Diagnostics Report\n`;
+                        text += `Timestamp: ${lastDiagnosticsData.timestamp || new Date().toISOString()}\n`;
+                        text += `Overall Health: ${lastDiagnosticsData.all_passed ? 'ALL CHECKS OPERATIONAL' : 'ATTENTION REQUIRED'}\n\n`;
+                        text += `| Test | Category | Status | Details | Recommendation |\n`;
+                        text += `| --- | --- | --- | --- | --- |\n`;
+                        lastDiagnosticsData.diagnostics.forEach(d => {
+                            text += `| ${d.test} | ${d.category || '-'} | ${d.status} | ${d.details} | ${d.recommendation} |\n`;
+                        });
+
+                        try {
+                            await navigator.clipboard.writeText(text);
+                            const origHtml = copyDiagBtn.innerHTML;
+                            copyDiagBtn.innerHTML = `<svg data-lucide="check" width="14" height="14"></svg> Copied!`;
+                            lucide.createIcons();
+                            setTimeout(() => {
+                                copyDiagBtn.innerHTML = origHtml;
+                                lucide.createIcons();
+                            }, 2000);
+                        } catch (err) {
+                            alert("Diagnostic Report:\n\n" + text);
+                        }
+                    }
+                });
+            }
 
             // -------------------------------------------------------------
             // Helper Modal
