@@ -432,8 +432,8 @@
                             <button class="settings-tab-btn" data-tab="diagnostics">
                                 <svg data-lucide="activity" width="14" height="14"></svg> Diagnostics
                             </button>
-                            <button class="settings-tab-btn" data-tab="about">
-                                <svg data-lucide="info" width="14" height="14"></svg> About
+                            <button class="settings-tab-btn" data-tab="api">
+                                <svg data-lucide="key" width="14" height="14"></svg> API
                             </button>
                         </div>
                     </div>
@@ -447,7 +447,7 @@
                             </h3>
                             <div class="settings-grid">
                                 <div class="form-row">
-                                    <label for="cfgTheme">Project & Application Theme</label>
+                                    <label for="cfgTheme">Theme</label>
                                     <select id="cfgTheme" class="form-select">
                                         <option value="emerald" selected>Emerald (#10B981) - Default</option>
                                         <option value="violet">Violet (#6366F1)</option>
@@ -638,14 +638,20 @@
                     <!-- TAB 4: TEXT TO SPEECH -->
                     <div class="tab-pane" id="pane-tts">
                         <div class="card">
-                            <h3 class="card-title" style="margin-bottom: var(--space-4);">
-                                <svg data-lucide="volume-2" width="18" height="18" style="color:var(--primary);"></svg>
-                                Text-to-Speech & Voice Synthesis
-                            </h3>
-                            <div class="settings-grid">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+                                <h3 class="card-title" style="display:flex; align-items:center; gap:8px;">
+                                    <svg data-lucide="volume-2" width="18" height="18" style="color:var(--primary);"></svg>
+                                    <span>Text-to-Speech & Voice Synthesis</span>
+                                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;">Available Soon</span>
+                                </h3>
+                            </div>
+                            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-4);">
+                                Neural voice synthesis and local voice cloning will be supported in an upcoming release. All settings below are placeholders and currently disabled.
+                            </p>
+                            <div class="settings-grid" style="opacity: 0.55; pointer-events: none;">
                                 <div class="form-row">
                                     <label for="cfgTtsProvider">Voice Synthesis Engine</label>
-                                    <select id="cfgTtsProvider" class="form-select">
+                                    <select id="cfgTtsProvider" class="form-select" disabled>
                                         <option value="edge-tts" selected>Edge Neural TTS (High Quality, Natural)</option>
                                         <option value="piper">Piper TTS (Fast Local On-Device)</option>
                                         <option value="coqui">Coqui TTS (Local Offline Voice Cloning)</option>
@@ -655,7 +661,7 @@
 
                                 <div class="form-row">
                                     <label for="cfgTtsVoice">Default Voice</label>
-                                    <select id="cfgTtsVoice" class="form-select">
+                                    <select id="cfgTtsVoice" class="form-select" disabled>
                                         <option value="en-US-ChristopherNeural" selected>Christopher (US Male - Deep & Cinematic)</option>
                                         <option value="en-US-JennyNeural">Jenny (US Female - Friendly & Warm)</option>
                                         <option value="en-US-GuyNeural">Guy (US Male - Energetic & Clear)</option>
@@ -668,7 +674,7 @@
 
                                 <div class="form-row">
                                     <label for="cfgTtsRate">Speech Rate</label>
-                                    <select id="cfgTtsRate" class="form-select">
+                                    <select id="cfgTtsRate" class="form-select" disabled>
                                         <option value="-20%">-20% (Slow & Deliberate)</option>
                                         <option value="+0%" selected>Normal (1.0x)</option>
                                         <option value="+10%">+10% (Fast)</option>
@@ -679,7 +685,7 @@
 
                                 <div class="form-row">
                                     <label for="cfgTtsPitch">Pitch Adjustment</label>
-                                    <select id="cfgTtsPitch" class="form-select">
+                                    <select id="cfgTtsPitch" class="form-select" disabled>
                                         <option value="-5Hz">-5 Hz (Deeper)</option>
                                         <option value="+0Hz" selected>Normal (+0 Hz)</option>
                                         <option value="+5Hz">+5 Hz (Higher)</option>
@@ -690,23 +696,67 @@
                         </div>
                     </div>
 
-                    <!-- TAB 3: DEPENDENCY & LIBRARY MANAGER -->
+                    <!-- TAB 5: DEPENDENCY & LIBRARY MANAGER -->
                     <div class="tab-pane" id="pane-dependencies">
                         <div class="card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
-                                <h3 class="card-title">
-                                    <svg data-lucide="layers" width="18" height="18" style="color:var(--primary);"></svg>
-                                    Installed System Dependencies
-                                </h3>
-                                <button id="refreshDepsBtn" class="btn btn-secondary btn-sm">
-                                    <svg data-lucide="refresh-cw" width="14" height="14"></svg> Re-scan
-                                </button>
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom: var(--space-4);">
+                                <div>
+                                    <h3 class="card-title" style="display:flex; align-items:center; gap:8px;">
+                                        <svg data-lucide="layers" width="18" height="18" style="color:var(--primary);"></svg>
+                                        <span>System Dependencies & Runtime Libraries</span>
+                                    </h3>
+                                    <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                                        Comprehensive inventory across 8 core categories: Core Python, AI & ML, Speech Recognition, Image & Video Processing, Web Framework, System Runtime & Typography.
+                                    </p>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <button id="installSelectedDepsBtn" class="btn btn-primary btn-sm" disabled>
+                                        <svg data-lucide="download" width="14" height="14"></svg> Install Selected (<span id="selectedDepsCount">0</span>)
+                                    </button>
+                                    <button id="installAllMissingDepsBtn" class="btn btn-secondary btn-sm">
+                                        <svg data-lucide="download-cloud" width="14" height="14"></svg> Install All Missing
+                                    </button>
+                                    <button id="refreshDepsBtn" class="btn btn-secondary btn-sm" title="Re-scan installed packages">
+                                        <svg data-lucide="refresh-cw" width="14" height="14"></svg> Re-scan
+                                    </button>
+                                </div>
                             </div>
-                            <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--space-4);">
-                                Genuine runtimes and libraries powering video encoding, speech transcription, computer vision, and graphic rendering.
-                            </p>
-                            <div id="depsListContainer" style="display: flex; flex-direction: column; gap: var(--space-3);">
-                                <div style="text-align: center; padding: 20px; color: var(--text-muted);">Scanning installed libraries...</div>
+
+                            <!-- Live Installation Progress Card (Shown when installation is running) -->
+                            <div id="depsInstallBox" style="display:none; background:var(--surface-0); border:1px solid var(--border-strong); border-radius:var(--radius-md); padding:16px; margin-bottom:var(--space-4);">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span class="spinner"></span>
+                                        <strong style="color:var(--text-primary); font-size:13px;" id="depsInstallTitle">Installing dependencies...</strong>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:12px;">
+                                        <span id="depsInstallPct" style="font-size:12px; font-weight:700; color:var(--primary);">0%</span>
+                                        <button id="cancelDepsInstallBtn" class="btn btn-secondary btn-sm" style="color:#EF4444; padding:2px 8px; font-size:11px;">
+                                            <svg data-lucide="x" width="12" height="12"></svg> Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="progress-bar-wrap" style="height:6px; margin-bottom:10px;">
+                                    <div id="depsInstallProgressBar" class="progress-bar-fill" style="width:0%;"></div>
+                                </div>
+                                <div id="depsInstallLogs" style="background:#05070B; border:1px solid var(--border); border-radius:6px; padding:10px; height:110px; overflow-y:auto; font-family:var(--font-mono); font-size:11px; color:#A7F3D0; line-height:1.5;">
+                                </div>
+                            </div>
+
+                            <!-- Batch Selector Bar -->
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--surface-0); border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom:var(--space-4);">
+                                <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--text-primary); cursor:pointer;">
+                                    <input type="checkbox" id="selectAllDepsCheckbox" style="accent-color:var(--primary); cursor:pointer;">
+                                    <span>Select All Missing Dependencies</span>
+                                </label>
+                                <div style="font-size:12px; color:var(--text-secondary);" id="depsSummaryCount">
+                                    Scanning catalog...
+                                </div>
+                            </div>
+
+                            <!-- Grouped Categories Container -->
+                            <div id="depsCategoriesContainer" style="display: flex; flex-direction: column; gap: var(--space-4);">
+                                <div style="text-align: center; padding: 20px; color: var(--text-muted);"><span class="spinner"></span> Scanning installed libraries...</div>
                             </div>
                         </div>
                     </div>
@@ -993,42 +1043,65 @@
                         </div>
                     </div>
 
-                    <!-- TAB 10: ABOUT & UPDATES -->
-                    <div class="tab-pane" id="pane-about">
+                    <!-- TAB 12: API SETTINGS -->
+                    <div class="tab-pane" id="pane-api">
                         <div class="card">
-                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: var(--space-5);">
-                                <img src="{{ url_for('static', filename='favicon.svg') }}" alt="UpClip Studio" width="56" height="56" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);">
-                                <div>
-                                    <h2 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 2px;">UpClip Studio</h2>
-                                    <div style="font-size: 12px; color: var(--primary); font-weight: 700;">Desktop AI Video Suite — Version 2.4.0</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                                <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+                                    <svg data-lucide="key" width="18" height="18" style="color:var(--primary);"></svg>
+                                    <span>External Cloud API Settings</span>
+                                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;">Available Soon</span>
+                                </h3>
+                            </div>
+                            <div style="background: rgba(148, 163, 184, 0.06); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: var(--radius-md); padding: 16px; margin-bottom: var(--space-5);">
+                                <div style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); font-weight: 700; font-size: 13.5px; margin-bottom: 6px;">
+                                    <svg data-lucide="info" width="16" height="16" style="color:var(--text-muted);"></svg>
+                                    <span>Local Execution Standby</span>
                                 </div>
+                                <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+                                    UpClip Studio currently runs 100% locally on your workstation using your CPU and GPU. External cloud AI APIs (OpenAI Whisper API, ElevenLabs TTS, Anthropic Claude) will be introduced in an upcoming release as optional cloud fallback providers.
+                                </p>
                             </div>
 
-                            <div class="table-responsive">
-                                <table class="custom-table">
-                                    <tbody>
-                                        <tr>
-                                            <td style="width: 200px; font-weight: 600;">Edition</td>
-                                            <td>UpClip Studio Pro Edition (Local Workstation)</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-weight: 600;">Architecture</td>
-                                            <td id="aboutArch">Python 3.14 x64 / Flask Desktop / React Caption Studio</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-weight: 600;">Video Pipeline</td>
-                                            <td>FFmpeg 8.1 / libx264 / AAC / ASS Substation Alpha Subtitles</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-weight: 600;">AI Engine</td>
-                                            <td>OpenAI Whisper Speech Recognition / OpenCV Computer Vision</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-weight: 600;">Update Status</td>
-                                            <td><span class="badge-active">Up to date (Official Release)</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="settings-grid" style="opacity: 0.55; pointer-events: none;">
+                                <div class="form-row">
+                                    <label for="cfgApiProvider">API Provider</label>
+                                    <select id="cfgApiProvider" class="form-select" disabled>
+                                        <option value="none" selected>Local Workstation (No API Key Required)</option>
+                                        <option value="openai">OpenAI (Whisper Cloud / GPT-4o)</option>
+                                        <option value="elevenlabs">ElevenLabs (Hyper-Realistic Speech)</option>
+                                        <option value="anthropic">Anthropic Claude (Video Cut Analysis)</option>
+                                        <option value="deepseek">DeepSeek AI</option>
+                                    </select>
+                                    <span class="form-hint">Target cloud provider for offloading heavy workloads.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label for="cfgApiKey">API Secret Key</label>
+                                    <input type="password" id="cfgApiKey" class="form-input" value="••••••••••••••••••••••••" disabled />
+                                    <span class="form-hint">Bearer authentication token for selected provider.</span>
+                                </div>
+
+                                <div class="form-row">
+                                    <label>Connection Status</label>
+                                    <div style="display: flex; align-items: center; gap: 8px; height: 38px;">
+                                        <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.25); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px;">
+                                            Standby / Not Configured
+                                        </span>
+                                    </div>
+                                    <span class="form-hint">Real-time health check of cloud endpoint credentials.</span>
+                                </div>
+
+                                <div class="form-row" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                                    <div style="display: flex; gap: 8px;">
+                                        <button class="btn btn-secondary btn-sm" disabled style="cursor: not-allowed;">
+                                            <svg data-lucide="radio" width="14" height="14"></svg> Test Connection
+                                        </button>
+                                        <button class="btn btn-primary btn-sm" disabled style="cursor: not-allowed;">
+                                            <svg data-lucide="save" width="14" height="14"></svg> Save API Config
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1166,6 +1239,29 @@
                     localStorage.setItem("upclip_theme", selectedTheme);
                     if (window.UpClipToast) {
                         window.UpClipToast.show(`Project theme set to ${selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}`, 'success');
+                    }
+                });
+            }
+
+            // Real-time Auto-Save preference listener
+            const autoSaveSelect = document.getElementById("cfgAutoSave");
+            if (autoSaveSelect) {
+                autoSaveSelect.addEventListener("change", (e) => {
+                    const isEnabled = (e.target.value === "true");
+                    localStorage.setItem("upclip_autosave_enabled", isEnabled ? "true" : "false");
+                    if (window.UpClipToast) {
+                        window.UpClipToast.show(isEnabled ? "Auto-save enabled (2s debounce)" : "Auto-save disabled (Manual Save Only)", 'info');
+                    }
+                });
+            }
+
+            // Real-time Default Export Format listener
+            const exportFormatSelect = document.getElementById("cfgExportFormat");
+            if (exportFormatSelect) {
+                exportFormatSelect.addEventListener("change", (e) => {
+                    localStorage.setItem("upclip_export_format", e.target.value);
+                    if (window.UpClipToast) {
+                        window.UpClipToast.show(`Default export container set to ${e.target.value.toUpperCase()}`, 'info');
                     }
                 });
             }
@@ -1485,44 +1581,288 @@
             // -------------------------------------------------------------
             // Dependency & Library Manager
             // -------------------------------------------------------------
+            let depsPollTimer = null;
+            let currentDepJobId = null;
+
             async function loadDependencies() {
-                const container = document.getElementById("depsListContainer");
-                container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);"><span class="spinner"></span> Scanning installed libraries...</div>`;
+                const container = document.getElementById("depsCategoriesContainer");
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted);"><span class="spinner"></span> Scanning installed libraries across 8 categories...</div>`;
                 try {
                     const res = await fetch("/api/settings/dependencies");
                     const data = await res.json();
                     if (data.success && data.dependencies) {
-                        container.innerHTML = "";
-                        data.dependencies.forEach(d => {
-                            const item = document.createElement("div");
-                            item.className = "dep-card";
-                            item.innerHTML = `
-                                <div>
-                                    <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); display:flex; align-items:center; gap:8px;">
-                                        <span>${d.name}</span>
-                                        <span style="font-size:11px; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; color:var(--text-muted);">${d.category}</span>
-                                    </div>
-                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-family: var(--font-mono);">
-                                        Version: <strong style="color:var(--text-primary);">${d.version}</strong>
-                                        ${d.hardware_accel ? ` | <span style="color:var(--primary);">${d.hardware_accel}</span>` : ''}
-                                    </div>
-                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                                        Requirement: ${d.required}
-                                    </div>
-                                </div>
-                                <div>
-                                    <span class="${d.status_code === 'ok' ? 'badge-active' : 'badge-available'}" style="${d.status_code !== 'ok' ? 'color:#EF4444; border-color:#EF4444;' : ''}">
-                                        ${d.status}
-                                    </span>
-                                </div>
-                            `;
-                            container.appendChild(item);
-                        });
-                        lucide.createIcons();
+                        renderDependencies(data.dependencies);
+                        checkDepInstallStatus();
+                    } else {
+                        container.innerHTML = `<div style="color:#EF4444; padding:20px;">Failed to scan dependencies: ${data.message || 'Unknown error'}</div>`;
                     }
                 } catch (e) {
                     container.innerHTML = `<div style="color:#EF4444; padding:20px;">Failed to scan dependencies: ${e.message}</div>`;
                 }
+            }
+
+            function renderDependencies(deps) {
+                const container = document.getElementById("depsCategoriesContainer");
+                container.innerHTML = "";
+
+                const installedCount = deps.filter(d => d.is_installed).length;
+                const totalCount = deps.length;
+                const sumLabel = document.getElementById("depsSummaryCount");
+                if (sumLabel) sumLabel.textContent = `${installedCount} of ${totalCount} dependencies operational`;
+
+                // Group by canonical categories
+                const categoryOrder = [
+                    "Core Python",
+                    "AI and Machine Learning",
+                    "Speech Recognition",
+                    "Image Processing",
+                    "Video Processing",
+                    "Web Framework",
+                    "System Runtime",
+                    "Typography and Font Assets"
+                ];
+
+                const groups = {};
+                categoryOrder.forEach(c => { groups[c] = []; });
+
+                deps.forEach(d => {
+                    const cat = d.category || "General";
+                    if (!groups[cat]) groups[cat] = [];
+                    groups[cat].push(d);
+                });
+
+                Object.keys(groups).forEach(catName => {
+                    const catDeps = groups[catName];
+                    if (!catDeps || catDeps.length === 0) return;
+
+                    const catCard = document.createElement("div");
+                    catCard.className = "card";
+                    catCard.style.cssText = "background: var(--surface-0); padding: 14px 16px; margin-bottom: 0;";
+
+                    const catInstalled = catDeps.filter(d => d.is_installed).length;
+
+                    let itemsHtml = "";
+                    catDeps.forEach(d => {
+                        const canCheck = d.can_install && !d.is_installed;
+                        const isInstalled = d.is_installed;
+                        const badgeClass = isInstalled ? "badge-active" : "badge-available";
+                        const badgeStyle = isInstalled ? "" : (d.is_required ? "color:#EF4444; border-color:#EF4444;" : "color:#F59E0B; border-color:#F59E0B;");
+
+                        let actionBtnHtml = "";
+                        if (canCheck) {
+                            actionBtnHtml = `
+                                <button class="btn btn-primary btn-sm btn-install-single" data-dep="${d.id}" style="padding: 3px 10px; font-size: 11px;">
+                                    <svg data-lucide="download" width="12" height="12"></svg> Install
+                                </button>
+                            `;
+                        } else if (isInstalled) {
+                            actionBtnHtml = `
+                                <span style="font-size: 11.5px; color: var(--primary); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                    <svg data-lucide="check" width="14" height="14"></svg> Ready
+                                </span>
+                            `;
+                        } else {
+                            actionBtnHtml = `
+                                <span style="font-size: 11px; color: var(--text-muted);" title="${d.install_instruction || 'Manual configuration'}">
+                                    System Binary
+                                </span>
+                            `;
+                        }
+
+                        itemsHtml += `
+                            <div class="dep-card" style="padding: 10px 12px; margin-top: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                    ${d.can_install ? `
+                                        <input type="checkbox" class="dep-checkbox" data-dep="${d.id}" ${canCheck ? '' : 'disabled'} ${canCheck ? '' : (isInstalled ? 'checked' : '')} style="accent-color: var(--primary); cursor: ${canCheck ? 'pointer' : 'default'};">
+                                    ` : `
+                                        <div style="width: 14px;"></div>
+                                    `}
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                                            <span>${d.name}</span>
+                                            ${d.is_required ? `<span style="font-size: 10px; background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.25); padding: 1px 5px; border-radius: 4px;">Required</span>` : `<span style="font-size: 10px; background: rgba(148, 163, 184, 0.1); color: var(--text-muted); padding: 1px 5px; border-radius: 4px;">Optional</span>`}
+                                        </div>
+                                        <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 3px; font-family: var(--font-mono);">
+                                            Installed: <strong style="color: ${isInstalled ? 'var(--text-primary)' : '#EF4444'};">${d.installed_version}</strong>
+                                            ${d.required_version ? ` • Req: ${d.required_version}` : ''}
+                                            ${d.estimated_size ? ` • Size: ~${d.estimated_size}` : ''}
+                                        </div>
+                                        ${d.description ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${d.description}</div>` : ''}
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-left: 12px;">
+                                    <span class="${badgeClass}" style="${badgeStyle}">
+                                        ${d.status}
+                                    </span>
+                                    ${actionBtnHtml}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    catCard.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                            <strong style="color: var(--text-primary); font-size: 13.5px;">${catName}</strong>
+                            <span style="font-size: 11.5px; color: var(--text-secondary); font-family: var(--font-mono);">${catInstalled} / ${catDeps.length} Operational</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                            ${itemsHtml}
+                        </div>
+                    `;
+
+                    container.appendChild(catCard);
+                });
+
+                lucide.createIcons();
+                updateDepSelectionState();
+
+                // Attach checkbox listeners
+                container.querySelectorAll(".dep-checkbox").forEach(cb => {
+                    cb.addEventListener("change", updateDepSelectionState);
+                });
+
+                // Attach single install buttons
+                container.querySelectorAll(".btn-install-single").forEach(b => {
+                    b.addEventListener("click", () => {
+                        const depId = b.dataset.dep;
+                        startDepInstallation([depId]);
+                    });
+                });
+            }
+
+            function updateDepSelectionState() {
+                const checkboxes = document.querySelectorAll(".dep-checkbox:not(:disabled)");
+                const checked = Array.from(checkboxes).filter(cb => cb.checked);
+                const countSpan = document.getElementById("selectedDepsCount");
+                if (countSpan) countSpan.textContent = checked.length;
+
+                const installSelBtn = document.getElementById("installSelectedDepsBtn");
+                if (installSelBtn) installSelBtn.disabled = (checked.length === 0);
+
+                const selectAllCb = document.getElementById("selectAllDepsCheckbox");
+                if (selectAllCb) {
+                    selectAllCb.checked = (checkboxes.length > 0 && checked.length === checkboxes.length);
+                }
+            }
+
+            const selectAllDepsCb = document.getElementById("selectAllDepsCheckbox");
+            if (selectAllDepsCb) {
+                selectAllDepsCb.addEventListener("change", (e) => {
+                    const checkboxes = document.querySelectorAll(".dep-checkbox:not(:disabled)");
+                    checkboxes.forEach(cb => cb.checked = e.target.checked);
+                    updateDepSelectionState();
+                });
+            }
+
+            const installSelBtn = document.getElementById("installSelectedDepsBtn");
+            if (installSelBtn) {
+                installSelBtn.addEventListener("click", () => {
+                    const checked = Array.from(document.querySelectorAll(".dep-checkbox:not(:disabled):checked"));
+                    const targetIds = checked.map(cb => cb.dataset.dep);
+                    if (targetIds.length > 0) {
+                        startDepInstallation(targetIds);
+                    }
+                });
+            }
+
+            const installAllMissingBtn = document.getElementById("installAllMissingDepsBtn");
+            if (installAllMissingBtn) {
+                installAllMissingBtn.addEventListener("click", () => {
+                    startDepInstallation([]); // empty array = install all missing installable dependencies
+                });
+            }
+
+            async function startDepInstallation(targetIds) {
+                try {
+                    const res = await fetch("/api/settings/dependencies/install", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ target_ids: targetIds })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.job_id) {
+                        currentDepJobId = data.job_id;
+                        showInstallProgressBox(data.job);
+                        startDepPolling();
+                    } else if (data.message) {
+                        alert(data.message);
+                    }
+                } catch (e) {
+                    alert("Error starting installation: " + e.message);
+                }
+            }
+
+            function showInstallProgressBox(job) {
+                const box = document.getElementById("depsInstallBox");
+                if (!box) return;
+                box.style.display = "block";
+                if (job) {
+                    const titleElem = document.getElementById("depsInstallTitle");
+                    if (titleElem) titleElem.textContent = `Installing ${job.current_item || 'dependencies'}...`;
+                    const pctElem = document.getElementById("depsInstallPct");
+                    if (pctElem) pctElem.textContent = `${job.progress_pct || 0}%`;
+                    const barElem = document.getElementById("depsInstallProgressBar");
+                    if (barElem) barElem.style.width = `${job.progress_pct || 0}%`;
+
+                    const logsBox = document.getElementById("depsInstallLogs");
+                    if (job.logs && logsBox) {
+                        logsBox.innerHTML = job.logs.map(l => `<div>${l}</div>`).join("");
+                        logsBox.scrollTop = logsBox.scrollHeight;
+                    }
+                }
+            }
+
+            function startDepPolling() {
+                if (depsPollTimer) clearInterval(depsPollTimer);
+                depsPollTimer = setInterval(checkDepInstallStatus, 1000);
+            }
+
+            async function checkDepInstallStatus() {
+                try {
+                    const res = await fetch("/api/settings/dependencies/install-status");
+                    const data = await res.json();
+                    if (data.success && data.jobs) {
+                        const activeJob = Object.values(data.jobs).find(j => j.status === "in_progress");
+                        if (activeJob) {
+                            currentDepJobId = activeJob.id;
+                            showInstallProgressBox(activeJob);
+                        } else {
+                            if (depsPollTimer) {
+                                clearInterval(depsPollTimer);
+                                depsPollTimer = null;
+                            }
+                            const latestJob = Object.values(data.jobs).sort((a,b) => b.started_at - a.started_at)[0];
+                            if (latestJob && latestJob.status === "completed") {
+                                showInstallProgressBox(latestJob);
+                                setTimeout(() => {
+                                    const box = document.getElementById("depsInstallBox");
+                                    if (box) box.style.display = "none";
+                                    loadDependencies();
+                                }, 3000);
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            const cancelInstallBtn = document.getElementById("cancelDepsInstallBtn");
+            if (cancelInstallBtn) {
+                cancelInstallBtn.addEventListener("click", async () => {
+                    if (currentDepJobId) {
+                        await fetch("/api/settings/dependencies/cancel", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ job_id: currentDepJobId })
+                        });
+                        if (depsPollTimer) {
+                            clearInterval(depsPollTimer);
+                            depsPollTimer = null;
+                        }
+                        const box = document.getElementById("depsInstallBox");
+                        if (box) box.style.display = "none";
+                        loadDependencies();
+                    }
+                });
             }
 
             document.getElementById("refreshDepsBtn").addEventListener("click", loadDependencies);

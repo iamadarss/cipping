@@ -2416,7 +2416,12 @@ class UpClipEditor {
         if (saveStatus) saveStatus.textContent = 'Unsaved changes';
 
         if (this.autosaveTimeout) clearTimeout(this.autosaveTimeout);
-        this.autosaveTimeout = setTimeout(() => this.saveProject(true), 2000);
+
+        // Respect global autosave configuration (Auto-save vs Manual Save Only)
+        const isAutosaveEnabled = localStorage.getItem('upclip_autosave_enabled') !== 'false';
+        if (isAutosaveEnabled) {
+            this.autosaveTimeout = setTimeout(() => this.saveProject(true), 2000);
+        }
     }
 
     async saveProject(isAutosave = false) {

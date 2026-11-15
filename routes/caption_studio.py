@@ -171,6 +171,17 @@ def caption_studio_preload():
 @caption_studio_bp.route("/api/caption-studio/auto-caption", methods=["POST"])
 def auto_caption():
     data = request.get_json(silent=True) or {}
+    model_name = data.get("model", getattr(config, "WHISPER_MODEL", "base") or "base")
+    whisper_cache_dir = Path.home() / ".cache" / "whisper"
+    model_file = whisper_cache_dir / f"{model_name}.pt"
+    if not model_file.exists():
+        return jsonify({
+            "success": False,
+            "error": "Model not installed. Download this model from Settings → AI Models before using it.",
+            "model": model_name,
+            "settings_url": "/settings?tab=models"
+        }), 400
+
     video_filename = data.get("videoFileName") or data.get("video_filename") or ""
     language = data.get("language", "hinglish")
     project_id = data.get("project_id", "")
@@ -247,6 +258,16 @@ def auto_caption():
         )
 
         model_name = data.get("model", getattr(config, "WHISPER_MODEL", "base") or "base")
+        whisper_cache_dir = Path.home() / ".cache" / "whisper"
+        model_file = whisper_cache_dir / f"{model_name}.pt"
+        if not model_file.exists():
+            return jsonify({
+                "success": False,
+                "error": "Model not installed. Download this model from Settings → AI Models before using it.",
+                "model": model_name,
+                "settings_url": "/settings?tab=models"
+            }), 400
+
         whisper = WhisperEngine(model_name)
 
         config.TRANSCRIPT_DIR.mkdir(parents=True, exist_ok=True)
@@ -392,7 +413,10 @@ def export_video():
         config.SUBTITLE_DIR.mkdir(parents=True, exist_ok=True)
 
         stem = Path(video_filename).stem
-        output_filename = f"captioned_{stem}.mp4"
+        container = (data.get("container") or data.get("format") or settings_manager.get("general.defaultExportFormat", "mp4")).lower().lstrip(".")
+        if container not in ("mp4", "mkv", "mov"):
+            container = "mp4"
+        output_filename = f"captioned_{stem}.{container}"
         output_path = config.FINAL_DIR / output_filename
 
         # Render burned captions using AnimatedCaptionRenderer with full styling

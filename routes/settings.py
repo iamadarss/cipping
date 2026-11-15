@@ -31,6 +31,8 @@ import config
 from core.settings_manager import settings_manager, DEFAULT_SETTINGS
 from core.logger import logger
 from utils.ffmpeg_utils import check_ffmpeg
+from core.dependency_manager import dependency_manager
+from core.font_manager import font_manager
 
 settings_bp = Blueprint("settings", __name__)
 
@@ -313,6 +315,7 @@ def _get_ram_info() -> Dict[str, Any]:
             avail_gb = round(stat.ullAvailPhys / (1024**3), 2)
             used_gb = round((stat.ullTotalPhys - stat.ullAvailPhys) / (1024**3), 2)
             return {
+                "host_type": "Local Machine (Desktop Workstation)",
                 "total_gb": total_gb,
                 "available_gb": avail_gb,
                 "used_gb": used_gb,
@@ -321,7 +324,7 @@ def _get_ram_info() -> Dict[str, Any]:
     except Exception as e:
         logger.app(f"RAM detection error: {e}", level="debug")
 
-    return {"total_gb": 0, "available_gb": 0, "used_gb": 0, "load_percent": 0}
+    return {"host_type": "Local Machine (Desktop Workstation)", "total_gb": 0, "available_gb": 0, "used_gb": 0, "load_percent": 0}
 
 
 def _get_folder_size(path: Path) -> Dict[str, Any]:
@@ -560,119 +563,90 @@ def delete_model():
 
 @settings_bp.route("/api/settings/dependencies", methods=["GET"])
 def get_dependencies():
-    """Inspect and report real operational status of all system libraries."""
-    deps = []
-
-    # 1. FFmpeg
-    ffmpeg_ok, ffmpeg_ver = check_ffmpeg()
-    deps.append({
-        "name": "FFmpeg Video Processing Core",
-        "category": "Media Engine",
-        "installed": ffmpeg_ok,
-        "version": ffmpeg_ver.splitlines()[0] if ffmpeg_ok else "Not Installed",
-        "path": str(config.FFMPEG_PATH) if config.FFMPEG_PATH else "System PATH",
-        "required": ">= 4.3 (H.264 / AAC / Filtergraph)",
-        "status": "Operational" if ffmpeg_ok else "Missing",
-        "status_code": "ok" if ffmpeg_ok else "error"
-    })
-
-    # 2. PyTorch
-    try:
-        import torch
-        cuda_avail = torch.cuda.is_available()
-        cuda_device = torch.cuda.get_device_name(0) if cuda_avail else "CPU Only (CUDA not active)"
-        deps.append({
-            "name": "PyTorch ML Tensor Framework",
-            "category": "Deep Learning",
-            "installed": True,
-            "version": torch.__version__,
-            "hardware_accel": f"CUDA: {cuda_avail} ({cuda_device})",
-            "required": ">= 2.0.0",
-            "status": "Operational",
-            "status_code": "ok"
-        })
-    except ImportError as e:
-        deps.append({
-            "name": "PyTorch ML Framework",
-            "category": "Deep Learning",
-            "installed": False,
-            "version": "Not Installed",
-            "required": ">= 2.0.0",
-            "status": f"Missing: {e}",
-            "status_code": "error"
-        })
-
-    # 3. Whisper
-    try:
-        import whisper
-        deps.append({
-            "name": "OpenAI Whisper Speech Recognition",
-            "category": "Audio AI",
-            "installed": True,
-            "version": getattr(whisper, "__version__", "Official Release"),
-            "path": str(WHISPER_CACHE_DIR),
-            "required": ">= 20230314",
-            "status": "Operational",
-            "status_code": "ok"
-        })
-    except ImportError as e:
-        deps.append({
-            "name": "OpenAI Whisper",
-            "category": "Audio AI",
-            "installed": False,
-            "version": "Not Installed",
-            "required": "Official",
-            "status": f"Missing: {e}",
-            "status_code": "error"
-        })
-
-    # 4. OpenCV
-    try:
-        import cv2
-        deps.append({
-            "name": "OpenCV Computer Vision",
-            "category": "Scene Detection & Face Tracking",
-            "installed": True,
-            "version": cv2.__version__,
-            "required": ">= 4.5.0",
-            "status": "Operational",
-            "status_code": "ok"
-        })
-    except ImportError as e:
-        deps.append({
-            "name": "OpenCV Computer Vision",
-            "category": "Scene Detection",
-            "installed": False,
-            "version": "Not Installed",
-            "required": ">= 4.5.0",
-            "status": f"Missing: {e}",
-            "status_code": "error"
-        })
-
-    # 5. Pillow (PIL)
-    try:
-        import PIL
-        deps.append({
-            "name": "Pillow Imaging Library",
-            "category": "Graphics & Brand Icon Engine",
-            "installed": True,
-            "version": PIL.__version__,
-            "required": ">= 9.0.0",
-            "status": "Operational",
-            "status_code": "ok"
-        })
-    except ImportError as e:
-        deps.append({
-            "name": "Pillow Imaging Library",
-            "category": "Graphics",
-            "installed": False,
-            "version": "Not Installed",
-            "required": ">= 9.0.0",
-            "status": f"Missing: {e}",
-            "status_code": "error"
-        })
-
+    """Inspect and report real operational status of all system libraries across 8 categories."""
+    deps = dependency_manager.inspect_dependencies()
     return jsonify({"success": True, "dependencies": deps})
+
+
+@settings_bp.route("/api/settings/dependencies/install", methods=["POST"])
+def install_dependencies():
+    """Trigger background installation of selected or all dependencies."""
+    data = request.get_json(silent=True) or {}
+    target_ids = data.get("target_ids", [])
+    if not target_ids:
+        # If no target specified or "all", install all installable items that are missing
+        all_deps = dependency_manager.inspect_dependencies()
+        target_ids = [d["id"] for d in all_deps if d.get("can_install") and not d.get("is_installed")]
+        if not target_ids:
+            return jsonify({"success": True, "message": "All dependencies are already installed."})
+
+    res = dependency_manager.start_installation(target_ids)
+    return jsonify(res)
+
+
+@settings_bp.route("/api/settings/dependencies/install-status", methods=["GET"])
+def get_dependency_install_status():
+    """Poll live installation progress for dependencies."""
+    jobs = dependency_manager.get_all_jobs()
+    return jsonify({"success": True, "jobs": jobs})
+
+
+@settings_bp.route("/api/settings/dependencies/cancel", methods=["POST"])
+def cancel_dependency_installation():
+    """Cancel in-progress dependency installation."""
+    data = request.get_json(silent=True) or {}
+    job_id = data.get("job_id", "")
+    res = dependency_manager.cancel_installation(job_id)
+    return jsonify(res)
+
+
+@settings_bp.route("/api/settings/fonts", methods=["GET"])
+def get_fonts():
+    """List creator fonts and diagnostics."""
+    catalog = font_manager.get_font_catalog()
+    diag = font_manager.get_diagnostics()
+    return jsonify({"success": True, "fonts": catalog, "diagnostics": diag})
+
+
+@settings_bp.route("/api/settings/fonts/install", methods=["POST"])
+def install_font():
+    """Download and install a specific creator font."""
+    data = request.get_json(silent=True) or {}
+    font_id = data.get("font_id", "")
+    res = font_manager.install_font(font_id)
+    return jsonify(res)
+
+
+@settings_bp.route("/api/settings/fonts/install-all", methods=["POST"])
+def install_all_fonts():
+    """Download and install all creator fonts."""
+    res = font_manager.install_all_fonts()
+    return jsonify(res)
+
+
+@settings_bp.route("/api/settings/models/available", methods=["GET"])
+def get_available_models():
+    """List only Whisper models that are physically downloaded and present on disk."""
+    available = []
+    for key, meta in WHISPER_CATALOG.items():
+        model_file = WHISPER_CACHE_DIR / f"{key}.pt"
+        if model_file.exists():
+            disk_size = model_file.stat().st_size
+            size_str = f"{disk_size / (1024**3):.2f} GB" if disk_size >= 1024**3 else f"{disk_size / (1024**2):.1f} MB"
+            available.append({
+                "id": key,
+                "name": meta["name"],
+                "variant": meta["variant"],
+                "size": size_str,
+                "disk_bytes": disk_size,
+                "accuracy": meta["accuracy"],
+                "languages": meta["languages"]
+            })
+    return jsonify({
+        "success": True,
+        "available_models": available,
+        "active_model": getattr(config, "WHISPER_MODEL", "base")
+    })
 
 
 @settings_bp.route("/api/settings/storage", methods=["GET"])
@@ -1035,12 +1009,12 @@ def run_diagnostics():
     ram_avail = ram_info.get("available_gb", 0)
     ram_ok = ram_avail >= 2.0
     results.append({
-        "test": "System Memory (RAM)",
+        "test": "Local Workstation Physical Memory (RAM)",
         "category": "System Resources",
         "status": "Working" if ram_ok else "Warning",
         "status_code": "ok" if ram_ok else "warn",
         "passed": ram_ok,
-        "details": f"{ram_avail} GB Available of {ram_total} GB Total ({ram_info.get('load_percent', 0)}% utilized)",
+        "details": f"Local Machine (Desktop Workstation): {ram_avail} GB Available of {ram_total} GB Total ({ram_info.get('load_percent', 0)}% utilized)",
         "recommendation": "Operational" if ram_ok else "Low available memory; close other background applications during video render"
     })
 
@@ -1074,38 +1048,32 @@ def run_diagnostics():
         })
 
     # 13. Required Library Status
-    libs_check = []
-    all_libs_ok = True
-    for mod_name in ["cv2", "PIL", "numpy", "torch", "whisper", "flask"]:
-        try:
-            __import__(mod_name)
-            libs_check.append(f"{mod_name}: OK")
-        except ImportError:
-            libs_check.append(f"{mod_name}: MISSING")
-            all_libs_ok = False
+    deps_all = dependency_manager.inspect_dependencies()
+    missing_required = [d["name"] for d in deps_all if d.get("is_required") and not d.get("is_installed")]
+    all_libs_ok = len(missing_required) == 0
     results.append({
-        "test": "Required Python Libraries",
+        "test": "Required System Libraries & Packages",
         "category": "Dependencies",
         "status": "Working" if all_libs_ok else "Missing",
         "status_code": "ok" if all_libs_ok else "error",
         "passed": all_libs_ok,
-        "details": ", ".join(libs_check),
-        "recommendation": "Operational" if all_libs_ok else "Install missing libraries from requirements.txt",
+        "details": f"All {len(deps_all)} catalog dependencies verified operational" if all_libs_ok else f"Missing: {', '.join(missing_required)}",
+        "recommendation": "Operational" if all_libs_ok else "Install missing libraries in Settings → Dependencies",
         "link": "/settings?tab=dependencies"
     })
 
     # 14. Typography & Font Assets
-    font_count = len(list(config.FONT_DIR.glob("*.ttf"))) + len(list(config.FONT_DIR.glob("*.otf")))
-    has_devanagari = any("devanagari" in f.name.lower() or "noto" in f.name.lower() for f in config.FONT_DIR.glob("*.*"))
-    fonts_ok = font_count > 0
+    fdiag = font_manager.get_diagnostics()
+    fonts_ok = fdiag["count"] > 0
     results.append({
         "test": "Typography & Font Assets",
         "category": "Caption Engine",
         "status": "Working" if fonts_ok else "Warning",
         "status_code": "ok" if fonts_ok else "warn",
         "passed": fonts_ok,
-        "details": f"{font_count} creator font files detected in {config.FONT_DIR.name} (Devanagari Unicode: {'Yes' if has_devanagari else 'Fallback'})",
-        "recommendation": "Operational" if fonts_ok else "Font assets directory empty; system fallbacks active"
+        "details": f"{fdiag['count']} creator font files detected in {config.FONT_DIR.name} (Devanagari Unicode: {'Yes' if fdiag['has_devanagari'] else 'Fallback'})",
+        "recommendation": "Operational" if fonts_ok else "Install creator fonts from Settings → Dependencies",
+        "link": "/settings?tab=dependencies"
     })
 
     all_passed = all(r["passed"] for r in results)

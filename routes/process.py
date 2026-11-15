@@ -399,6 +399,11 @@ def run_pipeline_job(job, app=None):
                     "en" if lang_code in ("english", "en") else (None if lang_code in ("auto", "") else lang_code)
                 )
 
+                whisper_cache_dir = Path.home() / ".cache" / "whisper"
+                model_file = whisper_cache_dir / f"{whisper_model}.pt"
+                if not model_file.exists():
+                    raise FileNotFoundError(f"Model not installed. Download this model from Settings → AI Models before using it.")
+
                 whisper = WhisperEngine(whisper_model)
                 transcript_file = config.TRANSCRIPT_DIR / f"{stem}_{whisper_model}.json"
                 raw_transcript = whisper.transcribe_cached(
@@ -794,10 +799,14 @@ def run_pipeline_job(job, app=None):
                 except Exception as e:
                     logger.debug(f"Could not load project template overrides: {e}")
 
+            export_container = settings_manager.get("general.defaultExportFormat", "mp4").lower().lstrip(".")
+            if export_container not in ("mp4", "mkv", "mov"):
+                export_container = "mp4"
+
             for clip_path in clips:
                 clip_name = Path(clip_path).name
                 clip_stem = Path(clip_path).stem
-                temp_output = clip_path.with_name(f"{clip_stem}_rendered.mp4")
+                temp_output = clip_path.with_name(f"{clip_stem}_rendered.{export_container}")
                 seg = clip_segment_map.get(clip_name) or {"start": 0.0, "end": 60.0}
                 c_start = float(seg.get("start", 0.0))
                 c_end = float(seg.get("end", c_start + 60.0))
@@ -992,6 +1001,17 @@ def start():
 
     if not filename:
         return jsonify({"success": False, "error": "No filename provided"}), 400
+
+    whisper_model = settings.get("whisper_model", getattr(config, "WHISPER_MODEL", "base"))
+    whisper_cache_dir = Path.home() / ".cache" / "whisper"
+    model_file = whisper_cache_dir / f"{whisper_model}.pt"
+    if not model_file.exists():
+        return jsonify({
+            "success": False,
+            "error": "Model not installed. Download this model from Settings → AI Models before using it.",
+            "model": whisper_model,
+            "settings_url": "/settings?tab=models"
+        }), 400
 
     video = config.INPUT_DIR / filename
     if not video.exists():
