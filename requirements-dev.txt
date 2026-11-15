@@ -1,0 +1,6 @@
+# Development, Linting, Security, and Testing Requirements for UpClip Studio
+ruff>=0.8.0
+bandit>=1.8.0
+pytest>=8.0.0
+pytest-qt>=4.4.0
+pyrefly==1.2.0
