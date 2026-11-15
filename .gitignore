@@ -68,4 +68,6 @@ credentials.json
 token.json
 youtube_token.json
 *.token
+UPCLIP_VISUAL_AUDIT/
+*.zip
 
