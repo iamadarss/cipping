@@ -4090,5 +4090,30 @@ if (previewLink) {
     }
 })();
 
+// Hardware Detection Pill dynamic update
+async function initHardwarePill() {
+    const pillText = document.getElementById('uploadHardwarePillText');
+    if (!pillText) return;
+    try {
+        const resp = await fetch('/api/settings/hardware');
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.gpu && data.gpu.cuda_available) {
+                pillText.textContent = 'GPU Acceleration (CUDA)';
+            } else {
+                pillText.textContent = 'CPU Mode (Optimized)';
+            }
+        }
+    } catch (e) {
+        pillText.textContent = 'CPU Mode (Optimized)';
+    }
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHardwarePill);
+} else {
+    initHardwarePill();
+}
+
+
 
 

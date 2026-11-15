@@ -756,15 +756,23 @@ def clear_cache():
 
 
 @settings_bp.route("/api/settings/performance", methods=["GET"])
+@settings_bp.route("/api/settings/hardware", methods=["GET"])
 def get_performance_info():
     """Retrieve genuine CPU, RAM, and GPU capabilities."""
     ram = _get_ram_info()
     cpu_count = os.cpu_count() or 1
     cpu_model = platform.processor() or "Multi-core Processor"
 
-    import torch
-    cuda_available = torch.cuda.is_available()
-    device_name = torch.cuda.get_device_name(0) if cuda_available else "Intel/AMD CPU"
+    cuda_available = False
+    device_name = "Intel/AMD CPU"
+    device_count = 0
+    try:
+        import torch
+        cuda_available = bool(torch.cuda.is_available())
+        device_name = torch.cuda.get_device_name(0) if cuda_available else "Intel/AMD CPU"
+        device_count = torch.cuda.device_count() if cuda_available else 0
+    except Exception:
+        pass
 
     return jsonify({
         "success": True,
@@ -777,7 +785,7 @@ def get_performance_info():
         "gpu": {
             "cuda_available": cuda_available,
             "device_name": device_name,
-            "device_count": torch.cuda.device_count() if cuda_available else 0
+            "device_count": device_count
         },
         "os": {
             "system": platform.system(),
@@ -924,18 +932,22 @@ def run_diagnostics():
 
     # 7. Scene Detection & Cut Analysis
     scene_ok = True
-    scene_details = "Internal luminance/motion difference cut detection engine active"
     try:
         import cv2
-        # Verify basic image difference function
-        import numpy as np
-        f1 = np.zeros((10, 10, 3), dtype=np.uint8)
-        f2 = np.ones((10, 10, 3), dtype=np.uint8) * 255
-        diff = cv2.absdiff(f1, f2)
-        scene_details += " (Hardware accelerated pixel delta verified)"
+        cuda_cv = False
+        try:
+            if hasattr(cv2, "cuda") and cv2.cuda.getCudaEnabledDeviceCount() > 0:
+                cuda_cv = True
+        except Exception:
+            cuda_cv = False
+
+        if cuda_cv:
+            scene_details = "GPU-accelerated OpenCV CUDA scene cut detection active"
+        else:
+            scene_details = "CPU Pixel Delta Engine (Native C++ OpenCV) active"
     except Exception as e:
         scene_ok = False
-        scene_details = f"Scene detection error: {e}"
+        scene_details = f"Scene detection engine unavailable: {e}"
     results.append({
         "test": "Scene Detection & Transition Analysis",
         "category": "Computer Vision",

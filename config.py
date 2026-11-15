@@ -129,7 +129,11 @@ WHISPER_MODEL = "base"
 
 LANGUAGE = "en"
 
-USE_GPU = True
+try:
+    import torch
+    USE_GPU = bool(torch.cuda.is_available())
+except Exception:
+    USE_GPU = False
 
 # ==========================================================
 # LANGUAGES
