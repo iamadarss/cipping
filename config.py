@@ -73,7 +73,28 @@ DATA_DIR = ROOT_DIR / "data"
 
 USERS_FILE = DATA_DIR / "users.json"
 
-SECRET_KEY = "ai-shorts-studio-secret-key-change-me"
+def _get_or_create_secret_key() -> str:
+    env_key = os.environ.get("UPCLIP_SECRET_KEY") or os.environ.get("SECRET_KEY")
+    if env_key:
+        return env_key
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    key_file = DATA_DIR / ".secret_key"
+    if key_file.exists():
+        try:
+            stored = key_file.read_text(encoding="utf-8").strip()
+            if stored:
+                return stored
+        except Exception:
+            pass
+    import secrets
+    new_key = secrets.token_hex(32)
+    try:
+        key_file.write_text(new_key, encoding="utf-8")
+    except Exception:
+        pass
+    return new_key
+
+SECRET_KEY = _get_or_create_secret_key()
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"

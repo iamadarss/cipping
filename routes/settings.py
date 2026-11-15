@@ -208,6 +208,13 @@ class ModelDownloadManager:
         target_path = WHISPER_CACHE_DIR / f"{model_name}.pt"
         part_path = WHISPER_CACHE_DIR / f"{model_name}.pt.part"
 
+        if not (isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))):
+            with self.lock:
+                if model_name in self.jobs:
+                    self.jobs[model_name]["status"] = "error"
+                    self.jobs[model_name]["error"] = "Invalid URL scheme"
+            return
+
         chunk_size = 128 * 1024  # 128 KB chunks
         downloaded = 0
         last_time = time.time()
@@ -218,7 +225,7 @@ class ModelDownloadManager:
                 url,
                 headers={"User-Agent": "UpClipStudio/2.0 (Whisper Model Downloader)"}
             )
-            with urllib.request.urlopen(req, timeout=30) as resp, open(part_path, "wb") as f_out:
+            with urllib.request.urlopen(req, timeout=30) as resp, open(part_path, "wb") as f_out:  # nosec B310
                 total_header = resp.getheader("Content-Length")
                 total_bytes = int(total_header) if total_header else WHISPER_CATALOG.get(model_name, {}).get("disk_bytes", 0)
 

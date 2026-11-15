@@ -523,7 +523,7 @@ def _xml_to_srt(xml_text: str) -> str:
     """Convert YouTube XML/srv1/srv2/srv3/ttml timedtext into standard SRT."""
     import xml.etree.ElementTree as ET
     try:
-        root = ET.fromstring(xml_text)
+        root = ET.fromstring(xml_text)  # nosec B314
         srt_lines = []
         idx = 1
         for node in root.findall(".//text"):
@@ -614,6 +614,9 @@ def _fetch_youtube_captions_direct(info: dict, target_lang: str = "en", output_f
         if not url:
             return None
 
+        if not (isinstance(url, str) and (url.startswith("http://") or url.startswith("https://"))):
+            return None
+
         # Add headers to avoid 429
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -623,7 +626,7 @@ def _fetch_youtube_captions_direct(info: dict, target_lang: str = "en", output_f
         }
         req = urllib.request.Request(url, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=12) as resp:
+            with urllib.request.urlopen(req, timeout=12) as resp:  # nosec B310
                 raw_bytes = resp.read()
                 raw_text = raw_bytes.decode("utf-8", errors="ignore")
                 if is_json or raw_text.strip().startswith("{"):

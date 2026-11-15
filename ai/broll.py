@@ -135,10 +135,12 @@ def search_pexels_videos(
         "per_page": per_page,
     })
     url = f"{PEXELS_SEARCH_URL}?{params}"
+    if not (url.startswith("http://") or url.startswith("https://")):
+        return []
 
     req = urllib.request.Request(url, headers={"Authorization": api_key, "User-Agent": "UpClipStudio/2.0"})
     try:
-        with urllib.request.urlopen(req, timeout=8.0) as resp:
+        with urllib.request.urlopen(req, timeout=8.0) as resp:  # nosec B310
             if resp.status == 200:
                 data = json.loads(resp.read().decode("utf-8"))
                 videos = data.get("videos", [])
@@ -188,9 +190,13 @@ def download_broll_cached(video_url: str, video_id: int) -> Optional[Path]:
     if target.exists() and target.stat().st_size > 10000:
         return target
 
+    if not (isinstance(video_url, str) and (video_url.startswith("http://") or video_url.startswith("https://"))):
+        logger.warning("Rejected non-HTTP/HTTPS B-roll URL: %s", video_url)
+        return None
+
     try:
         req = urllib.request.Request(video_url, headers={"User-Agent": "UpClipStudio/2.0"})
-        with urllib.request.urlopen(req, timeout=20.0) as resp, open(target, "wb") as out_f:
+        with urllib.request.urlopen(req, timeout=20.0) as resp, open(target, "wb") as out_f:  # nosec B310
             out_f.write(resp.read())
         return target
     except Exception as exc:

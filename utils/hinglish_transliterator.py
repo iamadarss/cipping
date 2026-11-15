@@ -253,8 +253,10 @@ def translate_online(text: str, target: str = "hi") -> str:
     try:
         encoded = urllib.parse.quote(text)
         url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl={target}&dt=t&q={encoded}"
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return ""
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=4) as resp:
+        with urllib.request.urlopen(req, timeout=4) as resp:  # nosec B310
             data = json.loads(resp.read().decode("utf-8"))
             if data and data[0]:
                 parts = [p[0] for p in data[0] if p and p[0]]

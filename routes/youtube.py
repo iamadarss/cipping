@@ -1282,7 +1282,7 @@ def update_video(video_id: int):
     params.append(video_id)
 
     conn.execute(
-        f"UPDATE videos SET {', '.join(update_fields)} WHERE id = ?",
+        f"UPDATE videos SET {', '.join(update_fields)} WHERE id = ?",  # nosec B608
         params,
     )
     conn.commit()
@@ -1882,7 +1882,7 @@ def update_schedule(schedule_id: int):
     params.append(schedule_id)
 
     conn.execute(
-        f"UPDATE schedules SET {', '.join(update_fields)} WHERE id = ?",
+        f"UPDATE schedules SET {', '.join(update_fields)} WHERE id = ?",  # nosec B608
         params,
     )
     conn.commit()
@@ -2130,7 +2130,7 @@ def update_template(template_id: int):
     params.append(template_id)
 
     conn.execute(
-        f"UPDATE templates SET {', '.join(update_fields)} WHERE id = ?",
+        f"UPDATE templates SET {', '.join(update_fields)} WHERE id = ?",  # nosec B608
         params,
     )
     conn.commit()
@@ -2186,8 +2186,13 @@ def apply_template(template_id: int):
     if t_dict.get("visibility"):
         updates["visibility"] = t_dict["visibility"]
 
+    ALLOWED_TEMPLATE_FIELDS = {
+        "title", "description", "tags", "category_id", "visibility",
+        "made_for_kids", "license", "embeddable", "privacy_status"
+    }
     for field, value in updates.items():
-        conn.execute(f"UPDATE videos SET {field} = ? WHERE id = ?", (value, video_id))
+        if field in ALLOWED_TEMPLATE_FIELDS:
+            conn.execute(f"UPDATE videos SET {field} = ? WHERE id = ?", (value, video_id))  # nosec B608
 
     conn.commit()
     conn.close()
@@ -2272,7 +2277,7 @@ def update_rule(rule_id: int):
     params.append(rule_id)
 
     conn.execute(
-        f"UPDATE automation_rules SET {', '.join(update_fields)} WHERE id = ?",
+        f"UPDATE automation_rules SET {', '.join(update_fields)} WHERE id = ?",  # nosec B608
         params,
     )
     conn.commit()
@@ -2697,17 +2702,19 @@ def save_settings():
 # ---------------------------------------------------------------
 
 
+YOUTUBE_ALLOWED_TABLES = (
+    "tokens", "videos", "schedules", "history", "playlists",
+    "templates", "automation_rules", "upload_queue", "watch_folder",
+    "naming_templates", "settings",
+)
+
+
 @youtube_bp.route("/data/clear", methods=["POST"])
 def clear_data():
     """Clear all local YouTube automation data."""
     conn = get_db()
-    tables = [
-        "tokens", "videos", "schedules", "history", "playlists",
-        "templates", "automation_rules", "upload_queue", "watch_folder",
-        "naming_templates", "settings",
-    ]
-    for table in tables:
-        conn.execute(f"DELETE FROM {table}")
+    for table in YOUTUBE_ALLOWED_TABLES:
+        conn.execute(f"DELETE FROM {table}")  # nosec B608
     conn.commit()
     conn.close()
     return jsonify({"success": True})
@@ -2718,13 +2725,8 @@ def export_data():
     """Export all local YouTube automation data as JSON."""
     conn = get_db()
     data = {}
-    tables = [
-        "tokens", "videos", "schedules", "history", "playlists",
-        "templates", "automation_rules", "upload_queue", "watch_folder",
-        "naming_templates", "settings",
-    ]
-    for table in tables:
-        rows = conn.execute(f"SELECT * FROM {table}").fetchall()
+    for table in YOUTUBE_ALLOWED_TABLES:
+        rows = conn.execute(f"SELECT * FROM {table}").fetchall()  # nosec B608
         data[table] = [dict(r) for r in rows]
     conn.close()
     return jsonify(data)
