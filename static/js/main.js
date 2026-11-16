@@ -4822,10 +4822,43 @@ async function initHardwarePill() {
         pillText.textContent = 'CPU Mode (Optimized)';
     }
 }
+async function syncDownloadedWhisperModels() {
+    const wModel = document.getElementById('whisperModel');
+    if (!wModel) return;
+    try {
+        const res = await fetch('/api/settings/models/available');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.available_models) && data.available_models.length > 0) {
+            const currentVal = wModel.value;
+            wModel.innerHTML = '';
+            data.available_models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.id} — ${m.name} (${m.size || 'Ready'})`;
+                if (m.id === currentVal || (m.id === (data.active_model || 'base') && !currentVal)) {
+                    opt.selected = true;
+                }
+                wModel.appendChild(opt);
+            });
+            if (!data.available_models.some(m => m.id === wModel.value)) {
+                wModel.value = data.available_models[0].id;
+            }
+        } else {
+            wModel.innerHTML = '<option value="" disabled selected>No models downloaded. Go to Settings → AI Models</option>';
+        }
+    } catch (e) {
+        console.debug('Failed to sync downloaded whisper models:', e);
+    }
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initHardwarePill);
+    document.addEventListener('DOMContentLoaded', () => {
+        initHardwarePill();
+        syncDownloadedWhisperModels();
+    });
 } else {
     initHardwarePill();
+    syncDownloadedWhisperModels();
 }
 
 

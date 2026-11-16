@@ -2534,9 +2534,33 @@
         }
     }
 
+    async function syncDownloadedCaptionModels() {
+        if (!el.genModelSelect) return;
+        try {
+            const res = await fetch('/api/settings/models/available');
+            const data = await res.json();
+            if (data.success && Array.isArray(data.available_models) && data.available_models.length > 0) {
+                const cur = el.genModelSelect.value;
+                el.genModelSelect.innerHTML = '';
+                data.available_models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = `${m.name} (${m.size || 'Ready'})`;
+                    if (m.id === cur || (m.id === (data.active_model || 'base') && !cur)) {
+                        opt.selected = true;
+                    }
+                    el.genModelSelect.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.debug('Failed to sync caption models:', e);
+        }
+    }
+
     function openGenerateModal() {
         if (!el.generateCaptionsModal) return;
         el.generateCaptionsModal.style.display = 'flex';
+        syncDownloadedCaptionModels();
         pendingGeneratedCaptions = [];
         if (el.genProgressPanel) el.genProgressPanel.style.display = 'none';
         if (el.genReadyPanel) el.genReadyPanel.style.display = 'none';
