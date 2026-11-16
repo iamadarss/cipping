@@ -1135,6 +1135,8 @@ function collectSettings() {
         naming_prefix: document.getElementById('clipNamingPrefix') ? document.getElementById('clipNamingPrefix').value : 'Clip_',
         naming_format: document.getElementById('clipNamingFormat') ? document.getElementById('clipNamingFormat').value : '001',
         quality: document.getElementById('exportQuality') ? document.getElementById('exportQuality').value : 'original',
+        format: localStorage.getItem('upclip_export_format') || 'mp4',
+        container: localStorage.getItem('upclip_export_format') || 'mp4',
 
         // 1. Whisper AI Engine
         whisper_enabled: document.getElementById('whisperToggle') ? document.getElementById('whisperToggle').checked : true,

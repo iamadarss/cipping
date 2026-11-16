@@ -2876,6 +2876,11 @@
     function openExportModal() {
         if (!el.exportVideoModal) return;
         el.exportVideoModal.style.display = 'flex';
+        // Respect global default export format from Settings
+        const defaultFmt = localStorage.getItem('upclip_export_format') || 'mp4';
+        if (el.exportFormatSelect) {
+            el.exportFormatSelect.value = defaultFmt;
+        }
         if (el.exportProgressPanel) el.exportProgressPanel.style.display = 'none';
         if (el.exportDownloadLinkBtn) el.exportDownloadLinkBtn.style.display = 'none';
         if (el.exportStartRenderBtn) {
