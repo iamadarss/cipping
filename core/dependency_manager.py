@@ -394,6 +394,8 @@ class DependencyInstallManager:
 
         return result
 
+    inspect_all = inspect_dependencies
+
     def start_installation(self, target_ids: List[str]) -> Dict[str, Any]:
         """Start non-blocking pip installation for selected dependencies."""
         job_id = f"job_{int(time.time())}"
